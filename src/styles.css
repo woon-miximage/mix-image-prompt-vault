@@ -2481,35 +2481,35 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
    ======================================================== */
 .prompt-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.15rem;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.85rem;
 }
 
 .prompt-card {
   position: relative;
   overflow: visible;
-  border-radius: 1.4rem;
+  border-radius: 1.05rem;
   display: flex;
   flex-direction: column;
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.95);
-  box-shadow: 0 12px 32px rgba(35, 52, 86, 0.06);
+  box-shadow: 0 8px 24px rgba(35, 52, 86, 0.05);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   content-visibility: auto;
-  contain-intrinsic-size: 0 360px;
+  contain-intrinsic-size: 0 420px;
 }
 
 .prompt-card:hover {
   transform: translateY(-3px);
   background: #ffffff;
   border-color: #cbd5e1;
-  box-shadow: 0 18px 42px rgba(35, 52, 86, 0.11);
+  box-shadow: 0 16px 36px rgba(35, 52, 86, 0.1);
 }
 
 .thumbnail-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 4 / 5;
   background: linear-gradient(135deg, #f8fafc, #e2e8f0 55%, #fff7ed);
   overflow: hidden;
 }
@@ -2528,10 +2528,23 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   position: relative;
   width: 100%;
   height: 100%;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
   background: radial-gradient(circle at 50% 50%, #ffffff 0%, #f1f5f9 70%, #e2e8f0 100%);
+}
+
+.thumbnail-img-blur {
+  position: absolute;
+  inset: -18%;
+  width: 136%;
+  height: 136%;
+  object-fit: cover;
+  filter: blur(24px) brightness(0.96) saturate(1.25);
+  opacity: 0.35;
+  pointer-events: none;
+  transform: scale(1.1);
 }
 
 .thumbnail-img-main {
@@ -2539,14 +2552,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   z-index: 1;
   max-width: 100%;
   max-height: 100%;
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   transition: transform 0.25s ease;
+  display: block;
 }
 
 .prompt-card:hover .thumbnail-img-main {
-  transform: scale(1.035);
+  transform: scale(1.03);
 }
 
 .thumbnail-empty {
@@ -2555,64 +2569,64 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   align-content: center;
   height: 100%;
   color: #94a3b8;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .thumbnail-empty .svg-icon {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2rem;
+  height: 2rem;
   opacity: 0.5;
 }
 
 .thumbnail-empty span {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
 }
 
 .image-count-badge {
   position: absolute;
-  bottom: 0.6rem;
-  left: 0.6rem;
+  bottom: 0.45rem;
+  left: 0.45rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.55rem;
+  gap: 0.25rem;
+  padding: 0.18rem 0.45rem;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.85);
   color: #ffffff;
-  font-size: 0.68rem;
+  font-size: 0.6rem;
   font-weight: 800;
   z-index: 2;
 }
 
 .tool-pill {
   position: absolute;
-  top: 0.6rem;
-  left: 0.6rem;
-  padding: 0.24rem 0.6rem;
+  top: 0.45rem;
+  left: 0.45rem;
+  padding: 0.18rem 0.48rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.96);
   color: #0369a1;
-  font-size: 0.66rem;
+  font-size: 0.58rem;
   font-weight: 800;
   border: 1px solid #bae6fd;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   z-index: 2;
 }
 
 .favorite-btn-overlay {
   position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-  width: 2.35rem;
-  height: 2.35rem;
+  top: 0.45rem;
+  right: 0.45rem;
+  width: 1.85rem;
+  height: 1.85rem;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(226, 232, 240, 0.9);
   color: #94a3b8;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
   transition: transform 0.15s ease, color 0.15s ease;
   z-index: 2;
 }
@@ -2630,25 +2644,27 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 /* Card Body */
 .prompt-card-body {
-  padding: 1.15rem;
+  padding: 0.75rem 0.8rem;
   display: flex;
   flex-direction: column;
   flex: 1;
+  gap: 0.25rem;
 }
 
 .card-heading-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.6rem;
+  gap: 0.35rem;
+  margin-bottom: 0.3rem;
+  flex-wrap: wrap;
 }
 
 .category-pill {
   display: inline-flex;
   width: fit-content;
   border-radius: 999px;
-  padding: 0.22rem 0.65rem;
-  font-size: 0.65rem;
+  padding: 0.16rem 0.5rem;
+  font-size: 0.6rem;
   font-weight: 800;
 }
 
@@ -2667,10 +2683,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .category-pill-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
   border-radius: 999px;
-  padding: 0.24rem 0.65rem;
-  font-size: 0.66rem;
+  padding: 0.16rem 0.5rem;
+  font-size: 0.6rem;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.16s ease;
@@ -2680,11 +2696,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .category-pill-btn:hover {
   transform: translateY(-1px);
   filter: brightness(0.95);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
 }
 
 .category-arrow-down {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   line-height: 1;
   opacity: 0.7;
 }
@@ -2693,54 +2709,57 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.3rem;
 }
 
 .card-badges-right {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
   margin-left: auto;
 }
 
 .note-badge-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.22rem 0.55rem;
+  gap: 0.2rem;
+  padding: 0.15rem 0.42rem;
   border-radius: 999px;
   background: #f5f3ff;
   color: #7c3aed;
   border: 1px solid #ddd6fe;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 800;
 }
 
 .note-badge-indicator .svg-icon {
-  width: 0.75rem;
-  height: 0.75rem;
+  width: 0.7rem;
+  height: 0.7rem;
 }
 
 .negative-badge {
   display: inline-flex;
-  padding: 0.22rem 0.55rem;
+  padding: 0.15rem 0.42rem;
   border-radius: 999px;
   background: #ffe4e6;
   color: #be123c;
   border: 1px solid #fecdd3;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 800;
 }
 
 .card-title {
-  margin: 0 0 0.4rem;
-  font-size: 1.05rem;
+  margin: 0 0 0.2rem;
+  font-size: 0.88rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.35;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
   color: #0f172a;
   cursor: pointer;
   transition: 0.2s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-title:hover {
@@ -2754,27 +2773,27 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   overflow: hidden;
   margin: 0;
   color: #475569;
-  font-size: 0.8rem;
-  line-height: 1.5;
+  font-size: 0.72rem;
+  line-height: 1.4;
   cursor: pointer;
 }
 
 .tag-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: 0.75rem;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
 }
 
 .tag-btn, .tag-pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.55rem;
-  border-radius: 0.5rem;
+  padding: 0.14rem 0.4rem;
+  border-radius: 0.4rem;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   color: #475569;
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 600;
   transition: 0.2s ease;
 }
@@ -2787,38 +2806,50 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 .card-footer-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.35rem;
   margin-top: auto;
-  padding-top: 1rem;
+  padding-top: 0.55rem;
   border-top: 1px solid var(--border-light);
 }
 
 .card-meta {
   color: #64748b;
-  font-size: 0.7rem;
+  font-size: 0.62rem;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-actions {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.22rem;
+  width: 100%;
 }
 
 .action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.42rem 0.65rem;
-  border-radius: 0.65rem;
+  justify-content: center;
+  gap: 0.22rem;
+  padding: 0.32rem 0.45rem;
+  border-radius: 0.55rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   color: #475569;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   transition: all 0.2s ease;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.action-btn .svg-icon {
+  width: 0.8rem;
+  height: 0.8rem;
 }
 
 .action-btn:hover {
@@ -2838,6 +2869,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   color: #e11d48;
   background: #fee2e2;
   border-color: #fca5a5;
+}
+
+.action-btn:nth-child(3),
+.action-btn:nth-child(4) {
+  flex: 0 0 1.85rem;
+  height: 1.85rem;
+  padding: 0;
 }
 
 /* Empty State */
@@ -3506,9 +3544,24 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 }
 
 /* Responsive Breakpoints */
+@media (max-width: 1680px) {
+  .prompt-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.8rem;
+  }
+}
+
+@media (max-width: 1400px) {
+  .prompt-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.8rem;
+  }
+}
+
 @media (max-width: 1100px) {
   .prompt-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
   }
   .category-row {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3757,8 +3810,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   }
 
   .prompt-grid {
-    grid-template-columns: 1fr;
-    gap: 0.95rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
   }
 
   .prompt-card-body {

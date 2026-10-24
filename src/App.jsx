@@ -1027,7 +1027,16 @@ const PromptCard = memo(function PromptCard({
         >
           {item.imageUrls?.[0] ? (
             <div className="thumbnail-aspect-frame">
-              {/* Foreground image ที่รักษาสัดส่วนต้นฉบับ ไม่ยืด ไม่แตก และโหลดแบบ Async */}
+              {/* ภาพพื้นหลังเบลอแบบ Ambient ให้เข้ากับโทนสีภาพ ไม่เห็นขอบตัดหรือช่องว่างทึบ */}
+              <img
+                className="thumbnail-img-blur"
+                src={item.imageUrls[0]}
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+              />
+              {/* ภาพตัวอย่างหลักที่แสดงสัดส่วนเต็มทั้งภาพ ไม่ตัดขอบ ไม่ยืด (Contain Full View) */}
               <img
                 className="thumbnail-img-main"
                 src={item.imageUrls[0]}
