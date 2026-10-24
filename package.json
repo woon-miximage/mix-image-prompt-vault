@@ -8,7 +8,8 @@
     "build": "vite build",
     "build:zip": "vite build && python package-deploy.py",
     "preview": "vite preview",
-    "package": "python package-deploy.py"
+    "package": "python package-deploy.py",
+    "deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1"
   },
   "dependencies": {
     "firebase": "^12.4.0",
