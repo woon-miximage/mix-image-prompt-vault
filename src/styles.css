@@ -2452,13 +2452,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   transform: translateY(-1px);
 }
 
-.danger-button {
+.danger-button,
+.delete-button-secondary {
   border: 1px solid rgba(225, 29, 72, 0.25);
   color: #e11d48;
   background: #fff1f2;
 }
 
-.danger-button:hover {
+.danger-button:hover,
+.delete-button-secondary:hover {
   background: #ffe4e6;
   border-color: rgba(225, 29, 72, 0.45);
 }

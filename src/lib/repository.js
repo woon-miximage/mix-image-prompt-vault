@@ -348,7 +348,12 @@ export const updateCloudPromptsOrder = async (itemsToUpdate = []) => {
 }
 
 export const deleteCloudPrompt = async (item) => {
-  await deleteDoc(doc(db, COLLECTION, item.id))
+  if (!item?.id || String(item.id).startsWith('local-')) return
+  try {
+    await deleteDoc(doc(db, COLLECTION, item.id))
+  } catch (err) {
+    console.warn('deleteDoc error:', err)
+  }
   if (item.imagePath) {
     try {
       await deleteObject(ref(storage, item.imagePath))

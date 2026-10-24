@@ -1329,16 +1329,19 @@ const PromptCard = memo(function PromptCard({
   )
 })
 
-function PromptEditor({ item, folders = [], defaultFolder = '', onClose, onSave }) {
-  const [form, setForm] = useState(
-    item
-      ? {
-          ...item,
-          folder: item.folder || '',
-          tags: Array.isArray(item.tags) ? item.tags.join(', ') : item.tags,
-        }
-      : { ...emptyForm, folder: defaultFolder || '' }
-  )
+function PromptEditor({ item, folders = [], defaultCategory = 'main', defaultFolder = '', onClose, onSave }) {
+  const isEditing = Boolean(item?.id)
+  const [form, setForm] = useState(() => {
+    const initialCategory = item?.category || defaultCategory || 'main'
+    const initialFolder = (item?.folder || defaultFolder || '').trim()
+    return {
+      ...emptyForm,
+      category: initialCategory,
+      folder: initialFolder,
+      ...(item || {}),
+      tags: Array.isArray(item?.tags) ? item.tags.join(', ') : (item?.tags || ''),
+    }
+  })
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(item?.imageUrls?.[0] || '')
   const [isDragOver, setIsDragOver] = useState(false)
@@ -1410,7 +1413,7 @@ function PromptEditor({ item, folders = [], defaultFolder = '', onClose, onSave 
         <div className="modal-header">
           <div>
             <p className="eyebrow">PROMPT VAULT</p>
-            <h2 id="editor-title">{item ? 'แก้ไขข้อมูลพรอมต์' : 'เพิ่มพรอมต์ใหม่'}</h2>
+            <h2 id="editor-title">{isEditing ? 'แก้ไขข้อมูลพรอมต์' : 'เพิ่มพรอมต์ใหม่'}</h2>
           </div>
           <button type="button" className="icon-button close-button" onClick={onClose} aria-label="ปิด">
             <Icon name="close" />
@@ -1456,19 +1459,7 @@ function PromptEditor({ item, folders = [], defaultFolder = '', onClose, onSave 
                   <span>หมวดหมู่</span>
                   <select
                     value={form.category}
-                    onChange={(event) => {
-                      const nextCategory = event.target.value
-                      setForm((current) => {
-                        // เปลี่ยนห้องแล้วโฟลเดอร์ที่เลือกไว้จากห้องเดิมจะถูกล้าง (ไม่ให้โฟลเดอร์ข้ามห้อง)
-                        const existsAnywhere = folders.some((f) => f.name === current.folder)
-                        const existsInNext = folders.some((f) => f.category === nextCategory && f.name === current.folder)
-                        return {
-                          ...current,
-                          category: nextCategory,
-                          folder: existsAnywhere && !existsInNext ? '' : current.folder,
-                        }
-                      })
-                    }}
+                    onChange={(event) => update('category', event.target.value)}
                   >
                     {categories.filter((c) => c.id !== 'all').map((category) => (
                       <option value={category.id} key={category.id}>
@@ -1625,7 +1616,17 @@ function PromptEditor({ item, folders = [], defaultFolder = '', onClose, onSave 
   )
 }
 
-function DetailModal({ item, folders = [], onClose, onCopy, onEdit, onLightbox, onMoveToCategory, onMoveToFolder }) {
+function DetailModal({
+  item,
+  folders = [],
+  onClose,
+  onCopy,
+  onEdit,
+  onDelete,
+  onLightbox,
+  onMoveToCategory,
+  onMoveToFolder,
+}) {
   const [activeTab, setActiveTab] = useState('positive')
   const [copiedType, setCopiedType] = useState('')
 
@@ -1805,6 +1806,18 @@ function DetailModal({ item, folders = [], onClose, onCopy, onEdit, onLightbox, 
             <span>อัปเดตเมื่อ: {formatDate(item.updatedAt)}</span>
           </div>
           <div className="detail-buttons-right">
+            {onDelete && (
+              <button
+                type="button"
+                className="danger-button"
+                onClick={() => {
+                  onDelete(item)
+                }}
+                title="ลบพรอมต์นี้"
+              >
+                <Icon name="trash" /> ลบ
+              </button>
+            )}
             <button
               type="button"
               className="secondary-button"
@@ -3175,8 +3188,24 @@ function App() {
         loadCloudPrompts(),
         loadCloudFolders(),
       ])
-      setItems(cloudItems)
-      writeLocalPrompts(cloudItems)
+      // สมานหมวดหมู่ให้ตรงกับโฟลเดอร์สำหรับกรณีข้อมูลเดิมที่มีโฟลเดอร์ในห้องเฉพาะ
+      const folderCatMap = new Map()
+      for (const f of cloudFolders || []) {
+        if (f.name && f.category && f.category !== 'all' && f.category !== 'main') {
+          folderCatMap.set(f.name.toLowerCase(), f.category)
+        }
+      }
+      const reconciled = (cloudItems || []).map((item) => {
+        if (item.folder && (item.category === 'main' || !item.category)) {
+          const expectedCat = folderCatMap.get(item.folder.toLowerCase())
+          if (expectedCat) {
+            return { ...item, category: expectedCat }
+          }
+        }
+        return item
+      })
+      setItems(reconciled)
+      writeLocalPrompts(reconciled)
       if (cloudFolders?.length) {
         setFolders(cloudFolders)
         writeLocalFolders(cloudFolders)
@@ -3272,7 +3301,16 @@ function App() {
   const categoryFilteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
     return items.filter((item) => {
-      const inCategory = categoryFilter === 'all' || item.category === categoryFilter
+      // ตรวจสอบห้อง: ตรงกับ categoryFilter หรือกรณีที่พรอมต์อยู่ในโฟลเดอร์ของห้องนั้น
+      const isFolderInCategory =
+        categoryFilter !== 'all' &&
+        item.folder &&
+        allFolders.some(
+          (f) =>
+            f.category === categoryFilter &&
+            f.name.toLowerCase() === item.folder.toLowerCase()
+        )
+      const inCategory = categoryFilter === 'all' || item.category === categoryFilter || isFolderInCategory
       if (!inCategory) return false
 
       if (quickFilter === 'favorite' && !item.favorite) return false
@@ -3299,7 +3337,7 @@ function App() {
 
       return true
     })
-  }, [items, query, categoryFilter, quickFilter, lockedDate])
+  }, [items, query, categoryFilter, quickFilter, lockedDate, allFolders])
 
   const filteredItems = useMemo(() => {
     if (folderFilter === 'all') return categoryFilteredItems
@@ -3422,12 +3460,30 @@ function App() {
     flash(`ลบโฟลเดอร์ “${folderObj.name}” แล้ว`)
   }
 
-  // ย้ายพรอมต์ไปยังโฟลเดอร์ที่เลือก
+  // ย้ายพรอมต์ไปยังโฟลเดอร์ที่เลือก (พร้อมปรับหมวดหมู่ให้สอดคล้องกับโฟลเดอร์โดยอัตโนมัติ)
   const moveItemToFolder = async (item, targetFolderName) => {
     const cleanFolder = (targetFolderName || '').trim()
-    if ((item.folder || '') === cleanFolder) return
+    if ((item.folder || '') === cleanFolder && (categoryFilter === 'all' || item.category === categoryFilter)) return
+
+    // หาหมวดหมู่เป้าหมายที่สัมพันธ์กับโฟลเดอร์นี้
+    const matchedFolder = cleanFolder
+      ? allFolders.find(
+          (f) =>
+            f.name.toLowerCase() === cleanFolder.toLowerCase() &&
+            f.category &&
+            f.category !== 'all'
+        )
+      : null
+
+    const targetCategory = cleanFolder
+      ? categoryFilter !== 'all'
+        ? categoryFilter
+        : (matchedFolder?.category || item.category || 'main')
+      : item.category || 'main'
+
     const nextItem = {
       ...item,
+      category: targetCategory,
       folder: cleanFolder,
       updatedAt: new Date().toISOString(),
     }
@@ -3437,9 +3493,29 @@ function App() {
     if (detailItem?.id === item.id) {
       setDetailItem(nextItem)
     }
+
+    // บันทึกโฟลเดอร์ลงหมวดหมู่เป้าหมายหากยังไม่มีในระบบ
+    if (
+      cleanFolder &&
+      !allFolders.some(
+        (f) =>
+          f.name.toLowerCase() === cleanFolder.toLowerCase() &&
+          f.category === targetCategory
+      )
+    ) {
+      saveCloudFolder({ name: cleanFolder, category: targetCategory }).then((created) => {
+        setFolders((curr) => {
+          const updatedFolders = [...curr, created]
+          writeLocalFolders(updatedFolders)
+          return updatedFolders
+        })
+      })
+    }
+
+    const catLabel = categories.find((c) => c.id === targetCategory)?.label || targetCategory
     flash(
       cleanFolder
-        ? `ย้าย “${item.title}” ไปยังโฟลเดอร์ “${cleanFolder}” แล้ว`
+        ? `ย้าย “${item.title}” ไปยังโฟลเดอร์ “${cleanFolder}” (${catLabel}) แล้ว`
         : `นำ “${item.title}” ออกจากโฟลเดอร์แล้ว`
     )
     try {
@@ -3451,23 +3527,23 @@ function App() {
 
   // สร้างโฟลเดอร์ใหม่พร้อมย้ายการ์ดเข้าไปทันที
   const createAndMoveToFolder = async (item, folderName) => {
-    const createdName = await createFolder(folderName, item?.category)
+    const targetCat = categoryFilter !== 'all' ? categoryFilter : (item?.category || 'main')
+    const createdName = await createFolder(folderName, targetCat)
     if (createdName) {
       await moveItemToFolder(item, createdName)
     }
   }
 
-  // ย้ายพรอมต์ไปหมวดหมู่อื่น
+  // ย้ายพรอมต์ไปหมวดหมู่อื่น (รักษาโฟลเดอร์เดิมไว้ และบันทึกเข้าห้องปลายทาง)
   const moveItemToCategory = async (item, targetCategoryId) => {
     if (!targetCategoryId || targetCategoryId === 'all' || item.category === targetCategoryId) return
     const catLabel = categories.find((c) => c.id === targetCategoryId)?.label || targetCategoryId
-    // ย้ายห้องแล้วโฟลเดอร์เดิมไม่ติดตามไป (กันโฟลเดอร์ปนกัน) ยกเว้นห้องปลายทางมีโฟลเดอร์ชื่อเดียวกันอยู่แล้ว
-    const keepFolder =
-      item.folder && allFolders.some((f) => f.category === targetCategoryId && f.name === item.folder)
+    const cleanFolder = (item.folder || '').trim()
+
     const nextItem = {
       ...item,
       category: targetCategoryId,
-      folder: keepFolder ? item.folder : '',
+      folder: cleanFolder,
       updatedAt: new Date().toISOString(),
     }
     const next = items.map((current) => (current.id === item.id ? nextItem : current))
@@ -3476,6 +3552,25 @@ function App() {
     if (detailItem?.id === item.id) {
       setDetailItem(nextItem)
     }
+
+    // บันทึกโฟลเดอร์ในหมวดหมู่ปลายทางด้วย
+    if (
+      cleanFolder &&
+      !allFolders.some(
+        (f) =>
+          f.name.toLowerCase() === cleanFolder.toLowerCase() &&
+          f.category === targetCategoryId
+      )
+    ) {
+      saveCloudFolder({ name: cleanFolder, category: targetCategoryId }).then((created) => {
+        setFolders((curr) => {
+          const updatedFolders = [...curr, created]
+          writeLocalFolders(updatedFolders)
+          return updatedFolders
+        })
+      })
+    }
+
     flash(`ย้าย “${item.title}” ไปหมวด “${catLabel}” แล้ว`)
     try {
       await updateCloudPrompt(nextItem)
@@ -3486,45 +3581,60 @@ function App() {
 
   const saveItem = async (draft) => {
     const payload = { ...draft, imageFile: undefined, precompressedPreview: undefined }
-    const previous = editorItem
-    // หากสร้างพรอมต์พร้อมพิมพ์ชื่อโฟลเดอร์ใหม่ ให้บันทึกโฟลเดอร์นั้นไว้ในรายการโฟลเดอร์ด้วย
+    const isEditing = Boolean(editorItem?.id)
+    const editingId = editorItem?.id
+    const finalCategory = payload.category || (categoryFilter === 'all' ? 'main' : categoryFilter)
+    const finalFolder = (payload.folder || '').trim()
+
+    // หากสร้างพรอมต์พร้อมพิมพ์ชื่อโฟลเดอร์ใหม่ ให้บันทึกโฟลเดอร์นั้นไว้ในรายการโฟลเดอร์ของห้องนั้นด้วย
     if (
-      payload.folder &&
-      !allFolders.some((f) => f.name === payload.folder && f.category === (payload.category || 'main'))
+      finalFolder &&
+      !allFolders.some(
+        (f) =>
+          f.name.toLowerCase() === finalFolder.toLowerCase() &&
+          f.category === finalCategory
+      )
     ) {
-      saveCloudFolder({ name: payload.folder, category: payload.category || 'main' }).then((created) => {
+      saveCloudFolder({ name: finalFolder, category: finalCategory }).then((created) => {
         setFolders((curr) => {
-          const next = [...curr, created]
-          writeLocalFolders(next)
-          return next
+          const nextFolders = [...curr, created]
+          writeLocalFolders(nextFolders)
+          return nextFolders
         })
       })
     }
+
     try {
       const saved = await saveCloudPrompt({
-        id: previous?.id,
-        data: payload,
+        id: editingId,
+        data: { ...payload, category: finalCategory, folder: finalFolder },
         imageFile: draft.imageFile,
         precompressedPreview: draft.precompressedPreview || '',
       })
-      const next = previous ? items.map((item) => item.id === previous.id ? saved : item) : [saved, ...items]
+      const next = isEditing
+        ? items.map((item) => (item.id === editingId ? saved : item))
+        : [saved, ...items]
       setItems(next)
       writeLocalPrompts(next)
       setEditorItem(null)
-      flash(previous ? 'บันทึกการแก้ไขแล้ว' : 'บันทึกพรอมต์ใหม่แล้ว')
+      flash(isEditing ? 'บันทึกการแก้ไขแล้ว' : 'บันทึกพรอมต์ใหม่แล้ว')
       setCloudState('Firebase พร้อม')
     } catch (error) {
-      const localId = previous?.id || `local-${Date.now()}`
+      const localId = editingId || `local-${Date.now()}`
       const localImage =
         draft.precompressedPreview ||
         (draft.imageFile ? await fileToLocalPreview(draft.imageFile).catch(() => '') : '')
       const saved = normalizePrompt(localId, {
         ...payload,
+        category: finalCategory,
+        folder: finalFolder,
         image_urls: localImage ? [localImage] : draft.imageUrls,
         updated_at: new Date().toISOString(),
-        created_at: previous?.createdAt || new Date().toISOString(),
+        created_at: editorItem?.createdAt || new Date().toISOString(),
       })
-      const next = previous ? items.map((item) => item.id === previous.id ? saved : item) : [saved, ...items]
+      const next = isEditing
+        ? items.map((item) => (item.id === editingId ? saved : item))
+        : [saved, ...items]
       setItems(next)
       writeLocalPrompts(next)
       setEditorItem(null)
@@ -3534,17 +3644,26 @@ function App() {
   }
 
   const deleteItem = async (item) => {
+    if (!item?.id) return
     if (!window.confirm(`ต้องการลบ “${item.title}” ใช่หรือไม่?`)) return
-    try {
-      await deleteCloudPrompt(item)
-    } catch {
-      /* keep local deletion usable when rules are not ready */
-    }
-    const next = items.filter((current) => current.id !== item.id)
+    const targetId = item.id
+    const targetTitle = item.title
+
+    // 1. Optimistic UI: ตัดรายการออกจาก state และลดจำนวนพรอมต์รวมทันที
+    const next = items.filter((current) => current.id !== targetId)
     setItems(next)
     writeLocalPrompts(next)
-    if (detailItem?.id === item.id) setDetailItem(null)
-    flash('ลบพรอมต์แล้ว')
+    if (detailItem?.id === targetId) {
+      setDetailItem(null)
+    }
+    flash(`ลบ “${targetTitle}” แล้ว`)
+
+    // 2. ซิงค์ลบข้อมูลบน Cloud / Storage ในเบื้องหลัง ไม่บล็อก UI
+    try {
+      await deleteCloudPrompt(item)
+    } catch (err) {
+      console.warn('ลบข้อมูลบนคลาวด์ไม่สำเร็จ (ลบในเครื่องเรียบร้อยแล้ว):', err)
+    }
   }
 
   const toggleFavorite = async (item) => {
@@ -3938,7 +4057,20 @@ function App() {
                   const count =
                     category.id === 'all'
                       ? items.length
-                      : items.filter((item) => item.category === category.id).length
+                      : items.filter((item) => {
+                          if (item.category === category.id) return true
+                          if (
+                            item.folder &&
+                            allFolders.some(
+                              (f) =>
+                                f.category === category.id &&
+                                f.name.toLowerCase() === item.folder.toLowerCase()
+                            )
+                          ) {
+                            return true
+                          }
+                          return false
+                        }).length
                   return (
                     <button
                       type="button"
@@ -4216,7 +4348,11 @@ function App() {
                       item={item}
                       index={index}
                       totalShown={shownItems.length}
-                      folders={foldersByCategory[item.category] || []}
+                      folders={
+                        categoryFilter !== 'all'
+                          ? (foldersByCategory[categoryFilter] || [])
+                          : (foldersByCategory[item.category]?.length ? foldersByCategory[item.category] : allFolders)
+                      }
                       key={item.id}
                       isDragging={draggedId === item.id}
                       isDragOver={dragOverCardId === item.id}
@@ -4470,8 +4606,9 @@ function App() {
 
       {editorItem && (
         <PromptEditor
-          item={editorItem?.id ? editorItem : null}
+          item={editorItem}
           folders={allFolders}
+          defaultCategory={editorItem?.category || (categoryFilter === 'all' ? 'main' : categoryFilter)}
           defaultFolder={editorItem?.folder || activeFolderDefault}
           onClose={() => { setEditorItem(null); setPage('home') }}
           onSave={saveItem}
@@ -4485,6 +4622,7 @@ function App() {
           onClose={() => setDetailItem(null)}
           onCopy={copyPromptText}
           onEdit={(current) => { setDetailItem(null); setEditorItem(current); setPage('add') }}
+          onDelete={deleteItem}
           onLightbox={(url) => setLightboxImage(url)}
           onMoveToCategory={moveItemToCategory}
           onMoveToFolder={moveItemToFolder}
