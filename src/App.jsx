@@ -992,7 +992,7 @@ const PromptCard = memo(function PromptCard({
       <div className="card-drag-bar" title="คลิกค้างที่การ์ดเพื่อลากย้ายตำแหน่ง หรือลากไปวางในโฟลเดอร์">
         <span className="drag-grip-label">
           <Icon name="grip" />
-          <span>คลิกค้างเพื่อลากย้าย</span>
+          <span>ลากย้าย</span>
         </span>
         <div className="card-step-controls">
           <button
@@ -1246,13 +1246,13 @@ const PromptCard = memo(function PromptCard({
           )}
           {item.negativePrompt && (
             <span className="negative-badge" title="มี Negative Prompt กำหนดไว้">
-              Negative ✓
+              Neg ✓
             </span>
           )}
         </div>
       </div>
 
-        <h3 onClick={() => onOpen(item)} className="card-title">
+        <h3 onClick={() => onOpen(item)} className="card-title" title={item.title}>
           {item.title}
         </h3>
 
@@ -1260,19 +1260,9 @@ const PromptCard = memo(function PromptCard({
           {item.promptText || 'ยังไม่มีข้อความพรอมต์'}
         </p>
 
-        {(item.folder || item.tags?.length > 0) && (
+        {item.tags?.length > 0 && (
           <div className="tag-row">
-            {item.folder && (
-              <button
-                type="button"
-                className="tag-btn folder-tag-btn"
-                onClick={(e) => { e.stopPropagation(); onFolderClick?.(item.folder) }}
-                title={`เปิดโฟลเดอร์ ${item.folder}`}
-              >
-                <Icon name="folder" filled /> {item.folder}
-              </button>
-            )}
-            {item.tags?.slice(0, 4).map((tag) => (
+            {item.tags.slice(0, 3).map((tag) => (
               <button
                 type="button"
                 className="tag-btn"
@@ -1286,12 +1276,11 @@ const PromptCard = memo(function PromptCard({
           </div>
         )}
 
-        <div className="card-footer-row">
-          <span className="card-meta">อัปเดต {formatDate(item.updatedAt)}</span>
+        <div className="card-footer-row" title={`อัปเดตเมื่อ ${formatDate(item.updatedAt)}`}>
           <div className="card-actions">
             <button
               type="button"
-              className={`action-btn ${copied ? 'action-copied' : ''}`}
+              className={`action-btn copy-action-btn ${copied ? 'action-copied' : ''}`}
               onClick={handleCopy}
               aria-label="คัดลอกพรอมต์"
               title="คัดลอกพรอมต์"
@@ -1315,7 +1304,7 @@ const PromptCard = memo(function PromptCard({
             </button>
             <button
               type="button"
-              className="action-btn"
+              className="action-btn icon-only-btn"
               onClick={(e) => { e.stopPropagation(); onEdit(item) }}
               aria-label="แก้ไข"
               title="แก้ไข"
@@ -1324,7 +1313,7 @@ const PromptCard = memo(function PromptCard({
             </button>
             <button
               type="button"
-              className="action-btn danger-action"
+              className="action-btn icon-only-btn danger-action"
               onClick={(e) => { e.stopPropagation(); onDelete(item) }}
               aria-label="ลบ"
               title="ลบ"

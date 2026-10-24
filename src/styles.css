@@ -442,22 +442,22 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .app-shell {
   display: flex;
   min-height: 100vh;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  max-width: 1440px;
+  gap: 1.1rem;
+  padding: 1.1rem;
+  max-width: 1920px;
   margin: 0 auto;
 }
 
 /* Sidebar */
 .sidebar {
   position: sticky;
-  top: 1.5rem;
+  top: 1.1rem;
   display: flex;
-  flex: 0 0 16.5rem;
+  flex: 0 0 15rem;
   flex-direction: column;
-  height: calc(100vh - 3rem);
-  padding: 1.25rem 1rem;
-  border-radius: 1.6rem;
+  height: calc(100vh - 2.2rem);
+  padding: 1.1rem 0.9rem;
+  border-radius: 1.5rem;
   z-index: 10;
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.85);
@@ -2482,34 +2482,34 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .prompt-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: 0.7rem;
 }
 
 .prompt-card {
   position: relative;
   overflow: visible;
-  border-radius: 1.05rem;
+  border-radius: 0.95rem;
   display: flex;
   flex-direction: column;
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.95);
-  box-shadow: 0 8px 24px rgba(35, 52, 86, 0.05);
+  box-shadow: 0 8px 22px rgba(35, 52, 86, 0.05);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   content-visibility: auto;
-  contain-intrinsic-size: 0 420px;
+  contain-intrinsic-size: 0 280px;
 }
 
 .prompt-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   background: #ffffff;
   border-color: #cbd5e1;
-  box-shadow: 0 16px 36px rgba(35, 52, 86, 0.1);
+  box-shadow: 0 14px 32px rgba(35, 52, 86, 0.1);
 }
 
 .thumbnail-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 10 / 9;
   background: linear-gradient(135deg, #f8fafc, #e2e8f0 55%, #fff7ed);
   overflow: hidden;
 }
@@ -2541,7 +2541,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   width: 136%;
   height: 136%;
   object-fit: cover;
-  filter: blur(24px) brightness(0.96) saturate(1.25);
+  filter: blur(22px) brightness(0.96) saturate(1.25);
   opacity: 0.35;
   pointer-events: none;
   transform: scale(1.1);
@@ -2569,66 +2569,71 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   align-content: center;
   height: 100%;
   color: #94a3b8;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .thumbnail-empty .svg-icon {
-  width: 2rem;
-  height: 2rem;
+  width: 1.75rem;
+  height: 1.75rem;
   opacity: 0.5;
 }
 
 .thumbnail-empty span {
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   font-weight: 600;
 }
 
 .image-count-badge {
   position: absolute;
-  bottom: 0.45rem;
-  left: 0.45rem;
+  bottom: 0.35rem;
+  left: 0.35rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.18rem 0.45rem;
+  gap: 0.2rem;
+  padding: 0.14rem 0.38rem;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.85);
   color: #ffffff;
-  font-size: 0.6rem;
+  font-size: 0.56rem;
   font-weight: 800;
   z-index: 2;
 }
 
 .tool-pill {
   position: absolute;
-  top: 0.45rem;
-  left: 0.45rem;
-  padding: 0.18rem 0.48rem;
+  top: 0.35rem;
+  left: 0.35rem;
+  padding: 0.14rem 0.42rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.96);
   color: #0369a1;
-  font-size: 0.58rem;
+  font-size: 0.54rem;
   font-weight: 800;
   border: 1px solid #bae6fd;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   z-index: 2;
 }
 
 .favorite-btn-overlay {
   position: absolute;
-  top: 0.45rem;
-  right: 0.45rem;
-  width: 1.85rem;
-  height: 1.85rem;
+  top: 0.35rem;
+  right: 0.35rem;
+  width: 1.65rem;
+  height: 1.65rem;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(226, 232, 240, 0.9);
   color: #94a3b8;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   transition: transform 0.15s ease, color 0.15s ease;
   z-index: 2;
+}
+
+.favorite-btn-overlay .svg-icon {
+  width: 0.82rem;
+  height: 0.82rem;
 }
 
 .favorite-btn-overlay:hover {
@@ -2644,18 +2649,18 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 /* Card Body */
 .prompt-card-body {
-  padding: 0.75rem 0.8rem;
+  padding: 0.5rem 0.6rem 0.55rem;
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: 0.25rem;
+  gap: 0.18rem;
 }
 
 .card-heading-row {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  margin-bottom: 0.3rem;
+  gap: 0.22rem;
+  margin-bottom: 0.12rem;
   flex-wrap: wrap;
 }
 
@@ -2663,8 +2668,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   display: inline-flex;
   width: fit-content;
   border-radius: 999px;
-  padding: 0.16rem 0.5rem;
-  font-size: 0.6rem;
+  padding: 0.12rem 0.42rem;
+  font-size: 0.56rem;
   font-weight: 800;
 }
 
@@ -2678,19 +2683,25 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 .move-menu-anchor {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .category-pill-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.18rem;
   border-radius: 999px;
-  padding: 0.16rem 0.5rem;
-  font-size: 0.6rem;
+  padding: 0.12rem 0.4rem;
+  font-size: 0.56rem;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.16s ease;
   user-select: none;
+  white-space: nowrap;
 }
 
 .category-pill-btn:hover {
@@ -2700,7 +2711,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 }
 
 .category-arrow-down {
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   line-height: 1;
   opacity: 0.7;
 }
@@ -2709,51 +2720,54 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  gap: 0.2rem;
+  min-width: 0;
 }
 
 .card-badges-right {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.18rem;
   margin-left: auto;
 }
 
 .note-badge-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
-  padding: 0.15rem 0.42rem;
+  gap: 0.15rem;
+  padding: 0.1rem 0.34rem;
   border-radius: 999px;
   background: #f5f3ff;
   color: #7c3aed;
   border: 1px solid #ddd6fe;
-  font-size: 0.58rem;
+  font-size: 0.54rem;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .note-badge-indicator .svg-icon {
-  width: 0.7rem;
-  height: 0.7rem;
+  width: 0.62rem;
+  height: 0.62rem;
 }
 
 .negative-badge {
   display: inline-flex;
-  padding: 0.15rem 0.42rem;
+  padding: 0.1rem 0.34rem;
   border-radius: 999px;
   background: #ffe4e6;
   color: #be123c;
   border: 1px solid #fecdd3;
-  font-size: 0.58rem;
+  font-size: 0.54rem;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .card-title {
-  margin: 0 0 0.2rem;
-  font-size: 0.88rem;
+  margin: 0;
+  font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: -0.01em;
-  line-height: 1.3;
+  line-height: 1.28;
   color: #0f172a;
   cursor: pointer;
   transition: 0.2s ease;
@@ -2768,34 +2782,37 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 .prompt-excerpt {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin: 0;
   color: #475569;
-  font-size: 0.72rem;
-  line-height: 1.4;
+  font-size: 0.66rem;
+  line-height: 1.35;
   cursor: pointer;
 }
 
 .tag-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  margin-top: 0.35rem;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  gap: 0.2rem;
+  margin-top: 0.15rem;
 }
 
 .tag-btn, .tag-pill {
   display: inline-flex;
   align-items: center;
-  padding: 0.14rem 0.4rem;
-  border-radius: 0.4rem;
+  padding: 0.08rem 0.34rem;
+  border-radius: 0.35rem;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   color: #475569;
-  font-size: 0.62rem;
+  font-size: 0.56rem;
   font-weight: 600;
   transition: 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tag-btn:hover {
@@ -2807,15 +2824,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .card-footer-row {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.25rem;
   margin-top: auto;
-  padding-top: 0.55rem;
+  padding-top: 0.38rem;
   border-top: 1px solid var(--border-light);
 }
 
 .card-meta {
   color: #64748b;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -2825,7 +2842,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .card-actions {
   display: flex;
   align-items: center;
-  gap: 0.22rem;
+  gap: 0.2rem;
   width: 100%;
 }
 
@@ -2833,23 +2850,32 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.22rem;
-  padding: 0.32rem 0.45rem;
-  border-radius: 0.55rem;
+  gap: 0.18rem;
+  padding: 0.26rem 0.32rem;
+  border-radius: 0.45rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   color: #475569;
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 700;
   transition: all 0.2s ease;
   flex: 1;
   min-width: 0;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.action-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .action-btn .svg-icon {
-  width: 0.8rem;
-  height: 0.8rem;
+  width: 0.72rem;
+  height: 0.72rem;
+  flex-shrink: 0;
 }
 
 .action-btn:hover {
@@ -2871,10 +2897,20 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   border-color: #fca5a5;
 }
 
+.action-btn.copy-action-btn {
+  flex: 1.15;
+}
+
+.action-btn.move-action-btn {
+  flex: 0.85;
+}
+
+.action-btn.icon-only-btn,
 .action-btn:nth-child(3),
 .action-btn:nth-child(4) {
-  flex: 0 0 1.85rem;
-  height: 1.85rem;
+  flex: 0 0 1.65rem;
+  width: 1.65rem;
+  height: 1.65rem;
   padding: 0;
 }
 
@@ -3544,24 +3580,24 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 }
 
 /* Responsive Breakpoints */
-@media (max-width: 1680px) {
+@media (max-width: 1360px) {
   .prompt-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.8rem;
+    gap: 0.7rem;
   }
 }
 
-@media (max-width: 1400px) {
+@media (max-width: 1160px) {
   .prompt-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.8rem;
+    gap: 0.7rem;
   }
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 980px) {
   .prompt-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 0.65rem;
   }
   .category-row {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4187,13 +4223,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.42rem 0.85rem;
-  border-top-left-radius: 1.4rem;
-  border-top-right-radius: 1.4rem;
+  padding: 0.24rem 0.55rem;
+  border-top-left-radius: 0.95rem;
+  border-top-right-radius: 0.95rem;
   background: linear-gradient(90deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.9));
   border-bottom: 1px solid rgba(226, 232, 240, 0.85);
   color: #64748b;
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   font-weight: 700;
   user-select: none;
 }
@@ -4201,29 +4237,33 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .drag-grip-label {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
   color: #64748b;
   cursor: grab;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .drag-grip-label .svg-icon {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 0.8rem;
+  height: 0.8rem;
   color: #94a3b8;
+  flex-shrink: 0;
 }
 
 .card-step-controls {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.2rem;
 }
 
 .step-move-btn {
   display: inline-grid;
   place-items: center;
-  width: 1.55rem;
-  height: 1.55rem;
-  border-radius: 0.45rem;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 0.35rem;
   border: 1px solid #cbd5e1;
   background: #ffffff;
   color: #334155;
@@ -4231,8 +4271,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 }
 
 .step-move-btn .svg-icon {
-  width: 0.82rem;
-  height: 0.82rem;
+  width: 0.72rem;
+  height: 0.72rem;
 }
 
 .step-move-btn:hover:not(:disabled) {
@@ -4248,29 +4288,36 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 .card-badges-left {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.22rem;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .folder-tag-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.65rem;
+  gap: 0.2rem;
+  padding: 0.12rem 0.4rem;
   border-radius: 999px;
   border: 1px solid #fde68a;
   background: #fffbeb;
   color: #b45309;
-  font-size: 0.69rem;
+  font-size: 0.56rem;
   font-weight: 800;
   transition: 0.15s ease;
+  max-width: 6.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .folder-tag-btn .svg-icon {
-  width: 0.78rem;
-  height: 0.78rem;
+  width: 0.65rem;
+  height: 0.65rem;
   color: #f59e0b;
+  flex-shrink: 0;
 }
 
 .folder-tag-btn:hover {
@@ -4281,6 +4328,33 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 /* Inline Folder Popover Menu on Card */
 .folder-menu-anchor {
   position: relative;
+  min-width: 0;
+}
+
+.folder-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.12rem 0.38rem;
+  border-radius: 999px;
+  font-size: 0.55rem;
+  font-weight: 800;
+  max-width: 5.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-chip-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folder-chip-btn .svg-icon {
+  width: 0.62rem;
+  height: 0.62rem;
+  flex-shrink: 0;
 }
 
 .folder-chip-btn.has-folder {
@@ -5067,14 +5141,14 @@ body {
 }
 
 .app-shell {
-  width: min(100%, 1580px);
-  gap: 1.2rem;
-  padding: clamp(0.75rem, 2vw, 1.5rem);
+  width: min(100%, 1900px);
+  gap: 1rem;
+  padding: clamp(0.65rem, 1.3vw, 1.15rem);
 }
 
 .sidebar {
-  flex-basis: 17.25rem;
-  border-radius: 2rem;
+  flex-basis: 14.5rem;
+  border-radius: 1.65rem;
   background: rgba(255, 255, 255, 0.68);
   box-shadow: var(--shadow-glass);
 }
@@ -5218,7 +5292,7 @@ body {
 }
 
 .prompt-card {
-  border-radius: 1.55rem;
+  border-radius: 0.95rem;
   background: rgba(255, 255, 255, 0.86);
 }
 
