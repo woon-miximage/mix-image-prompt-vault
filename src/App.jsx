@@ -548,6 +548,62 @@ function Icon({ name, className = '', filled = false }) {
           <line x1="12" y1="12" x2="19" y2="5" />
         </svg>
       )
+    case 'download':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+      )
+    case 'windows':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
+        </svg>
+      )
+    case 'android':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.0838 12 8.0838c-1.8533 0-3.5902.3278-5.1368.8659L4.8409 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396" />
+        </svg>
+      )
+    case 'desktop':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+          <line x1="8" y1="21" x2="16" y2="21" />
+          <line x1="12" y1="17" x2="12" y2="21" />
+        </svg>
+      )
+    case 'smartphone':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+          <line x1="12" y1="18" x2="12.01" y2="18" />
+        </svg>
+      )
+    case 'settings':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      )
+    case 'info':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="16" x2="12" y2="12" />
+          <line x1="12" y1="8" x2="12.01" y2="8" />
+        </svg>
+      )
+    case 'chevron-right':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      )
     default:
       return <span className="icon-fallback">•</span>
   }
@@ -706,7 +762,7 @@ function PinGate({ onUnlock }) {
   )
 }
 
-const Sidebar = memo(function Sidebar({ page, onNavigate, onAdd, totalCount, notesCount }) {
+const Sidebar = memo(function Sidebar({ page, onNavigate, onAdd, onOpenDownload, totalCount, notesCount }) {
   const nav = [
     ['home', 'หน้าหลัก', 'home'],
     ['prompts', 'คลังพรอมต์', 'prompt'],
@@ -737,6 +793,30 @@ const Sidebar = memo(function Sidebar({ page, onNavigate, onAdd, totalCount, not
           </button>
         ))}
       </nav>
+
+      {/* ปุ่มดาวน์โหลดแอปสำหรับ Windows (.exe) และ Android (.apk) */}
+      <div
+        className="sidebar-download-banner"
+        onClick={onOpenDownload}
+        role="button"
+        tabIndex={0}
+        title="ดาวน์โหลดแอปสำหรับ Windows (.exe) และ Android (.apk)"
+      >
+        <div className="sidebar-download-badge">
+          <span className="download-pulse-dot" />
+          APP DOWNLOAD
+        </div>
+        <div className="sidebar-download-main">
+          <div className="sidebar-download-icon-box">
+            <Icon name="download" />
+          </div>
+          <div className="sidebar-download-info">
+            <strong>ดาวน์โหลดแอป</strong>
+            <span>Windows &amp; Android</span>
+          </div>
+          <Icon name="chevron-right" className="sidebar-download-chevron" />
+        </div>
+      </div>
 
       {/* ปุ่มลิงก์แอปและเว็บในเครือ MIX-IMAGE (เรียงลำดับจากล่างขึ้นบนตามที่ระบุ) */}
       <div className="sidebar-links-section" aria-label="ลิงก์เว็บไซต์ในเครือ MIX-IMAGE">
@@ -2675,6 +2755,356 @@ function WeatherMekhaWidget() {
   )
 }
 
+const AppDownloadModal = memo(function AppDownloadModal({
+  onClose,
+  deferredPrompt,
+  onInstallPwa,
+  flash,
+}) {
+  const [tab, setTab] = useState('windows') // 'windows' | 'android' | 'settings'
+  const [customLinks, setCustomLinks] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mix_custom_download_links')
+      return saved ? JSON.parse(saved) : { exeUrl: '', apkUrl: '' }
+    } catch {
+      return { exeUrl: '', apkUrl: '' }
+    }
+  })
+  const [copiedLink, setCopiedLink] = useState(false)
+  const [exeUrlInput, setExeUrlInput] = useState(customLinks.exeUrl || '')
+  const [apkUrlInput, setApkUrlInput] = useState(customLinks.apkUrl || '')
+
+  const defaultExeZipUrl = '/downloads/MIX-Prompt-Vault-Windows.zip'
+  const defaultExeUrl = '/downloads/MIX-Prompt-Vault.exe'
+  const defaultApkBuilderUrl = 'https://www.pwabuilder.com/'
+
+  const effectiveExeUrl = customLinks.exeUrl?.trim() || defaultExeZipUrl
+  const effectiveApkUrl = customLinks.apkUrl?.trim() || defaultApkBuilderUrl
+
+  const handleSaveSettings = (e) => {
+    e.preventDefault()
+    const next = {
+      exeUrl: exeUrlInput.trim(),
+      apkUrl: apkUrlInput.trim(),
+    }
+    setCustomLinks(next)
+    try {
+      localStorage.setItem('mix_custom_download_links', JSON.stringify(next))
+    } catch {
+      // ignore
+    }
+    flash?.('บันทึกการตั้งค่าลิงก์ดาวน์โหลดเรียบร้อยแล้ว')
+  }
+
+  const handleCopyShareLink = () => {
+    const url = window.location.origin || 'https://miximageprompt.netlify.app'
+    try {
+      navigator.clipboard?.writeText(url)
+    } catch {
+      // fallback
+    }
+    setCopiedLink(true)
+    flash?.('คัดลอกลิงก์เว็บแอปเรียบร้อยแล้ว')
+    setTimeout(() => setCopiedLink(false), 2500)
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-card download-modal-card animate-scale-in" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <div className="download-modal-header-brand">
+            <img src="/brand/jongjang-app-icon.png" alt="MIX Prompt" className="download-header-icon" />
+            <div>
+              <div className="badge-tag-wrap">
+                <span className="download-badge-version">v1.0.0 Online Live-Sync</span>
+                <span className="download-badge-free">ฟรีตลอดชีพ</span>
+              </div>
+              <h2 className="download-modal-title">ดาวน์โหลดแอป MIX Image Prompt</h2>
+              <p className="download-modal-subtitle">ติดตั้งลงคอมพิวเตอร์และมือถือ เปิดใช้งานเต็มหน้าจอ รวดเร็ว และอัปเดตข้อมูลอัตโนมัติ</p>
+            </div>
+          </div>
+          <button type="button" className="round-button" onClick={onClose} aria-label="ปิด">
+            <Icon name="close" />
+          </button>
+        </div>
+
+        <div className="download-nav-tabs">
+          <button
+            type="button"
+            className={`download-tab-btn ${tab === 'windows' ? 'active' : ''}`}
+            onClick={() => setTab('windows')}
+          >
+            <Icon name="windows" />
+            <span>Windows (.exe)</span>
+          </button>
+          <button
+            type="button"
+            className={`download-tab-btn ${tab === 'android' ? 'active' : ''}`}
+            onClick={() => setTab('android')}
+          >
+            <Icon name="android" />
+            <span>Android (.apk / PWA)</span>
+          </button>
+          <button
+            type="button"
+            className={`download-tab-btn ${tab === 'settings' ? 'active' : ''}`}
+            onClick={() => setTab('settings')}
+          >
+            <Icon name="settings" />
+            <span>ตั้งค่าลิงก์</span>
+          </button>
+        </div>
+
+        <div className="download-modal-body">
+          {tab === 'windows' && (
+            <div className="download-tab-content animate-fade-in">
+              <div className="download-feature-card win-card">
+                <div className="feature-card-header">
+                  <div className="feature-os-icon win-icon">
+                    <Icon name="windows" />
+                  </div>
+                  <div>
+                    <h3>Windows Desktop App (.exe)</h3>
+                    <p>สำหรับ Windows 10 และ Windows 11 (64-bit)</p>
+                  </div>
+                  <span className="feature-badge win-badge">⚡ ทำงานแยกหน้าต่าง</span>
+                </div>
+
+                <div className="feature-benefits-list">
+                  <div className="benefit-item">
+                    <span className="benefit-check">✓</span>
+                    <span><strong>เปิดใช้งานเต็มหน้าจอ:</strong> ไม่ต้องเปิดเว็บเบราว์เซอร์ ทำงานแยกเป็นโปรแกรมเฉพาะ</span>
+                  </div>
+                  <div className="benefit-item">
+                    <span className="benefit-check">✓</span>
+                    <span><strong>อัปเดตอัตโนมัติ (Live Sync):</strong> เมื่อเว็บมีการปรับปรุง ตัวโปรแกรมจะอัปเดตตามทันที 100%</span>
+                  </div>
+                  <div className="benefit-item">
+                    <span className="benefit-check">✓</span>
+                    <span><strong>ไอคอนมาสคอตจ๋องแจ๋ง:</strong> ปักหมุดบน Taskbar, Desktop และ Start Menu ได้สวยงาม</span>
+                  </div>
+                  <div className="benefit-item">
+                    <span className="benefit-check">✓</span>
+                    <span><strong>เบาและเร็ว:</strong> ขับเคลื่อนด้วย Microsoft WebView2 โหลดเร็ว ไม่กินแรม</span>
+                  </div>
+                </div>
+
+                <div className="download-actions-grid">
+                  <a
+                    href={effectiveExeUrl}
+                    download="MIX-Prompt-Vault-Windows.zip"
+                    className="download-btn-primary win-btn"
+                    target={customLinks.exeUrl ? '_blank' : '_self'}
+                    rel="noopener noreferrer"
+                  >
+                    <Icon name="download" />
+                    <div className="download-btn-text">
+                      <strong>ดาวน์โหลดโปรแกรม Windows (.zip / .exe)</strong>
+                      <span>ขนาด 635 KB แตกไฟล์แล้วดับเบิลคลิก MIX-Prompt-Vault.exe เปิดได้ทันที</span>
+                    </div>
+                  </a>
+
+                  <a
+                    href={defaultExeUrl}
+                    download="MIX-Prompt-Vault.exe"
+                    className="download-link-secondary"
+                  >
+                    <span>หรือคลิกที่นี่เพื่อดาวน์โหลดไฟล์ <code>MIX-Prompt-Vault.exe</code> โดยตรง (1.08 MB) ↗</span>
+                  </a>
+                </div>
+
+                <div className="download-install-tip">
+                  <Icon name="info" />
+                  <div>
+                    <strong>คำแนะนำการติดตั้ง:</strong>
+                    <ol>
+                      <li>ดาวน์โหลดไฟล์แล้วแตกไฟล์ <code>.zip</code> ออกมา</li>
+                      <li>ดับเบิลคลิกที่ไฟล์ <code>MIX-Prompt-Vault.exe</code> เพื่อเข้าใช้งานได้ทันที</li>
+                      <li>คลิกขวาที่ไฟล์ เลือก <em>"สร้างทางลัด" (Create shortcut)</em> หรือ <em>"ปักหมุดที่แถบงาน" (Pin to Taskbar)</em></li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tab === 'android' && (
+            <div className="download-tab-content animate-fade-in">
+              <div className="download-feature-card android-card">
+                <div className="feature-card-header">
+                  <div className="feature-os-icon android-icon">
+                    <Icon name="android" />
+                  </div>
+                  <div>
+                    <h3>Android Mobile App (.apk / PWA)</h3>
+                    <p>สำหรับสมาร์ตโฟนและแท็บเล็ตระบบ Android ทุกรุ่น</p>
+                  </div>
+                  <span className="feature-badge android-badge">📱 ใช้งานเหมือนแอปจริง</span>
+                </div>
+
+                <div className="feature-benefits-list">
+                  <div className="benefit-item">
+                    <span className="benefit-check">✓</span>
+                    <span><strong>เปิดเหมือนแอปแท้ 100%:</strong> ไม่มีแถบ URL กวนใจ ทำงานเต็มหน้าจอ</span>
+                  </div>
+                  <div className="benefit-item">
+                    <span className="benefit-check">✓</span>
+                    <span><strong>อัปเดตแบบเรียลไทม์:</strong> อัปเดตพรอมต์และดีไซน์ตามเว็บจริงทันที</span>
+                  </div>
+                  <div className="benefit-item">
+                    <span className="benefit-check">✓</span>
+                    <span><strong>ไอคอนแอปจ๋องแจ๋ง:</strong> แสดงบนหน้าจอโฮมและหน้าแอปรองรับทุกหน้าจอ</span>
+                  </div>
+                </div>
+
+                <div className="android-options-container">
+                  {/* Option A: Direct APK / PWABuilder */}
+                  <div className="android-sub-card">
+                    <div className="sub-card-badge">ทางเลือกที่ 1 • สำหรับติดตั้งด้วยไฟล์ .APK</div>
+                    <h4>ดาวน์โหลดไฟล์แพ็กเกจ .APK</h4>
+                    <p>เหมาะสำหรับนำไฟล์ APK ไปติดตั้งลงเครื่อง Android หรือส่งต่อให้เพื่อน</p>
+                    <a
+                      href={effectiveApkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="download-btn-primary android-btn"
+                    >
+                      <Icon name="download" />
+                      <div className="download-btn-text">
+                        <strong>{customLinks.apkUrl ? 'ดาวน์โหลดไฟล์ .APK โดยตรง' : 'สร้างและดาวน์โหลด APK (PWABuilder)'}</strong>
+                        <span>{customLinks.apkUrl ? 'คลิกเพื่อดาวน์โหลดไฟล์ APK' : 'ระบบของ Microsoft แปลงเว็บเป็น APK ให้อัตโนมัติ'}</span>
+                      </div>
+                    </a>
+                  </div>
+
+                  {/* Option B: Install via Browser PWA */}
+                  <div className="android-sub-card highlight">
+                    <div className="sub-card-badge accent">ทางเลือกที่ 2 • แนะนำ สะดวกและเร็วที่สุด</div>
+                    <h4>ติดตั้งแอปลงในมือถือทันที (ไม่ต้องโหลดไฟล์)</h4>
+                    <p>เปิดใช้งานเสมือนแอปจริงได้ทันทีจาก Google Chrome</p>
+                    {deferredPrompt ? (
+                      <button
+                        type="button"
+                        className="download-btn-primary pwa-btn"
+                        onClick={onInstallPwa}
+                      >
+                        <Icon name="smartphone" />
+                        <div className="download-btn-text">
+                          <strong>กดเพื่อติดตั้งแอปลงในโทรศัพท์ทันที</strong>
+                          <span>คลิกปุ่มนี้เพื่อเปิดหน้าต่างติดตั้งของระบบ Android</span>
+                        </div>
+                      </button>
+                    ) : (
+                      <div className="pwa-steps-guide">
+                        <div className="pwa-step-item">
+                          <span className="step-num">1</span>
+                          <span>เปิดเว็บ <code>miximageprompt.netlify.app</code> ใน Google Chrome</span>
+                        </div>
+                        <div className="pwa-step-item">
+                          <span className="step-num">2</span>
+                          <span>กดปุ่มเมนู <strong>3 จุด (⋮)</strong> ที่มุมขวาบนของหน้าจอ</span>
+                        </div>
+                        <div className="pwa-step-item">
+                          <span className="step-num">3</span>
+                          <span>เลือก <strong>"ติดตั้งแอปลงในโทรศัพท์"</strong> หรือ <strong>"เพิ่มลงในหน้าจอหลัก"</strong></span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tab === 'settings' && (
+            <div className="download-tab-content animate-fade-in">
+              <form onSubmit={handleSaveSettings} className="download-settings-card">
+                <h3>ตั้งค่าลิงก์ดาวน์โหลดส่วนตัว (Custom Download Links)</h3>
+                <p className="settings-desc">
+                  หากคุณได้อัปโหลดไฟล์ <code>.apk</code> หรือ <code>.exe</code> ไปไว้บน Google Drive, Dropbox, หรือคลาวด์ส่วนตัว 
+                  สามารถนำลิงก์มาวางที่นี่เพื่อให้ปุ่มดาวน์โหลดชี้ไปยังไฟล์ของคุณได้ทันทีครับ
+                </p>
+
+                <div className="form-group">
+                  <label htmlFor="custom-exe-input">
+                    <Icon name="windows" />
+                    <strong>ลิงก์ดาวน์โหลด Windows (.exe):</strong>
+                  </label>
+                  <input
+                    id="custom-exe-input"
+                    type="url"
+                    value={exeUrlInput}
+                    onChange={(e) => setExeUrlInput(e.target.value)}
+                    placeholder="เช่น https://drive.google.com/uc?id=... (หรือเว้นว่างเพื่อใช้ไฟล์เริ่มต้น)"
+                    className="custom-url-input"
+                  />
+                  <span className="field-hint">ค่าเริ่มต้นปัจจุบัน: <code>{defaultExeZipUrl}</code></span>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="custom-apk-input">
+                    <Icon name="android" />
+                    <strong>ลิงก์ดาวน์โหลด Android (.apk):</strong>
+                  </label>
+                  <input
+                    id="custom-apk-input"
+                    type="url"
+                    value={apkUrlInput}
+                    onChange={(e) => setApkUrlInput(e.target.value)}
+                    placeholder="เช่น https://drive.google.com/uc?id=... (หรือเว้นว่างเพื่อใช้ PWABuilder)"
+                    className="custom-url-input"
+                  />
+                  <span className="field-hint">ค่าเริ่มต้นปัจจุบัน: <code>PWABuilder Generator</code></span>
+                </div>
+
+                <div className="settings-actions">
+                  <button type="submit" className="save-settings-btn">
+                    <Icon name="check" />
+                    <span>บันทึกการตั้งค่าลิงก์</span>
+                  </button>
+                  {(customLinks.exeUrl || customLinks.apkUrl) && (
+                    <button
+                      type="button"
+                      className="reset-settings-btn"
+                      onClick={() => {
+                        setExeUrlInput('')
+                        setApkUrlInput('')
+                        setCustomLinks({ exeUrl: '', apkUrl: '' })
+                        try {
+                          localStorage.removeItem('mix_custom_download_links')
+                        } catch {}
+                        flash?.('รีเซ็ตเป็นลิงก์เริ่มต้นแล้ว')
+                      }}
+                    >
+                      รีเซ็ตกลับเป็นค่าเริ่มต้น
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
+
+        <div className="download-modal-footer">
+          <div className="share-web-box">
+            <span className="share-label">แชร์ลิงก์เว็บแอป:</span>
+            <code className="share-url">https://miximageprompt.netlify.app</code>
+            <button
+              type="button"
+              className="copy-share-btn"
+              onClick={handleCopyShareLink}
+              title="คัดลอกลิงก์"
+            >
+              <Icon name={copiedLink ? 'check' : 'copy'} />
+              <span>{copiedLink ? 'คัดลอกแล้ว!' : 'คัดลอก'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+})
+
 function App() {
   const [unlocked, setUnlocked] = useState(() => isSessionUnlocked())
   const [items, setItems] = useState([])
@@ -2695,13 +3125,39 @@ function App() {
   const [editorItem, setEditorItem] = useState(null)
   const [detailItem, setDetailItem] = useState(null)
   const [lightboxImage, setLightboxImage] = useState(null)
+  const [showDownloadModal, setShowDownloadModal] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [toast, setToast] = useState('')
   const [cloudState, setCloudState] = useState('กำลังเชื่อมต่อ Firebase')
   const [isSyncing, setIsSyncing] = useState(false)
 
+  // ดักจับ PWA Install Prompt สำหรับมือถือ
+  useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall)
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
+  }, [])
+
+  const handleInstallPwa = async () => {
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    try {
+      const { outcome } = await deferredPrompt.userChoice
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null)
+        setToast('ขอบคุณที่ติดตั้งแอป MIX Image Prompt')
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   // ล็อคการเลื่อนหน้าจอพื้นหลังเมื่อเปิด Modal บนมือถือ ป้องกันหน้าจอไหลซ้อนกัน
   useEffect(() => {
-    const hasModal = Boolean(editorItem || detailItem || lightboxImage)
+    const hasModal = Boolean(editorItem || detailItem || lightboxImage || showDownloadModal)
     if (hasModal) {
       document.body.style.overflow = 'hidden'
     } else {
@@ -2710,7 +3166,7 @@ function App() {
     return () => {
       document.body.style.overflow = ''
     }
-  }, [editorItem, detailItem, lightboxImage])
+  }, [editorItem, detailItem, lightboxImage, showDownloadModal])
 
   const syncData = async () => {
     setIsSyncing(true)
@@ -3238,6 +3694,7 @@ function App() {
           })
           setPage('add')
         }}
+        onOpenDownload={() => setShowDownloadModal(true)}
         totalCount={items.length}
         notesCount={notesCount}
       />
@@ -3260,6 +3717,18 @@ function App() {
           <div className="topbar-actions">
             {/* แถบวันที่และเวลาเรียลไทม์บนหน้าแรก (แยก Component ไม่ให้ Re-render ทั้งหน้า) */}
             <TopbarClockPill />
+
+            {/* ปุ่มดาวน์โหลดแอปสำหรับ Windows (.exe) และ Android (.apk) */}
+            <button
+              type="button"
+              className="topbar-download-btn"
+              onClick={() => setShowDownloadModal(true)}
+              title="ดาวน์โหลดแอปสำหรับ Windows (.exe) และ Android (.apk)"
+            >
+              <Icon name="download" />
+              <span className="topbar-download-label">ดาวน์โหลดแอป</span>
+              <span className="download-badge-tag">PC / มือถือ</span>
+            </button>
 
             <button
               type="button"
@@ -3888,6 +4357,55 @@ function App() {
               </div>
             </section>
 
+            {/* ส่วนดาวน์โหลดแอปสำหรับคอมพิวเตอร์และมือถือ */}
+            <section className="profile-downloads-card glass-panel">
+              <div className="profile-downloads-header">
+                <div className="profile-downloads-title-box">
+                  <div className="downloads-icon-bubble">
+                    <Icon name="download" />
+                  </div>
+                  <div>
+                    <h2>แอปพลิเคชันสำหรับติดตั้งลงเครื่อง (Desktop &amp; Mobile)</h2>
+                    <p>ติดตั้งโปรแกรมลงคอมพิวเตอร์ Windows หรือมือถือ Android ใช้งานเต็มหน้าจอและอัปเดตข้อมูลอัตโนมัติ</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="profile-open-downloads-btn"
+                  onClick={() => setShowDownloadModal(true)}
+                >
+                  <Icon name="download" />
+                  <span>เปิดหน้าต่างดาวน์โหลด</span>
+                </button>
+              </div>
+
+              <div className="profile-downloads-grid">
+                <div className="profile-dl-item win" onClick={() => setShowDownloadModal(true)}>
+                  <div className="dl-item-top">
+                    <span className="dl-os-icon win"><Icon name="windows" /></span>
+                    <span className="dl-os-badge">Windows .exe</span>
+                  </div>
+                  <h3>Windows Desktop App</h3>
+                  <p>สำหรับ Windows 10/11 (64-bit) รวดเร็ว มีไอคอนบน Desktop</p>
+                  <div className="dl-item-action">
+                    <span>เปิดดาวน์โหลด .exe ↗</span>
+                  </div>
+                </div>
+
+                <div className="profile-dl-item android" onClick={() => setShowDownloadModal(true)}>
+                  <div className="dl-item-top">
+                    <span className="dl-os-icon android"><Icon name="android" /></span>
+                    <span className="dl-os-badge">Android .apk / PWA</span>
+                  </div>
+                  <h3>Android Mobile App</h3>
+                  <p>สำหรับสมาร์ตโฟน Android ติดตั้งลงเครื่องเหมือนแอปแท้</p>
+                  <div className="dl-item-action">
+                    <span>เปิดดาวน์โหลด APK ↗</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             <section className="section-block">
               <div className="section-heading">
                 <h2>
@@ -3975,6 +4493,15 @@ function App() {
 
       {lightboxImage && (
         <Lightbox imageUrl={lightboxImage} onClose={() => setLightboxImage(null)} />
+      )}
+
+      {showDownloadModal && (
+        <AppDownloadModal
+          onClose={() => setShowDownloadModal(false)}
+          deferredPrompt={deferredPrompt}
+          onInstallPwa={handleInstallPwa}
+          flash={flash}
+        />
       )}
 
       {toast && (
