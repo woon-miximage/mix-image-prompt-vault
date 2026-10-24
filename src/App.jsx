@@ -1,0 +1,3990 @@
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  deleteCloudFolder,
+  deleteCloudPrompt,
+  fileToLocalPreview,
+  loadCloudFolders,
+  loadCloudPrompts,
+  normalizePrompt,
+  readLocalFolders,
+  readLocalPrompts,
+  saveCloudFolder,
+  saveCloudPrompt,
+  updateCloudPrompt,
+  updateCloudPromptsOrder,
+  writeLocalFolders,
+  writeLocalPrompts,
+} from './lib/repository'
+
+const PIN = '1449'
+const PIN_SESSION_KEY = 'mix-image-prompt-vault.unlocked'
+const PIN_PERSIST_KEY = 'mix-image-prompt-vault.unlocked.until'
+const UNLOCK_TTL_MS = 24 * 60 * 60 * 1000 // จดจำการปลดล็อกบนมือถือ 24 ชม. ไม่ต้องกรอกใหม่เมื่อสลับแอป
+
+function isSessionUnlocked() {
+  try {
+    if (sessionStorage.getItem(PIN_SESSION_KEY) === 'true') return true
+    const until = Number(localStorage.getItem(PIN_PERSIST_KEY) || 0)
+    if (until > Date.now()) {
+      sessionStorage.setItem(PIN_SESSION_KEY, 'true')
+      return true
+    }
+  } catch {
+    // Ignore storage errors
+  }
+  return false
+}
+
+function persistUnlock() {
+  try {
+    sessionStorage.setItem(PIN_SESSION_KEY, 'true')
+    localStorage.setItem(PIN_PERSIST_KEY, String(Date.now() + UNLOCK_TTL_MS))
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function clearUnlock() {
+  try {
+    sessionStorage.removeItem(PIN_SESSION_KEY)
+    localStorage.removeItem(PIN_PERSIST_KEY)
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+// คัดลอกข้อความแบบรองรับทุกเบราว์เซอร์มือถือ รวมถึง LINE / Facebook WebView และ iOS Safari
+async function safeCopyText(text) {
+  const value = text || ''
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value)
+      return true
+    }
+  } catch {
+    // Fallback below
+  }
+  try {
+    const textarea = document.createElement('textarea')
+    textarea.value = value
+    textarea.setAttribute('readonly', '')
+    textarea.style.position = 'fixed'
+    textarea.style.top = '-9999px'
+    textarea.style.left = '-9999px'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.focus()
+    textarea.select()
+    textarea.setSelectionRange(0, value.length)
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    return true
+  } catch {
+    return false
+  }
+}
+
+const categories = [
+  { id: 'all', label: 'ทั้งหมด', color: 'slate', icon: 'sparkles' },
+  { id: 'main', label: 'ทั่วไป', color: 'orange', icon: 'prompt' },
+  { id: 'note', label: 'โน้ตส่วนตัว', color: 'purple', icon: 'note' },
+  { id: 'portrait', label: 'ภาพบุคคล', color: 'pink', icon: 'user' },
+  { id: 'product', label: 'สินค้า / โฆษณา', color: 'cyan', icon: 'sparkles' },
+  { id: 'landscape', label: 'ฉาก / สถานที่', color: 'blue', icon: 'image' },
+  { id: 'sound', label: 'งานเสียง / เพลง', color: 'green', icon: 'music' },
+]
+
+const popularTools = [
+  'Midjourney',
+  'GPT-Image 2.5',
+  'FLUX.1',
+  'Suno AI',
+  'Stable Diffusion',
+  'Ideogram',
+]
+
+// รายการลิงก์เว็บในเครือ MIX-IMAGE เรียงลำดับจาก "ล่างขึ้นบน" ตามที่ผู้ใช้กำหนด (#1 ล่างสุด -> #10 บนสุด)
+const externalLinksBottomToTop = [
+  { id: 'shop', label: 'miximage.shop', sub: 'MIXIMAGE SHOP', url: 'https://miximage.shop/', color: 'orange' },
+  { id: 'one', label: 'miximage.one', sub: 'MIXIMAGE ONE', url: 'https://miximage.one/', color: 'cyan' },
+  { id: 'art', label: 'miximageart.netlify.app', sub: 'MIXIMAGE ART', url: 'https://miximageart.netlify.app/', color: 'purple' },
+  { id: 'card', label: 'miximagecard.netlify.app', sub: 'MIXIMAGE CARD', url: 'https://miximagecard.netlify.app/', color: 'blue' },
+  { id: 'id-house', label: 'id-house.netlify.app', sub: 'ID-HOUSE STUDIO', url: 'https://id-house.netlify.app/', color: 'green' },
+  { id: 'lyric', label: 'miximage-lyric.netlify.app', sub: 'MIXIMAGE LYRIC', url: 'https://miximage-lyric.netlify.app/', color: 'orange' },
+  { id: 'music', label: 'mix-music.netlify.app', sub: 'MIX-MUSIC AI', url: 'https://mix-music.netlify.app/', color: 'purple' },
+  { id: 'zeroday-gh', label: 'woon-miximage.github.io/zeroday-mastering', sub: 'ZERODAY (GITHUB)', url: 'https://woon-miximage.github.io/zeroday-mastering/', color: 'cyan' },
+  { id: 'zeroday-net', label: 'zeroday-mastering.netlify.app', sub: 'ZERODAY MASTERING', url: 'https://zeroday-mastering.netlify.app/', color: 'blue' },
+  { id: 'ai-online', label: 'miximageai.online', sub: 'MIXIMAGE AI ONLINE', url: 'https://miximageai.online/', color: 'green' },
+]
+
+// แสดงผลจากบนลงล่าง โดยให้รายการสุดท้ายอยู่บนสุด และรายการแรกอยู่ล่างสุด (เรียงล่างขึ้นบน)
+const externalLinksTopToBottom = [...externalLinksBottomToTop].reverse()
+
+
+const emptyForm = {
+  title: '',
+  promptText: '',
+  negativePrompt: '',
+  category: 'main',
+  folder: '',
+  tags: '',
+  notes: '',
+  tool: '',
+  imageUrls: [],
+  imagePath: '',
+  favorite: false,
+}
+
+// สร้างตัวจัดรูปแบบวันที่/เวลาเพียงครั้งเดียวที่ระดับโมดูล ลดภาระ CPU ทุกวินาที
+const timeFullFmt = new Intl.DateTimeFormat('th-TH', {
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+})
+const timeShortFmt = new Intl.DateTimeFormat('th-TH', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+})
+const dateFullFmt = new Intl.DateTimeFormat('th-TH', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+})
+const dateShortFmt = new Intl.DateTimeFormat('th-TH', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+})
+
+// Hook สำหรับวันที่และเวลาเรียลไทม์ (ใช้เฉพาะใน Leaf Component เพื่อไม่ให้ทั้งแอป Re-render)
+function useRealtimeClock() {
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date())
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return {
+    timeString: timeFullFmt.format(now),
+    timeShort: timeShortFmt.format(now),
+    dateString: dateFullFmt.format(now),
+    dateShort: dateShortFmt.format(now),
+  }
+}
+
+const TopbarClockPill = memo(function TopbarClockPill() {
+  const { dateShort, timeString } = useRealtimeClock()
+  return (
+    <div className="realtime-clock-pill" title="วันที่และเวลาเรียลไทม์">
+      <span className="live-dot" />
+      <span>{dateShort}</span>
+      <span className="dot-divider">•</span>
+      <strong className="live-time-str">{timeString}</strong>
+    </div>
+  )
+})
+
+const HeroClockBadge = memo(function HeroClockBadge() {
+  const { dateString, timeString } = useRealtimeClock()
+  return (
+    <div className="hero-live-badge">
+      <span className="live-dot" />
+      <span>{dateString} • {timeString}</span>
+    </div>
+  )
+})
+
+const PhoneStatusClock = memo(function PhoneStatusClock() {
+  const { timeShort, timeString } = useRealtimeClock()
+  return (
+    <span className="phone-clock-text" title={`เวลาเรียลไทม์: ${timeString}`}>
+      {timeShort}
+    </span>
+  )
+})
+
+const PhoneLivePill = memo(function PhoneLivePill() {
+  const { dateShort, timeString } = useRealtimeClock()
+  return (
+    <div className="phone-live-pill">
+      <span className="live-blink-dot" />
+      <span>{dateShort} • {timeString}</span>
+    </div>
+  )
+})
+
+const PhoneFooterDate = memo(function PhoneFooterDate() {
+  const { dateString } = useRealtimeClock()
+  return <p className="phone-footer-note">{dateString}</p>
+})
+
+// Crisp inline SVG Icons
+function Icon({ name, className = '', filled = false }) {
+  const baseClass = `svg-icon icon-${name} ${className}`
+  switch (name) {
+    case 'home':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      )
+    case 'prompt':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
+        </svg>
+      )
+    case 'add':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      )
+    case 'note':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+        </svg>
+      )
+    case 'user':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      )
+    case 'search':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      )
+    case 'filter':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+        </svg>
+      )
+    case 'cloud':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+        </svg>
+      )
+    case 'copy':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      )
+    case 'check':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      )
+    case 'edit':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+      )
+    case 'trash':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          <line x1="10" y1="11" x2="10" y2="17" />
+          <line x1="14" y1="11" x2="14" y2="17" />
+        </svg>
+      )
+    case 'star':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+        </svg>
+      )
+    case 'close':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      )
+    case 'sparkles':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+        </svg>
+      )
+    case 'image':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+      )
+    case 'music':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 18V5l12-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="18" cy="16" r="3" />
+        </svg>
+      )
+    case 'tag':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+          <line x1="7" y1="7" x2="7.01" y2="7" />
+        </svg>
+      )
+    case 'zoom':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <line x1="11" y1="8" x2="11" y2="14" />
+          <line x1="8" y1="11" x2="14" y2="11" />
+        </svg>
+      )
+    case 'logout':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+      )
+    case 'sync':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="23 4 23 10 17 10" />
+          <polyline points="1 20 1 14 7 14" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+      )
+    case 'fingerprint':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4" />
+          <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 12 0c0 1 0 3 .5 5" />
+          <path d="M12 10a2 2 0 0 1 2 2c0 2-1 4-2 6" />
+          <path d="M9 13a4.5 4.5 0 0 0 6 0" />
+          <path d="M10 20c1 .5 3 .5 4 0" />
+        </svg>
+      )
+    case 'folder':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+        </svg>
+      )
+    case 'folder-plus':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          <line x1="12" y1="11" x2="12" y2="17" />
+          <line x1="9" y1="14" x2="15" y2="14" />
+        </svg>
+      )
+    case 'grip':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="currentColor" stroke="none">
+          <circle cx="9" cy="6" r="1.7" />
+          <circle cx="15" cy="6" r="1.7" />
+          <circle cx="9" cy="12" r="1.7" />
+          <circle cx="15" cy="12" r="1.7" />
+          <circle cx="9" cy="18" r="1.7" />
+          <circle cx="15" cy="18" r="1.7" />
+        </svg>
+      )
+    case 'arrow-left':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      )
+    case 'arrow-right':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      )
+    case 'external':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+          <polyline points="15 3 21 3 21 9" />
+          <line x1="10" y1="14" x2="21" y2="3" />
+        </svg>
+      )
+    case 'globe':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="2" y1="12" x2="22" y2="12" />
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+        </svg>
+      )
+    case 'calendar':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+      )
+    case 'calculator':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="4" y="2" width="16" height="20" rx="2" />
+          <rect x="7" y="5" width="10" height="4" rx="1" />
+          <line x1="8" y1="13" x2="8" y2="13" />
+          <line x1="12" y1="13" x2="12" y2="13" />
+          <line x1="16" y1="13" x2="16" y2="13" />
+          <line x1="8" y1="17" x2="8" y2="17" />
+          <line x1="12" y1="17" x2="12" y2="17" />
+          <line x1="16" y1="17" x2="16" y2="17" />
+        </svg>
+      )
+    case 'lock':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      )
+    case 'unlock':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+        </svg>
+      )
+    case 'key':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="7.5" cy="15.5" r="4.5" />
+          <path d="m21 3-9.5 9.5" />
+          <path d="m15.5 7.5 3 3" />
+        </svg>
+      )
+    case 'pin':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="17" x2="12" y2="22" />
+          <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24z" />
+        </svg>
+      )
+    case 'palette':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+          <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+          <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+          <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z" />
+        </svg>
+      )
+    case 'sun':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="5" />
+          <line x1="12" y1="1" x2="12" y2="3" />
+          <line x1="12" y1="21" x2="12" y2="23" />
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+          <line x1="1" y1="12" x2="3" y2="12" />
+          <line x1="21" y1="12" x2="23" y2="12" />
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+        </svg>
+      )
+    case 'cloud-rain':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="16" y1="13" x2="16" y2="21" />
+          <line x1="8" y1="13" x2="8" y2="21" />
+          <line x1="12" y1="15" x2="12" y2="23" />
+          <path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25" />
+        </svg>
+      )
+    case 'gps':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="22" y1="12" x2="18" y2="12" />
+          <line x1="6" y1="12" x2="2" y2="12" />
+          <line x1="12" y1="6" x2="12" y2="2" />
+          <line x1="12" y1="22" x2="12" y2="18" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      )
+    case 'radar':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="12" cy="12" r="5" />
+          <circle cx="12" cy="12" r="1.5" />
+          <line x1="12" y1="12" x2="19" y2="5" />
+        </svg>
+      )
+    default:
+      return <span className="icon-fallback">•</span>
+  }
+}
+
+function formatDate(value) {
+  if (!value) return 'ยังไม่ระบุ'
+  try {
+    return dateShortFmt.format(new Date(value))
+  } catch {
+    return 'ยังไม่ระบุ'
+  }
+}
+
+// PIN Gate หน้ารูปแบบโทรศัพท์เสมือนจริง พร้อมนาฬิกา & วันที่เรียลไทม์ (แยก Component นาฬิกาเพื่อความลื่นไหล)
+function PinGate({ onUnlock }) {
+  const [pin, setPin] = useState('')
+  const [error, setError] = useState(false)
+
+  const handleDigit = (digit) => {
+    if (pin.length >= 4) return
+    setError(false)
+    const nextPin = pin + digit
+    setPin(nextPin)
+    if (nextPin.length === 4) {
+      if (nextPin === PIN) {
+        persistUnlock()
+        onUnlock()
+      } else {
+        setError(true)
+        setTimeout(() => {
+          setPin('')
+          setError(false)
+        }, 800)
+      }
+    }
+  }
+
+  const handleDelete = () => {
+    setError(false)
+    setPin((prev) => prev.slice(0, -1))
+  }
+
+  const handleQuickUnlock = () => {
+    setPin(PIN)
+    setTimeout(() => {
+      persistUnlock()
+      onUnlock()
+    }, 200)
+  }
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key >= '0' && e.key <= '9') {
+        handleDigit(e.key)
+      } else if (e.key === 'Backspace') {
+        handleDelete()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [pin])
+
+  return (
+    <main className="phone-gate-container">
+      <div className="phone-ambient-orb orb-1" />
+      <div className="phone-ambient-orb orb-2" />
+
+      <div className="phone-mockup-frame">
+        {/* Phone Top Status Bar พร้อมเวลาเรียลไทม์ */}
+        <div className="phone-status-bar">
+          <PhoneStatusClock />
+          <div className="phone-punch-camera" />
+          <div className="phone-status-icons">
+            <span className="status-dot">●</span>
+            <span className="status-dot">●</span>
+            <span className="status-battery">▰</span>
+          </div>
+        </div>
+
+        {/* Brand Card & New App Icon */}
+        <div className="phone-brand-section">
+          <div className="phone-logo-badge mascot-badge">
+            <img src="/brand/jongjang-mascot.png" alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" decoding="async" />
+          </div>
+
+          <h1 className="phone-brand-title">
+            <span className="brand-text-dark">MIX </span>
+            <span className="brand-text-gradient">Image</span>
+          </h1>
+          <p className="phone-brand-sub">JongJang Prompt Desk</p>
+          <p className="phone-brand-desc">
+            คลังรวมพรอมต์สร้างสรรค์ ภาพและเสียง ด้วย AI
+          </p>
+
+          <PhoneLivePill />
+        </div>
+
+        {/* PIN Input & Numeric Keypad */}
+        <div className="phone-keypad-card">
+          <p className="phone-pin-prompt">ใส่รหัส PIN 4 หลัก</p>
+
+          <div className={`phone-dots-row ${error ? 'dots-shake' : ''}`}>
+            {[0, 1, 2, 3].map((index) => (
+              <span
+                key={index}
+                className={`phone-pin-dot ${index < pin.length ? 'filled' : ''} ${error ? 'error' : ''}`}
+              />
+            ))}
+          </div>
+
+          {error && <p className="phone-error-msg">รหัส PIN ไม่ถูกต้อง</p>}
+
+          <div className="phone-keypad-grid">
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
+              <button
+                type="button"
+                key={digit}
+                className="phone-key-btn"
+                onClick={() => handleDigit(digit)}
+              >
+                {digit}
+              </button>
+            ))}
+            <button
+              type="button"
+              className="phone-key-btn phone-action-key phone-clear-btn"
+              onClick={handleDelete}
+              aria-label="ลบตัวเลข"
+              title="ลบตัวเลข (Backspace)"
+            >
+              ⌫
+            </button>
+            <button
+              type="button"
+              className="phone-key-btn"
+              onClick={() => handleDigit('0')}
+            >
+              0
+            </button>
+            <button
+              type="button"
+              className="phone-key-btn phone-action-key phone-unlock-btn"
+              onClick={handleQuickUnlock}
+              aria-label="ปลดล็อกเข้าสู่ระบบ"
+              title="ปลดล็อกเข้าสู่ระบบ (1449)"
+            >
+              <Icon name="unlock" />
+            </button>
+          </div>
+        </div>
+
+        <PhoneFooterDate />
+      </div>
+    </main>
+  )
+}
+
+const Sidebar = memo(function Sidebar({ page, onNavigate, onAdd, totalCount, notesCount }) {
+  const nav = [
+    ['home', 'หน้าหลัก', 'home'],
+    ['prompts', 'คลังพรอมต์', 'prompt'],
+    ['add', 'เพิ่มพรอมต์', 'add'],
+    ['notes', 'โน้ตส่วนตัว', 'note'],
+    ['profile', 'โปรไฟล์', 'user'],
+  ]
+
+  return (
+    <aside className="sidebar glass-panel">
+      <div className="brand-lockup">
+        <img src="/brand/jongjang-mascot.png" alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" decoding="async" />
+        <div>
+          <strong>MIX-IMAGE</strong>
+          <span>Prompt Archive</span>
+        </div>
+      </div>
+      <nav className="side-nav" aria-label="เมนูหลัก">
+        {nav.map(([id, label, icon]) => (
+          <button
+            type="button"
+            key={id}
+            className={`nav-button ${page === id ? 'active' : ''} ${id === 'add' ? 'nav-add' : ''}`}
+            onClick={() => id === 'add' ? onAdd() : onNavigate(id)}
+          >
+            <Icon name={icon} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* ปุ่มลิงก์แอปและเว็บในเครือ MIX-IMAGE (เรียงลำดับจากล่างขึ้นบนตามที่ระบุ) */}
+      <div className="sidebar-links-section" aria-label="ลิงก์เว็บไซต์ในเครือ MIX-IMAGE">
+        <div className="sidebar-links-header">
+          <Icon name="globe" />
+          <span>MIX-IMAGE WEB LINKS</span>
+        </div>
+        <div className="sidebar-links-list">
+          {externalLinksTopToBottom.map((link) => (
+            <a
+              key={link.id}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`sidebar-link-btn accent-${link.color}`}
+              title={`เปิด ${link.url}`}
+            >
+              <span className={`sidebar-link-dot dot-${link.color}`} />
+              <div className="sidebar-link-text">
+                <strong>{link.sub}</strong>
+                <span>{link.label}</span>
+              </div>
+              <Icon name="external" className="sidebar-link-arrow" />
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <div className="sidebar-footer">
+        <div><span>พรอมต์ทั้งหมด</span><strong>{totalCount}</strong></div>
+        <div><span>มีโน้ต</span><strong>{notesCount}</strong></div>
+      </div>
+    </aside>
+  )
+})
+
+const MobileNav = memo(function MobileNav({ page, onNavigate, onAdd }) {
+  const nav = [
+    ['home', 'หน้าหลัก', 'home'],
+    ['prompts', 'พรอมต์', 'prompt'],
+    ['add', 'เพิ่ม', 'add'],
+    ['notes', 'โน้ต', 'note'],
+    ['profile', 'โปรไฟล์', 'user'],
+  ]
+
+  return (
+    <nav className="mobile-nav glass-panel" aria-label="แถบนำทางมือถือ">
+      {nav.map(([id, label, icon]) => (
+        <button
+          type="button"
+          key={id}
+          className={`mobile-nav-btn ${page === id ? 'active' : ''} ${id === 'add' ? 'mobile-nav-add' : ''}`}
+          onClick={() => id === 'add' ? onAdd() : onNavigate(id)}
+        >
+          <div className="mobile-nav-icon-wrap">
+            <Icon name={icon} />
+          </div>
+          <span>{label}</span>
+        </button>
+      ))}
+    </nav>
+  )
+})
+
+const StatCard = memo(function StatCard({
+  icon,
+  label,
+  value,
+  tone,
+  onClick,
+  active,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  isDropActive,
+}) {
+  return (
+    <button
+      type="button"
+      className={`stat-card ${active ? 'stat-active' : ''} ${isDropActive ? 'drop-target-active' : ''}`}
+      onClick={onClick}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      title={`คลิกเพื่อดู${label}`}
+    >
+      <div className={`stat-icon ${tone}`}><Icon name={icon} /></div>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </button>
+  )
+})
+
+// การแสดงผลการ์ดที่รองรับคลิกค้างแล้วลากย้ายตำแหน่ง (Drag & Drop) + ย้ายเข้าโฟลเดอร์
+const PromptCard = memo(function PromptCard({
+  item,
+  index,
+  totalShown,
+  folders = [],
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  onMoveStep,
+  onMoveToFolder,
+  onCreateAndMoveFolder,
+  onMoveToCategory,
+  onFolderClick,
+  onCopy,
+  onEdit,
+  onDelete,
+  onFavorite,
+  onOpen,
+  onTagClick,
+}) {
+  const [copied, setCopied] = useState(false)
+  const [showMoveMenu, setShowMoveMenu] = useState(false)
+  const [moveTab, setMoveTab] = useState('folders')
+  const [folderSearch, setFolderSearch] = useState('')
+  const [quickNewFolder, setQuickNewFolder] = useState('')
+  const moveMenuRef = useRef(null)
+
+  useEffect(() => {
+    if (!showMoveMenu) return
+    const handleClickOutside = (e) => {
+      if (moveMenuRef.current && !moveMenuRef.current.contains(e.target)) {
+        setShowMoveMenu(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [showMoveMenu])
+
+  const handleCopy = (e) => {
+    e.stopPropagation()
+    onCopy(item)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1800)
+  }
+
+  const handleQuickCreateFolder = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const clean = quickNewFolder.trim()
+    if (!clean) return
+    await onCreateAndMoveFolder?.(item, clean)
+    setQuickNewFolder('')
+    setShowMoveMenu(false)
+  }
+
+  const filteredFolders = useMemo(() => {
+    if (!folderSearch.trim()) return folders
+    const q = folderSearch.trim().toLowerCase()
+    return folders.filter((f) => f.name.toLowerCase().includes(q))
+  }, [folders, folderSearch])
+
+  const categoryInfo = categories.find((c) => c.id === item.category) || { label: item.category, color: 'slate' }
+
+  return (
+    <article
+      className={`prompt-card ${isDragging ? 'is-dragging' : ''} ${isDragOver ? 'is-drag-over' : ''} ${showMoveMenu ? 'popover-open' : ''}`}
+      draggable
+      onDragStart={(e) => onDragStart?.(e, item)}
+      onDragOver={(e) => onDragOver?.(e, item)}
+      onDragLeave={(e) => onDragLeave?.(e, item)}
+      onDrop={(e) => onDrop?.(e, item)}
+      onDragEnd={onDragEnd}
+    >
+      {/* แถบจับลากย้ายตำแหน่งด้านบนการ์ด */}
+      <div className="card-drag-bar" title="คลิกค้างที่การ์ดเพื่อลากย้ายตำแหน่ง หรือลากไปวางในโฟลเดอร์">
+        <span className="drag-grip-label">
+          <Icon name="grip" />
+          <span>คลิกค้างเพื่อลากย้าย</span>
+        </span>
+        <div className="card-step-controls">
+          <button
+            type="button"
+            className="step-move-btn"
+            disabled={index <= 0}
+            onClick={(e) => { e.stopPropagation(); onMoveStep?.(item, -1) }}
+            title="ขยับขึ้น / ไปทางซ้าย"
+            aria-label="ขยับไปก่อนหน้า"
+          >
+            <Icon name="arrow-left" />
+          </button>
+          <button
+            type="button"
+            className="step-move-btn"
+            disabled={index >= totalShown - 1}
+            onClick={(e) => { e.stopPropagation(); onMoveStep?.(item, 1) }}
+            title="ขยับลง / ไปทางขวา"
+            aria-label="ขยับไปถัดไป"
+          >
+            <Icon name="arrow-right" />
+          </button>
+        </div>
+      </div>
+
+      <div className="thumbnail-container">
+        <button
+          type="button"
+          className="thumbnail-button"
+          onClick={() => onOpen(item)}
+          aria-label={`ดูรายละเอียดและภาพ ${item.title}`}
+        >
+          {item.imageUrls?.[0] ? (
+            <div className="thumbnail-aspect-frame">
+              {/* Foreground image ที่รักษาสัดส่วนต้นฉบับ ไม่ยืด ไม่แตก และโหลดแบบ Async */}
+              <img
+                className="thumbnail-img-main"
+                src={item.imageUrls[0]}
+                alt={item.title}
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+              />
+            </div>
+          ) : (
+            <div className="thumbnail-empty">
+              <Icon name="image" />
+              <span>ไม่มีภาพตัวอย่าง</span>
+            </div>
+          )}
+        </button>
+
+        {item.imageUrls?.length > 1 && (
+          <span className="image-count-badge">
+            <Icon name="image" /> {item.imageUrls.length} รูป
+          </span>
+        )}
+
+        {item.tool && (
+          <span className="tool-pill" title={`โมเดล: ${item.tool}`}>
+            {item.tool}
+          </span>
+        )}
+
+        <button
+          type="button"
+          className={`favorite-btn-overlay ${item.favorite ? 'is-favorite' : ''}`}
+          onClick={(e) => { e.stopPropagation(); onFavorite(item) }}
+          aria-label={item.favorite ? 'ลบออกจากรายการโปรด' : 'เพิ่มเป็นรายการโปรด'}
+        >
+          <Icon name="star" filled={item.favorite} />
+        </button>
+      </div>
+
+      <div className="prompt-card-body">
+        <div className="card-heading-row">
+          <div className="card-badges-left">
+            {/* ปุ่มย้ายหมวดหมู่ หรือย้ายเข้าโฟลเดอร์ */}
+            <div className="move-menu-anchor" ref={moveMenuRef}>
+              <button
+                type="button"
+                className={`category-pill category-pill-btn ${categoryInfo.color}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMoveTab('categories')
+                  setShowMoveMenu((prev) => !prev)
+                }}
+                title={`คลิกเพื่อย้ายหมวดหมู่ (ปัจจุบัน: ${categoryInfo.label})`}
+              >
+                <span>{categoryInfo.label}</span>
+                <span className="category-arrow-down">▾</span>
+              </button>
+
+              <button
+                type="button"
+                className={`folder-chip-btn ${item.folder ? 'has-folder' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMoveTab('folders')
+                  setShowMoveMenu((prev) => !prev)
+                }}
+                title="คลิกเพื่อย้ายเข้าโฟลเดอร์ หรือจัดกลุ่ม"
+              >
+                <Icon name="folder" filled={Boolean(item.folder)} />
+                <span>{item.folder || 'ใส่โฟลเดอร์'}</span>
+              </button>
+
+              {showMoveMenu && (
+                <div className="card-move-popover" onClick={(e) => e.stopPropagation()}>
+                  <div className="popover-header">
+                    <div className="popover-header-title">
+                      <Icon name={moveTab === 'folders' ? 'folder' : 'tag'} />
+                      <strong>{moveTab === 'folders' ? 'ย้ายเข้าโฟลเดอร์' : 'เปลี่ยนหมวดหมู่'}</strong>
+                    </div>
+                    <button
+                      type="button"
+                      className="popover-close"
+                      onClick={() => setShowMoveMenu(false)}
+                      aria-label="ปิดเมนูย้าย"
+                    >
+                      <Icon name="close" />
+                    </button>
+                  </div>
+
+                  {/* แท็บสลับระหว่าง โฟลเดอร์ (ทั้งหมด) กับ หมวดหมู่ */}
+                  <div className="popover-tabs">
+                    <button
+                      type="button"
+                      className={`popover-tab-btn ${moveTab === 'folders' ? 'active' : ''}`}
+                      onClick={() => setMoveTab('folders')}
+                    >
+                      <Icon name="folder" />
+                      <span>โฟลเดอร์ ({folders.length})</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`popover-tab-btn ${moveTab === 'categories' ? 'active' : ''}`}
+                      onClick={() => setMoveTab('categories')}
+                    >
+                      <Icon name="tag" />
+                      <span>หมวดหมู่</span>
+                    </button>
+                  </div>
+
+                  {moveTab === 'folders' ? (
+                    <div className="popover-tab-content">
+                      {folders.length > 4 && (
+                        <input
+                          type="text"
+                          className="popover-search-input"
+                          placeholder="🔍 ค้นหาโฟลเดอร์..."
+                          value={folderSearch}
+                          onChange={(e) => setFolderSearch(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      )}
+
+                      <div className="popover-folder-scroll-list">
+                        {item.folder && (
+                          <button
+                            type="button"
+                            className="popover-folder-item remove-folder-item"
+                            onClick={() => {
+                              onMoveToFolder?.(item, '')
+                              setShowMoveMenu(false)
+                            }}
+                          >
+                            <Icon name="close" />
+                            <span>นำออกจากโฟลเดอร์ “{item.folder}”</span>
+                          </button>
+                        )}
+
+                        {filteredFolders.length > 0 ? (
+                          filteredFolders.map((f) => (
+                            <button
+                              type="button"
+                              key={f.name}
+                              className={`popover-folder-item ${item.folder === f.name ? 'active' : ''}`}
+                              onClick={() => {
+                                onMoveToFolder?.(item, f.name)
+                                setShowMoveMenu(false)
+                              }}
+                            >
+                              <Icon name="folder" filled={item.folder === f.name} />
+                              <span className="popover-folder-name">{f.name}</span>
+                              {item.folder === f.name && <Icon name="check" className="check-icon" />}
+                            </button>
+                          ))
+                        ) : (
+                          <p className="popover-empty">
+                            {folderSearch.trim() ? 'ไม่พบโฟลเดอร์ที่ค้นหา' : 'ยังไม่มีโฟลเดอร์ สร้างใหม่ด้านล่างได้เลย'}
+                          </p>
+                        )}
+                      </div>
+
+                      <form className="popover-create-form" onSubmit={handleQuickCreateFolder}>
+                        <div className="folder-quick-input-row">
+                          <input
+                            value={quickNewFolder}
+                            onChange={(e) => setQuickNewFolder(e.target.value)}
+                            placeholder="ชื่อโฟลเดอร์ใหม่..."
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <button type="submit" className="popover-create-btn" disabled={!quickNewFolder.trim()}>
+                            <Icon name="add" /> สร้าง
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  ) : (
+                    <div className="popover-tab-content">
+                      <div className="popover-category-list">
+                        {categories.filter((c) => c.id !== 'all').map((cat) => (
+                          <button
+                            type="button"
+                            key={cat.id}
+                            className={`popover-category-item ${item.category === cat.id ? 'active' : ''}`}
+                            onClick={() => {
+                              onMoveToCategory?.(item, cat.id)
+                              setShowMoveMenu(false)
+                            }}
+                          >
+                            <span className={`category-mini-dot ${cat.color}`} />
+                            <Icon name={cat.icon} />
+                            <span className="popover-cat-label">{cat.label}</span>
+                            {item.category === cat.id && <Icon name="check" className="check-icon" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+        <div className="card-badges-right">
+          {item.notes && (
+            <span className="note-badge-indicator" title="มีบันทึกโน้ต/เทคนิคส่วนตัว">
+              <Icon name="note" /> โน้ต
+            </span>
+          )}
+          {item.negativePrompt && (
+            <span className="negative-badge" title="มี Negative Prompt กำหนดไว้">
+              Negative ✓
+            </span>
+          )}
+        </div>
+      </div>
+
+        <h3 onClick={() => onOpen(item)} className="card-title">
+          {item.title}
+        </h3>
+
+        <p className="prompt-excerpt" onClick={() => onOpen(item)}>
+          {item.promptText || 'ยังไม่มีข้อความพรอมต์'}
+        </p>
+
+        {(item.folder || item.tags?.length > 0) && (
+          <div className="tag-row">
+            {item.folder && (
+              <button
+                type="button"
+                className="tag-btn folder-tag-btn"
+                onClick={(e) => { e.stopPropagation(); onFolderClick?.(item.folder) }}
+                title={`เปิดโฟลเดอร์ ${item.folder}`}
+              >
+                <Icon name="folder" filled /> {item.folder}
+              </button>
+            )}
+            {item.tags?.slice(0, 4).map((tag) => (
+              <button
+                type="button"
+                className="tag-btn"
+                key={tag}
+                onClick={(e) => { e.stopPropagation(); onTagClick?.(tag) }}
+                title={`ค้นหา #${tag}`}
+              >
+                #{tag}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="card-footer-row">
+          <span className="card-meta">อัปเดต {formatDate(item.updatedAt)}</span>
+          <div className="card-actions">
+            <button
+              type="button"
+              className={`action-btn ${copied ? 'action-copied' : ''}`}
+              onClick={handleCopy}
+              aria-label="คัดลอกพรอมต์"
+              title="คัดลอกพรอมต์"
+            >
+              <Icon name={copied ? 'check' : 'copy'} />
+              <span>{copied ? 'คัดลอกแล้ว' : 'คัดลอก'}</span>
+            </button>
+            <button
+              type="button"
+              className="action-btn move-action-btn"
+              onClick={(e) => {
+                e.stopPropagation()
+                setMoveTab('folders')
+                setShowMoveMenu((prev) => !prev)
+              }}
+              aria-label="ย้ายโฟลเดอร์หรือหมวดหมู่"
+              title="กดย้ายเพื่อเลือกโฟลเดอร์ทั้งหมด หรือเปลี่ยนหมวดหมู่"
+            >
+              <Icon name="sync" />
+              <span>ย้าย</span>
+            </button>
+            <button
+              type="button"
+              className="action-btn"
+              onClick={(e) => { e.stopPropagation(); onEdit(item) }}
+              aria-label="แก้ไข"
+              title="แก้ไข"
+            >
+              <Icon name="edit" />
+            </button>
+            <button
+              type="button"
+              className="action-btn danger-action"
+              onClick={(e) => { e.stopPropagation(); onDelete(item) }}
+              aria-label="ลบ"
+              title="ลบ"
+            >
+              <Icon name="trash" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
+  )
+})
+
+function PromptEditor({ item, folders = [], defaultFolder = '', onClose, onSave }) {
+  const [form, setForm] = useState(
+    item
+      ? {
+          ...item,
+          folder: item.folder || '',
+          tags: Array.isArray(item.tags) ? item.tags.join(', ') : item.tags,
+        }
+      : { ...emptyForm, folder: defaultFolder || '' }
+  )
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(item?.imageUrls?.[0] || '')
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const fileInputRef = useRef(null)
+
+  const update = (key, value) => setForm((current) => ({ ...current, [key]: value }))
+  // โฟลเดอร์ที่เลือกได้ = เฉพาะของห้อง (หมวดหมู่) ที่เลือกอยู่ในฟอร์ม
+  const scopedFolders = folders.filter((f) => f.category === form.category)
+
+  const handleFileChange = async (file) => {
+    if (!file || !file.type.startsWith('image/')) return
+    setImageFile(file)
+    try {
+      // บีบอัดภาพทันทีที่เลือก (ลดขนาดรูป 12MP–48MP จากกล้องมือถือให้เหลือ ~30KB ในหน่วยความจำ)
+      const compressedDataUrl = await fileToLocalPreview(file, 760)
+      setImagePreview(compressedDataUrl)
+    } catch {
+      setImagePreview(URL.createObjectURL(file))
+    }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) handleFileChange(file)
+  }
+
+  const handleRemoveImage = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setImageFile(null)
+    setImagePreview('')
+    update('imageUrls', [])
+    update('imagePath', '')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const submit = async (event) => {
+    event.preventDefault()
+    if (!form.title.trim() || !form.promptText.trim()) return
+    setSaving(true)
+    try {
+      await onSave({
+        ...form,
+        folder: (form.folder || '').trim(),
+        tags: form.tags
+          ? form.tags.split(',').map((tag) => tag.trim()).filter(Boolean)
+          : [],
+        imageUrls: imagePreview ? (imageFile ? [imagePreview] : form.imageUrls) : [],
+        imageFile,
+        precompressedPreview: imageFile && imagePreview.startsWith('data:') ? imagePreview : '',
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
+      <section
+        className="editor-modal glass-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="editor-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div>
+            <p className="eyebrow">PROMPT VAULT</p>
+            <h2 id="editor-title">{item ? 'แก้ไขข้อมูลพรอมต์' : 'เพิ่มพรอมต์ใหม่'}</h2>
+          </div>
+          <button type="button" className="icon-button close-button" onClick={onClose} aria-label="ปิด">
+            <Icon name="close" />
+          </button>
+        </div>
+
+        <form className="editor-form" onSubmit={submit}>
+          <div className="editor-grid">
+            <div className="editor-fields">
+              <label>
+                <span>ชื่อพรอมต์ <strong className="required-star">*</strong></span>
+                <input
+                  value={form.title}
+                  onChange={(event) => update('title', event.target.value)}
+                  placeholder="เช่น Dark Cinematic Neon Portrait"
+                  required
+                />
+              </label>
+
+              <label>
+                <span>พรอมต์หลัก (Positive Prompt) <strong className="required-star">*</strong></span>
+                <textarea
+                  value={form.promptText}
+                  onChange={(event) => update('promptText', event.target.value)}
+                  rows="6"
+                  placeholder="วางพรอมต์ต้นฉบับภาษาอังกฤษหรือไทยที่นี่..."
+                  required
+                />
+              </label>
+
+              <label>
+                <span>Negative Prompt (สิ่งที่ไม่ต้องการ)</span>
+                <textarea
+                  value={form.negativePrompt}
+                  onChange={(event) => update('negativePrompt', event.target.value)}
+                  rows="3"
+                  placeholder="เช่น blurry, bad anatomy, deformed, watermark, low quality"
+                />
+              </label>
+
+              <div className="form-two-col">
+                <label>
+                  <span>หมวดหมู่</span>
+                  <select
+                    value={form.category}
+                    onChange={(event) => {
+                      const nextCategory = event.target.value
+                      setForm((current) => {
+                        // เปลี่ยนห้องแล้วโฟลเดอร์ที่เลือกไว้จากห้องเดิมจะถูกล้าง (ไม่ให้โฟลเดอร์ข้ามห้อง)
+                        const existsAnywhere = folders.some((f) => f.name === current.folder)
+                        const existsInNext = folders.some((f) => f.category === nextCategory && f.name === current.folder)
+                        return {
+                          ...current,
+                          category: nextCategory,
+                          folder: existsAnywhere && !existsInNext ? '' : current.folder,
+                        }
+                      })
+                    }}
+                  >
+                    {categories.filter((c) => c.id !== 'all').map((category) => (
+                      <option value={category.id} key={category.id}>
+                        {category.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span>โฟลเดอร์ / กลุ่มย่อย (Folder)</span>
+                  <input
+                    value={form.folder || ''}
+                    onChange={(event) => update('folder', event.target.value)}
+                    placeholder="เช่น รูปวีซ่า, ชุดนักเรียน, ชุดสูทสุภาพ"
+                  />
+                </label>
+              </div>
+
+              {scopedFolders.length > 0 && (
+                <div className="tool-quick-row">
+                  <span className="tool-quick-label">เลือกโฟลเดอร์ (เฉพาะห้องนี้):</span>
+                  <button
+                    type="button"
+                    className={`tool-quick-btn ${!form.folder ? 'active' : ''}`}
+                    onClick={() => update('folder', '')}
+                  >
+                    ไม่ระบุโฟลเดอร์
+                  </button>
+                  {scopedFolders.map((f) => (
+                    <button
+                      type="button"
+                      key={f.name}
+                      className={`tool-quick-btn ${form.folder === f.name ? 'active' : ''}`}
+                      onClick={() => update('folder', f.name)}
+                    >
+                      📁 {f.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <label>
+                <span>เครื่องมือ / AI Model</span>
+                <input
+                  value={form.tool}
+                  onChange={(event) => update('tool', event.target.value)}
+                  placeholder="เช่น Midjourney, GPT-Image, Suno"
+                />
+              </label>
+
+              {/* Quick tool selector tags */}
+              <div className="tool-quick-row">
+                <span className="tool-quick-label">เลือกด่วน:</span>
+                {popularTools.map((t) => (
+                  <button
+                    type="button"
+                    key={t}
+                    className={`tool-quick-btn ${form.tool === t ? 'active' : ''}`}
+                    onClick={() => update('tool', t)}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+
+              <label>
+                <span>แท็ก (คั่นด้วยเครื่องหมายจุลภาค)</span>
+                <input
+                  value={form.tags}
+                  onChange={(event) => update('tags', event.target.value)}
+                  placeholder="portrait, cinematic, luxury, neon, client"
+                />
+              </label>
+
+              <label>
+                <span>โน้ตส่วนตัว (Notes & Workflow)</span>
+                <textarea
+                  value={form.notes}
+                  onChange={(event) => update('notes', event.target.value)}
+                  rows="3"
+                  placeholder="บันทึกเทคนิค ค่า seed หรือข้อสังเกตสำหรับการใช้งาน..."
+                />
+              </label>
+            </div>
+
+            <div className="image-upload-column">
+              <label className="field-label">ภาพตัวอย่างผลงาน</label>
+              <div
+                className={`image-dropzone ${isDragOver ? 'drag-over' : ''} ${imagePreview ? 'has-image' : ''}`}
+                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
+                onDragLeave={() => setIsDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {imagePreview ? (
+                  <div className="preview-container">
+                    <img className="preview-img-contain" src={imagePreview} alt="ตัวอย่างภาพพรอมต์" />
+                    <div className="preview-overlay">
+                      <button
+                        type="button"
+                        className="dropzone-btn change-btn"
+                        onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}
+                      >
+                        <Icon name="image" /> เปลี่ยนรูป
+                      </button>
+                      <button
+                        type="button"
+                        className="dropzone-btn remove-btn"
+                        onClick={handleRemoveImage}
+                      >
+                        <Icon name="trash" /> ลบรูป
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="dropzone-empty">
+                    <div className="upload-plus">
+                      <Icon name="add" />
+                    </div>
+                    <strong>ลากรูปภาพมาวางที่นี่</strong>
+                    <span>หรือคลิกเพื่อเลือกไฟล์รูปตัวอย่าง</span>
+                    <small>ระบบจะบีบอัดอัตโนมัติให้เหมาะสำหรับการแสดงผล Preview</small>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleFileChange(file)
+                  }}
+                />
+              </div>
+              <p className="helper-text">
+                ระบบจะบีบอัดไฟล์ให้อยู่ในขนาดที่โหลดไว และจัดเก็บเป็นภาพตัวอย่างโดยเฉพาะ
+              </p>
+            </div>
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" className="secondary-button" onClick={onClose}>
+              ยกเลิก
+            </button>
+            <button type="submit" className="primary-button" disabled={saving}>
+              {saving ? 'กำลังบันทึก...' : 'บันทึกพรอมต์'}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  )
+}
+
+function DetailModal({ item, folders = [], onClose, onCopy, onEdit, onLightbox, onMoveToCategory, onMoveToFolder }) {
+  const [activeTab, setActiveTab] = useState('positive')
+  const [copiedType, setCopiedType] = useState('')
+
+  const handleCopy = (text, type) => {
+    onCopy(text)
+    setCopiedType(type)
+    setTimeout(() => setCopiedType(''), 1800)
+  }
+
+  const categoryInfo = categories.find((c) => c.id === item.category) || { label: item.category, color: 'slate' }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
+      <section
+        className="detail-modal glass-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detail-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="modal-header">
+          <div>
+            <div className="detail-badges">
+              <span className={`category-pill ${categoryInfo.color}`}>{categoryInfo.label}</span>
+              {item.folder && (
+                <span className="folder-chip-btn has-folder">
+                  <Icon name="folder" filled /> {item.folder}
+                </span>
+              )}
+              {item.tool && <span className="tool-pill">{item.tool}</span>}
+            </div>
+            <h2 id="detail-title">{item.title}</h2>
+
+            {/* แถบย้ายหมวดหมู่ด่วน เช่น ย้ายจากทั่วไป ไปโน้ตส่วนตัว หรือหมวดอื่น */}
+            <div className="detail-category-switcher">
+              <span className="switcher-label">ย้ายหมวดหมู่:</span>
+              <div className="switcher-pills-row">
+                {categories.filter((c) => c.id !== 'all').map((cat) => (
+                  <button
+                    type="button"
+                    key={cat.id}
+                    className={`detail-move-pill ${item.category === cat.id ? 'active ' + cat.color : ''}`}
+                    onClick={() => onMoveToCategory?.(item, cat.id)}
+                    title={`ย้ายไปหมวด ${cat.label}`}
+                  >
+                    <Icon name={cat.icon} />
+                    <span>{cat.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* แถบย้ายโฟลเดอร์ด่วน */}
+            {folders.length > 0 && (
+              <div className="detail-folder-switcher">
+                <span className="switcher-label">โฟลเดอร์:</span>
+                <div className="switcher-pills-row">
+                  <button
+                    type="button"
+                    className={`detail-move-pill ${!item.folder ? 'active folder-active' : ''}`}
+                    onClick={() => onMoveToFolder?.(item, '')}
+                    title="ไม่จัดโฟลเดอร์"
+                  >
+                    <Icon name="folder" />
+                    <span>ไม่ระบุ</span>
+                  </button>
+                  {folders.map((f) => (
+                    <button
+                      type="button"
+                      key={f.name}
+                      className={`detail-move-pill ${item.folder === f.name ? 'active folder-active' : ''}`}
+                      onClick={() => onMoveToFolder?.(item, f.name)}
+                      title={`ย้ายเข้าโฟลเดอร์ ${f.name}`}
+                    >
+                      <Icon name="folder" filled={item.folder === f.name} />
+                      <span>{f.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <button type="button" className="icon-button close-button" onClick={onClose} aria-label="ปิด">
+            <Icon name="close" />
+          </button>
+        </div>
+
+        {item.imageUrls?.[0] && (
+          <div className="detail-image-wrap" onClick={() => onLightbox(item.imageUrls[0])} title="คลิกเพื่อดูภาพขนาดเต็ม">
+            <img className="detail-img-main" src={item.imageUrls[0]} alt={item.title} decoding="async" />
+            <div className="detail-image-hint">
+              <Icon name="zoom" /> ดูภาพขนาดเต็ม
+            </div>
+          </div>
+        )}
+
+        <div className="detail-tabs">
+          <button
+            type="button"
+            className={`detail-tab ${activeTab === 'positive' ? 'active' : ''}`}
+            onClick={() => setActiveTab('positive')}
+          >
+            พรอมต์หลัก
+          </button>
+          {item.negativePrompt && (
+            <button
+              type="button"
+              className={`detail-tab ${activeTab === 'negative' ? 'active' : ''}`}
+              onClick={() => setActiveTab('negative')}
+            >
+              Negative Prompt
+            </button>
+          )}
+          {item.notes && (
+            <button
+              type="button"
+              className={`detail-tab ${activeTab === 'notes' ? 'active' : ''}`}
+              onClick={() => setActiveTab('notes')}
+            >
+              โน้ตส่วนตัว
+            </button>
+          )}
+        </div>
+
+        <div className="detail-tab-body">
+          {activeTab === 'positive' && (
+            <div className="code-block-wrap">
+              <div className="code-block-header">
+                <span>Positive Prompt</span>
+                <button
+                  type="button"
+                  className="copy-chip"
+                  onClick={() => handleCopy(item.promptText, 'positive')}
+                >
+                  <Icon name={copiedType === 'positive' ? 'check' : 'copy'} />
+                  {copiedType === 'positive' ? 'คัดลอกแล้ว' : 'คัดลอก'}
+                </button>
+              </div>
+              <pre>{item.promptText}</pre>
+            </div>
+          )}
+
+          {activeTab === 'negative' && item.negativePrompt && (
+            <div className="code-block-wrap">
+              <div className="code-block-header">
+                <span>Negative Prompt</span>
+                <button
+                  type="button"
+                  className="copy-chip"
+                  onClick={() => handleCopy(item.negativePrompt, 'negative')}
+                >
+                  <Icon name={copiedType === 'negative' ? 'check' : 'copy'} />
+                  {copiedType === 'negative' ? 'คัดลอกแล้ว' : 'คัดลอก'}
+                </button>
+              </div>
+              <pre>{item.negativePrompt}</pre>
+            </div>
+          )}
+
+          {activeTab === 'notes' && item.notes && (
+            <div className="notes-box">
+              <p>{item.notes}</p>
+            </div>
+          )}
+        </div>
+
+        {item.tags?.length > 0 && (
+          <div className="detail-tags-row">
+            {item.tags.map((tag) => (
+              <span className="tag-pill" key={tag}>#{tag}</span>
+            ))}
+          </div>
+        )}
+
+        <div className="modal-actions detail-actions">
+          <div className="detail-meta-left">
+            <span>อัปเดตเมื่อ: {formatDate(item.updatedAt)}</span>
+          </div>
+          <div className="detail-buttons-right">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => { onClose(); onEdit(item) }}
+            >
+              <Icon name="edit" /> แก้ไข
+            </button>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => handleCopy(item.promptText, 'main')}
+            >
+              <Icon name={copiedType === 'main' ? 'check' : 'copy'} />
+              {copiedType === 'main' ? 'คัดลอกแล้ว' : 'คัดลอกพรอมต์'}
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function Lightbox({ imageUrl, onClose }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  return (
+    <div className="lightbox-backdrop" onClick={onClose}>
+      <button type="button" className="lightbox-close" onClick={onClose} aria-label="ปิด">
+        <Icon name="close" />
+      </button>
+      <div className="lightbox-image-wrap" onClick={(e) => e.stopPropagation()}>
+        <img src={imageUrl} alt="ภาพขนาดเต็ม" />
+      </div>
+    </div>
+  )
+}
+
+const THAI_MONTHS_FULL = [
+  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
+]
+const THAI_MONTHS_SHORT = [
+  'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+  'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.',
+]
+const THAI_DAYS_SHORT = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']
+
+function isSameDay(d1, d2) {
+  if (!d1 || !d2) return false
+  const a = new Date(d1)
+  const b = new Date(d2)
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
+function formatThaiDateFull(dateVal) {
+  if (!dateVal) return ''
+  try {
+    const d = new Date(dateVal)
+    return `${d.getDate()} ${THAI_MONTHS_FULL[d.getMonth()]} ${d.getFullYear() + 543}`
+  } catch {
+    return ''
+  }
+}
+
+function formatThaiDateShort(dateVal) {
+  if (!dateVal) return ''
+  try {
+    const d = new Date(dateVal)
+    return `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`
+  } catch {
+    return ''
+  }
+}
+
+const KEEP_COLORS = [
+  { id: 'default', label: 'ค่าเริ่มต้น', bg: '#1e2433', border: 'rgba(255,255,255,0.12)' },
+  { id: 'coral', label: 'แดงปะการัง', bg: '#5c2b29', border: '#f87171' },
+  { id: 'peach', label: 'ส้มพีช', bg: '#614a19', border: '#fb923c' },
+  { id: 'sand', label: 'เหลืองทราย', bg: '#635d19', border: '#facc15' },
+  { id: 'mint', label: 'เขียวมิ้นท์', bg: '#345920', border: '#4ade80' },
+  { id: 'sage', label: 'เขียวเซจ', bg: '#16504b', border: '#2dd4bf' },
+  { id: 'fog', label: 'ฟ้าหมอก', bg: '#2d555e', border: '#38bdf8' },
+  { id: 'storm', label: 'ครามสตอร์ม', bg: '#1e3a5f', border: '#60a5fa' },
+  { id: 'dusk', label: 'ม่วงสนธยา', bg: '#42275e', border: '#c084fc' },
+  { id: 'blossom', label: 'ชมพูบลอสซัม', bg: '#5b2245', border: '#f472b6' },
+  { id: 'clay', label: 'น้ำตาลดินเผา', bg: '#442f19', border: '#fbbf24' },
+]
+
+function getWeatherCondition(code) {
+  if (code === 0) return { label: 'ท้องฟ้าแจ่มใส', icon: 'sun', emoji: '☀️' }
+  if (code === 1 || code === 2) return { label: 'มีเมฆบางส่วน', icon: 'cloud', emoji: '🌤️' }
+  if (code === 3) return { label: 'มีเมฆเป็นส่วนมาก', icon: 'cloud', emoji: '⛅' }
+  if (code === 45 || code === 48) return { label: 'มีหมอกหนา', icon: 'cloud', emoji: '🌫️' }
+  if (code >= 51 && code <= 55) return { label: 'ฝนตกปรอยๆ', icon: 'cloud-rain', emoji: '🌦️' }
+  if (code >= 61 && code <= 65) return { label: 'ฝนตกต่อเนื่อง', icon: 'cloud-rain', emoji: '🌧️' }
+  if (code >= 80 && code <= 82) return { label: 'ฝนตกหนัก', icon: 'cloud-rain', emoji: '🌧️' }
+  if (code >= 95) return { label: 'พายุฝนฟ้าคะนอง', icon: 'cloud-rain', emoji: '⛈️' }
+  return { label: 'อากาศทั่วไป', icon: 'sun', emoji: '🌤️' }
+}
+
+// 1. เครื่องมือเขียนโน๊ต กดแล้วขยายเหมือน Google Keep รองรับแนบรูปภาพพร้อมบีบอัดความเร็วสูง
+function QuickKeepNoteWidget({ onSaveNote }) {
+  const [expanded, setExpanded] = useState(false)
+  const [title, setTitle] = useState('')
+  const [notes, setNotes] = useState('')
+  const [pinned, setPinned] = useState(false)
+  const [color, setColor] = useState(KEEP_COLORS[0])
+  const [imagePreview, setImagePreview] = useState('')
+  const [isCompressing, setIsCompressing] = useState(false)
+  const [showPalette, setShowPalette] = useState(false)
+  const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    if (!expanded) return
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [expanded, title, notes, imagePreview, pinned, color])
+
+  const handleImageChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setIsCompressing(true)
+    try {
+      const preview = await fileToLocalPreview(file, 960)
+      setImagePreview(preview)
+    } catch (err) {
+      console.warn('Image compression warning:', err)
+    } finally {
+      setIsCompressing(false)
+    }
+  }
+
+  const handleSave = () => {
+    if (!title.trim() && !notes.trim() && !imagePreview) {
+      setExpanded(false)
+      return
+    }
+    const finalTitle =
+      title.trim() ||
+      `โน้ตด่วน (${new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })})`
+    onSaveNote({
+      title: finalTitle,
+      promptText: notes.trim() || finalTitle,
+      negativePrompt: '',
+      notes: notes.trim(),
+      category: 'note',
+      folder: '',
+      tags: ['GoogleKeep', 'QuickNote'],
+      favorite: pinned,
+      tool: 'Google Keep',
+      imageUrls: imagePreview ? [imagePreview] : [],
+      precompressedPreview: imagePreview || '',
+      color: color.bg,
+    })
+    setTitle('')
+    setNotes('')
+    setImagePreview('')
+    setPinned(false)
+    setColor(KEEP_COLORS[0])
+    setShowPalette(false)
+    setExpanded(false)
+  }
+
+  const handleClose = () => {
+    if (title.trim() || notes.trim() || imagePreview) {
+      handleSave()
+    } else {
+      setExpanded(false)
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="top-widget-btn keep-note-pill"
+        onClick={() => setExpanded(true)}
+        title="จดโน้ตด่วน ขยายแบบ Google Keep รองรับรูปภาพ"
+      >
+        <Icon name="note" />
+        <span>จดโน้ต (Keep)</span>
+        <span className="keep-badge-dot">📝</span>
+      </button>
+
+      {expanded && (
+        <div className="keep-modal-backdrop" onClick={handleClose}>
+          <div
+            className="keep-card animate-scale-in"
+            style={{ backgroundColor: color.bg, borderColor: color.border }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header: Title + Pin */}
+            <div className="keep-card-header">
+              <input
+                type="text"
+                className="keep-title-input"
+                placeholder="ชื่อเรื่อง"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                autoFocus
+              />
+              <button
+                type="button"
+                className={`keep-pin-btn ${pinned ? 'pinned' : ''}`}
+                title={pinned ? 'ยกเลิกการปักหมุด' : 'ปักหมุดโน้ต'}
+                onClick={() => setPinned(!pinned)}
+              >
+                <Icon name="pin" filled={pinned} />
+              </button>
+            </div>
+
+            {/* Note text content */}
+            <textarea
+              className="keep-body-textarea"
+              placeholder="จดบันทึก..."
+              rows={4}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+
+            {/* Image preview */}
+            {imagePreview && (
+              <div className="keep-preview-wrap">
+                <img src={imagePreview} alt="ภาพประกอบโน้ต" />
+                <button
+                  type="button"
+                  className="keep-remove-img"
+                  title="ลบรูป"
+                  onClick={() => setImagePreview('')}
+                >
+                  <Icon name="close" />
+                </button>
+              </div>
+            )}
+
+            {isCompressing && (
+              <div className="keep-compressing-notice">
+                <Icon name="sync" className="spin-icon" /> กำลังประมวลผลและบีบอัดภาพเพื่อความเร็ว...
+              </div>
+            )}
+
+            {/* Card Footer Toolbar */}
+            <div className="keep-card-footer">
+              <div className="keep-tools-left">
+                {/* Palette */}
+                <div className="keep-palette-container">
+                  <button
+                    type="button"
+                    className={`keep-tool-btn ${showPalette ? 'active' : ''}`}
+                    title="สีพื้นหลังโน้ต"
+                    onClick={() => setShowPalette(!showPalette)}
+                  >
+                    <Icon name="palette" />
+                  </button>
+                  {showPalette && (
+                    <div className="keep-palette-popover">
+                      {KEEP_COLORS.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className={`keep-color-circle ${color.id === c.id ? 'active' : ''}`}
+                          style={{ backgroundColor: c.bg, borderColor: c.border }}
+                          title={c.label}
+                          onClick={() => {
+                            setColor(c)
+                            setShowPalette(false)
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Image upload */}
+                <button
+                  type="button"
+                  className="keep-tool-btn"
+                  title="เพิ่มรูปภาพ"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Icon name="image" />
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleImageChange}
+                />
+
+                <span className="keep-category-badge">
+                  <Icon name="sparkles" /> โน้ตส่วนตัว
+                </span>
+              </div>
+
+              <div className="keep-tools-right">
+                <button
+                  type="button"
+                  className="keep-btn-close"
+                  onClick={() => setExpanded(false)}
+                >
+                  ปิด
+                </button>
+                <button
+                  type="button"
+                  className="keep-btn-save"
+                  onClick={handleSave}
+                  disabled={!title.trim() && !notes.trim() && !imagePreview}
+                >
+                  บันทึกโน้ต
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// เครื่องคิดเลขด่วนสำหรับคำนวณราคา จำนวนภาพ และต้นทุนงาน โดยทำงานในเบราว์เซอร์ทันที
+function CalculatorWidget() {
+  const [isOpen, setIsOpen] = useState(false)
+  const [display, setDisplay] = useState('0')
+  const [storedValue, setStoredValue] = useState(null)
+  const [pendingOperation, setPendingOperation] = useState(null)
+  const [waitingForOperand, setWaitingForOperand] = useState(false)
+  const [error, setError] = useState('')
+
+  const resetCalculator = () => {
+    setDisplay('0')
+    setStoredValue(null)
+    setPendingOperation(null)
+    setWaitingForOperand(false)
+    setError('')
+  }
+
+  const calculate = (first, second, operation) => {
+    if (operation === '+') return first + second
+    if (operation === '−') return first - second
+    if (operation === '×') return first * second
+    if (operation === '÷') return second === 0 ? null : first / second
+    return second
+  }
+
+  const formatResult = (value) => {
+    if (!Number.isFinite(value)) return '0'
+    const rounded = Math.round((value + Number.EPSILON) * 1e10) / 1e10
+    return String(rounded)
+  }
+
+  const inputDigit = (digit) => {
+    setError('')
+    if (waitingForOperand || display === '0' || display === 'หารด้วยศูนย์ไม่ได้') {
+      setDisplay(digit)
+      setWaitingForOperand(false)
+      return
+    }
+    if (display.replace('-', '').replace('.', '').length < 14) {
+      setDisplay(`${display}${digit}`)
+    }
+  }
+
+  const inputDecimal = () => {
+    setError('')
+    if (waitingForOperand) {
+      setDisplay('0.')
+      setWaitingForOperand(false)
+      return
+    }
+    if (!display.includes('.')) setDisplay(`${display}.`)
+  }
+
+  const chooseOperation = (operation) => {
+    setError('')
+    const inputValue = Number(display)
+    if (storedValue === null) {
+      setStoredValue(inputValue)
+    } else if (pendingOperation && !waitingForOperand) {
+      const result = calculate(storedValue, inputValue, pendingOperation)
+      if (result === null) {
+        setDisplay('หารด้วยศูนย์ไม่ได้')
+        setError('หารด้วยศูนย์ไม่ได้')
+        setStoredValue(null)
+        setPendingOperation(null)
+        setWaitingForOperand(true)
+        return
+      }
+      setDisplay(formatResult(result))
+      setStoredValue(result)
+    }
+    setPendingOperation(operation)
+    setWaitingForOperand(true)
+  }
+
+  const handleEquals = () => {
+    if (storedValue === null || !pendingOperation) return
+    const result = calculate(storedValue, Number(display), pendingOperation)
+    if (result === null) {
+      setDisplay('หารด้วยศูนย์ไม่ได้')
+      setError('หารด้วยศูนย์ไม่ได้')
+    } else {
+      setDisplay(formatResult(result))
+    }
+    setStoredValue(null)
+    setPendingOperation(null)
+    setWaitingForOperand(true)
+  }
+
+  const handlePercent = () => {
+    setError('')
+    const value = Number(display)
+    setDisplay(formatResult(value / 100))
+    setWaitingForOperand(false)
+  }
+
+  const handleSign = () => {
+    if (display === '0' || display === 'หารด้วยศูนย์ไม่ได้') return
+    setDisplay(display.startsWith('-') ? display.slice(1) : `-${display}`)
+  }
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (event) => {
+      if (/^[0-9]$/.test(event.key)) inputDigit(event.key)
+      else if (event.key === '.') inputDecimal()
+      else if (event.key === '+') chooseOperation('+')
+      else if (event.key === '-') chooseOperation('−')
+      else if (event.key === '*') chooseOperation('×')
+      else if (event.key === '/') chooseOperation('÷')
+      else if (event.key === 'Enter' || event.key === '=') handleEquals()
+      else if (event.key === 'Escape') setIsOpen(false)
+      else if (event.key === 'Backspace') setDisplay((current) => current.length > 1 ? current.slice(0, -1) : '0')
+      else return
+      event.preventDefault()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  })
+
+  return (
+    <>
+      <button
+        type="button"
+        className="top-widget-btn calculator-pill"
+        onClick={() => setIsOpen(true)}
+        title="เปิดเครื่องคิดเลข"
+      >
+        <Icon name="calculator" />
+        <span>เครื่องคิดเลข</span>
+      </button>
+
+      {isOpen && (
+        <div className="calculator-modal-backdrop" onClick={() => setIsOpen(false)}>
+          <div className="calculator-card animate-scale-in" onClick={(event) => event.stopPropagation()}>
+            <div className="calculator-header">
+              <div>
+                <span className="calculator-kicker">QUICK TOOL</span>
+                <h3>เครื่องคิดเลข</h3>
+              </div>
+              <button type="button" className="calculator-close-btn" onClick={() => setIsOpen(false)} aria-label="ปิดเครื่องคิดเลข">
+                <Icon name="close" />
+              </button>
+            </div>
+
+            <div className={`calculator-display ${error ? 'has-error' : ''}`} aria-live="polite">
+              {display}
+            </div>
+            {error && <p className="calculator-error">{error}</p>}
+
+            <div className="calculator-keypad">
+              <button type="button" className="calculator-key muted" onClick={resetCalculator}>AC</button>
+              <button type="button" className="calculator-key muted" onClick={handleSign}>±</button>
+              <button type="button" className="calculator-key muted" onClick={handlePercent}>%</button>
+              <button type="button" className="calculator-key operation" onClick={() => chooseOperation('÷')}>÷</button>
+              {['7', '8', '9'].map((digit) => <button key={digit} type="button" className="calculator-key" onClick={() => inputDigit(digit)}>{digit}</button>)}
+              <button type="button" className="calculator-key operation" onClick={() => chooseOperation('×')}>×</button>
+              {['4', '5', '6'].map((digit) => <button key={digit} type="button" className="calculator-key" onClick={() => inputDigit(digit)}>{digit}</button>)}
+              <button type="button" className="calculator-key operation" onClick={() => chooseOperation('−')}>−</button>
+              {['1', '2', '3'].map((digit) => <button key={digit} type="button" className="calculator-key" onClick={() => inputDigit(digit)}>{digit}</button>)}
+              <button type="button" className="calculator-key operation" onClick={() => chooseOperation('+')}>+</button>
+              <button type="button" className="calculator-key zero" onClick={() => inputDigit('0')}>0</button>
+              <button type="button" className="calculator-key" onClick={inputDecimal}>.</button>
+              <button type="button" className="calculator-key equals" onClick={handleEquals}>=</button>
+            </div>
+            <p className="calculator-hint">กดแป้นพิมพ์ตัวเลขและ Enter ได้ด้วย</p>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// 2. ปฏิทิน มีระบบล็อควันได้ (Calendar with Date Locking)
+function CalendarLockWidget({ items = [], lockedDate, onLockDate, onClearLock }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const initialDate = lockedDate ? new Date(lockedDate) : new Date()
+  const [viewYear, setViewYear] = useState(() => initialDate.getFullYear())
+  const [viewMonth, setViewMonth] = useState(() => initialDate.getMonth())
+  const [selectedDate, setSelectedDate] = useState(() => initialDate)
+
+  // เมื่อเปิดปฏิทิน ให้เลื่อนเดือนไปที่วันที่ถูกล็อคอยู่หรือปัจจุบัน
+  useEffect(() => {
+    if (isOpen) {
+      const target = lockedDate ? new Date(lockedDate) : new Date()
+      setViewYear(target.getFullYear())
+      setViewMonth(target.getMonth())
+      setSelectedDate(target)
+    }
+  }, [isOpen, lockedDate])
+
+  // ปิดด้วยปุ่ม ESC
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen])
+
+  // นับจำนวนรายการในแต่ละวัน เพื่อแสดงจุด badge บนปฏิทิน
+  const promptsByDay = useMemo(() => {
+    const map = {}
+    for (const item of items) {
+      if (!item.createdAt) continue
+      const d = new Date(item.createdAt)
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+      map[key] = (map[key] || 0) + 1
+    }
+    return map
+  }, [items])
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+  const firstDayWeekday = new Date(viewYear, viewMonth, 1).getDay() // 0 = Sun, 6 = Sat
+
+  const handlePrevMonth = () => {
+    if (viewMonth === 0) {
+      setViewYear(viewYear - 1)
+      setViewMonth(11)
+    } else {
+      setViewMonth(viewMonth - 1)
+    }
+  }
+
+  const handleNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewYear(viewYear + 1)
+      setViewMonth(0)
+    } else {
+      setViewMonth(viewMonth + 1)
+    }
+  }
+
+  const handleToday = () => {
+    const now = new Date()
+    setViewYear(now.getFullYear())
+    setViewMonth(now.getMonth())
+    setSelectedDate(now)
+  }
+
+  const handleSelectDay = (day) => {
+    setSelectedDate(new Date(viewYear, viewMonth, day))
+  }
+
+  const handleApplyLock = () => {
+    onLockDate(selectedDate)
+    setIsOpen(false)
+  }
+
+  const handleRemoveLock = () => {
+    onClearLock()
+    setIsOpen(false)
+  }
+
+  const selectedKey = `${selectedDate.getFullYear()}-${selectedDate.getMonth()}-${selectedDate.getDate()}`
+  const selectedCount = promptsByDay[selectedKey] || 0
+
+  return (
+    <>
+      <div className={`top-widget-btn calendar-lock-pill ${lockedDate ? 'locked' : ''}`}>
+        <button
+          type="button"
+          className="calendar-pill-main"
+          onClick={() => setIsOpen(true)}
+          title="เปิดปฏิทินและเลือกล็อควัน"
+        >
+          <Icon name={lockedDate ? 'lock' : 'calendar'} />
+          <span>{lockedDate ? formatThaiDateShort(lockedDate) : 'ปฏิทิน'}</span>
+          {lockedDate && <span className="locked-dot-pulse" />}
+        </button>
+        {lockedDate && (
+          <button
+            type="button"
+            className="calendar-pill-clear"
+            onClick={(e) => {
+              e.stopPropagation()
+              onClearLock()
+            }}
+            title="ปลดล็อควัน"
+          >
+            <Icon name="close" />
+          </button>
+        )}
+      </div>
+
+      {isOpen && (
+        <div className="calendar-modal-backdrop" onClick={() => setIsOpen(false)}>
+          <div className="calendar-card animate-scale-in" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="calendar-header">
+              <div className="calendar-nav-controls">
+                <button type="button" className="cal-nav-btn" onClick={handlePrevMonth} title="เดือนก่อนหน้า">
+                  <Icon name="arrow-left" />
+                </button>
+                <div className="cal-month-title">
+                  <strong>{THAI_MONTHS_FULL[viewMonth]}</strong> {viewYear + 543}
+                </div>
+                <button type="button" className="cal-nav-btn" onClick={handleNextMonth} title="เดือนถัดไป">
+                  <Icon name="arrow-right" />
+                </button>
+              </div>
+              <div className="cal-header-actions">
+                <button type="button" className="cal-today-btn" onClick={handleToday}>
+                  วันนี้
+                </button>
+                <button type="button" className="cal-close-btn" onClick={() => setIsOpen(false)}>
+                  <Icon name="close" />
+                </button>
+              </div>
+            </div>
+
+            {/* Weekdays */}
+            <div className="calendar-weekdays-row">
+              {THAI_DAYS_SHORT.map((wd) => (
+                <div key={wd} className="cal-weekday-cell">
+                  {wd}
+                </div>
+              ))}
+            </div>
+
+            {/* Days Grid */}
+            <div className="calendar-days-grid">
+              {/* Empty leading cells */}
+              {Array.from({ length: firstDayWeekday }).map((_, i) => (
+                <div key={`empty-${i}`} className="cal-day-cell empty" />
+              ))}
+
+              {/* Days of the month */}
+              {Array.from({ length: daysInMonth }).map((_, idx) => {
+                const day = idx + 1
+                const dateObj = new Date(viewYear, viewMonth, day)
+                const isToday = isSameDay(dateObj, new Date())
+                const isSelected = isSameDay(dateObj, selectedDate)
+                const isLocked = lockedDate && isSameDay(dateObj, lockedDate)
+                const key = `${viewYear}-${viewMonth}-${day}`
+                const count = promptsByDay[key] || 0
+
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    className={`cal-day-cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''} ${isLocked ? 'is-locked' : ''} ${count > 0 ? 'has-data' : ''}`}
+                    onClick={() => handleSelectDay(day)}
+                  >
+                    <span className="cal-day-num">{day}</span>
+                    {count > 0 && <span className="cal-day-count-badge">{count}</span>}
+                    {isLocked && <span className="cal-day-lock-icon">🔒</span>}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Selection info */}
+            <div className="calendar-selection-bar">
+              <div className="cal-selected-info">
+                <span>
+                  วันที่เลือก: <strong>{formatThaiDateFull(selectedDate)}</strong>
+                </span>
+                <span className="cal-data-count">
+                  พบ <strong>{selectedCount}</strong> รายการ
+                </span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="calendar-footer-actions">
+              {lockedDate && (
+                <button type="button" className="cal-action-unlock" onClick={handleRemoveLock}>
+                  <Icon name="unlock" /> ปลดล็อควันที่
+                </button>
+              )}
+              <button type="button" className="cal-action-lock" onClick={handleApplyLock}>
+                <Icon name="lock" /> ล็อควันที่เลือก
+              </button>
+              <button type="button" className="cal-action-close" onClick={() => setIsOpen(false)}>
+                ปิด
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// 3. พยากรณ์อากาศ ดึงข้อมูลจาก Mekha (เมฆฝน) และ Open-Meteo อ้างอิงพิกัด GPS จริงแบบเรียลไทม์
+function WeatherMekhaWidget() {
+  const [isOpen, setIsOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [coords, setCoords] = useState({ lat: 13.7563, lon: 100.5018, isLiveGPS: false })
+  const [locationName, setLocationName] = useState('กรุงเทพมหานคร')
+  const [weather, setWeather] = useState(null)
+  const [lastUpdated, setLastUpdated] = useState(null)
+
+  const fetchWeather = async (lat, lon, locLabel) => {
+    try {
+      const res = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,wind_speed_10m&timezone=auto`
+      )
+      if (res.ok) {
+        const data = await res.json()
+        setWeather(data.current)
+        setLastUpdated(new Date())
+        if (locLabel) setLocationName(locLabel)
+      }
+    } catch (err) {
+      console.warn('Weather fetch warning:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const requestGPS = () => {
+    setLoading(true)
+    if (!navigator.geolocation) {
+      fetchWeather(13.7563, 100.5018, 'กรุงเทพมหานคร')
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude
+        const lon = pos.coords.longitude
+        let resolvedName = `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`
+        try {
+          const geoRes = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=th`,
+            { headers: { 'User-Agent': 'MixImagePromptVault/2.5' } }
+          )
+          if (geoRes.ok) {
+            const geoData = await geoRes.json()
+            const addr = geoData.address || {}
+            resolvedName =
+              addr.city ||
+              addr.town ||
+              addr.suburb ||
+              addr.district ||
+              addr.province ||
+              addr.state ||
+              resolvedName
+          }
+        } catch {
+          // fallback
+        }
+        setCoords({ lat, lon, isLiveGPS: true })
+        fetchWeather(lat, lon, resolvedName)
+      },
+      (err) => {
+        console.warn('GPS position error or denied:', err)
+        fetchWeather(13.7563, 100.5018, 'กรุงเทพมหานคร')
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    )
+  }
+
+  useEffect(() => {
+    requestGPS()
+  }, [])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen])
+
+  const weatherCond = weather
+    ? getWeatherCondition(weather.weather_code)
+    : { label: 'กำลังโหลด...', emoji: '⛅' }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="top-widget-btn weather-mekha-pill"
+        onClick={() => setIsOpen(true)}
+        title="สภาพอากาศพิกัด GPS เรียลไทม์ และเรดาร์เมฆฝน Mekha"
+      >
+        <span className="weather-pill-emoji">{weatherCond.emoji}</span>
+        <span className="weather-pill-temp">
+          {weather ? `${Math.round(weather.temperature_2m)}°C` : '...'}
+        </span>
+        <span className="weather-pill-loc">{locationName}</span>
+        <span className="weather-pill-radar-tag">Mekha 📡</span>
+        {coords.isLiveGPS && <span className="gps-live-badge" title="GPS ดาวเทียมสด" />}
+      </button>
+
+      {isOpen && (
+        <div className="weather-modal-backdrop" onClick={() => setIsOpen(false)}>
+          <div className="weather-card animate-scale-in" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="weather-header">
+              <div className="weather-title-wrap">
+                <div className="weather-header-icon">
+                  <Icon name="cloud-rain" />
+                </div>
+                <div>
+                  <h3 className="weather-title">พยากรณ์อากาศ & เรดาร์ Mekha</h3>
+                  <p className="weather-subtitle">
+                    อ้างอิงพิกัด GPS เรียลไทม์ • เรดาร์ตรวจกลุ่มฝนสดประเทศไทย
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="weather-close-btn"
+                onClick={() => setIsOpen(false)}
+                title="ปิด"
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+
+            {/* Main Weather Hero Card */}
+            <div className="weather-hero-card">
+              <div className="weather-hero-left">
+                <span className="weather-hero-emoji">{weatherCond.emoji}</span>
+                <div>
+                  <div className="weather-hero-temp">
+                    {weather ? `${Math.round(weather.temperature_2m)}°C` : '--°C'}
+                  </div>
+                  <div className="weather-hero-condition">{weatherCond.label}</div>
+                  {weather?.apparent_temperature && (
+                    <div className="weather-hero-feels">
+                      รู้สึกเหมือน {Math.round(weather.apparent_temperature)}°C
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="weather-hero-right">
+                <div className="weather-gps-badge">
+                  <Icon name="gps" />
+                  <span>{coords.isLiveGPS ? 'GPS ดาวเทียมสด' : 'พิกัดเริ่มต้น'}</span>
+                </div>
+                <div className="weather-location-name">{locationName}</div>
+                <div className="weather-latlon">
+                  {coords.lat.toFixed(3)}°N, {coords.lon.toFixed(3)}°E
+                </div>
+              </div>
+            </div>
+
+            {/* Metrics Grid */}
+            <div className="weather-metrics-grid">
+              <div className="weather-metric-item">
+                <span className="metric-label">ความชื้นสัมพัทธ์</span>
+                <span className="metric-val">{weather ? `${weather.relative_humidity_2m}%` : '--'}</span>
+              </div>
+              <div className="weather-metric-item">
+                <span className="metric-label">ปริมาณฝน</span>
+                <span className="metric-val">{weather ? `${weather.precipitation ?? 0} มม.` : '--'}</span>
+              </div>
+              <div className="weather-metric-item">
+                <span className="metric-label">ความเร็วลม</span>
+                <span className="metric-val">{weather ? `${weather.wind_speed_10m} กม./ชม.` : '--'}</span>
+              </div>
+              <div className="weather-metric-item">
+                <span className="metric-label">อัปเดตล่าสุด</span>
+                <span className="metric-val">
+                  {lastUpdated
+                    ? lastUpdated.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+                    : '--:--'}
+                </span>
+              </div>
+            </div>
+
+            {/* Mekha Realtime Radar Section */}
+            <div className="mekha-radar-section">
+              <div className="mekha-radar-info">
+                <div className="mekha-radar-title">
+                  <Icon name="radar" />
+                  <span>ระบบเรดาร์ตรวจจับเมฆฝน Mekha (Mekhfon)</span>
+                </div>
+                <p className="mekha-radar-desc">
+                  ติดตามภาพเรดาร์กลุ่มฝนสดแบบ Doppler ทั่วประเทศไทย ตรวจจับเมฆฝน ฟ้าผ่า และทิศทางพายุแบบเรียลไทม์
+                </p>
+              </div>
+              <a
+                href={`https://app.mekhfon.com/?lat=${coords.lat}&lon=${coords.lon}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mekha-launch-btn"
+              >
+                <Icon name="radar" />
+                <span>เปิดเรดาร์กลุ่มฝนสด Mekha (พิกัด GPS นี้) ↗</span>
+              </a>
+            </div>
+
+            {/* Footer controls */}
+            <div className="weather-footer-actions">
+              <button
+                type="button"
+                className="weather-refresh-gps-btn"
+                onClick={requestGPS}
+                disabled={loading}
+              >
+                <Icon name="gps" className={loading ? 'spin-icon' : ''} />
+                <span>{loading ? 'กำลังดึงพิกัด GPS...' : 'รีเฟรช GPS เรียลไทม์'}</span>
+              </button>
+              <button
+                type="button"
+                className="weather-dismiss-btn"
+                onClick={() => setIsOpen(false)}
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+function App() {
+  const [unlocked, setUnlocked] = useState(() => isSessionUnlocked())
+  const [items, setItems] = useState([])
+  const [folders, setFolders] = useState([])
+  const [page, setPage] = useState('home')
+  const [query, setQuery] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [folderFilter, setFolderFilter] = useState('all') // 'all' | '__unfiled__' | folderName
+  const [quickFilter, setQuickFilter] = useState('all') // 'all' | 'favorite' | 'hasNote' | 'hasImage'
+  const [lockedDate, setLockedDate] = useState(null) // Date | null สำหรับฟังก์ชันปฏิทินล็อควัน
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [newFolderCategory, setNewFolderCategory] = useState('main')
+  const [draggedId, setDraggedId] = useState(null)
+  const [dragOverCardId, setDragOverCardId] = useState(null)
+  const [dragOverFolder, setDragOverFolder] = useState(null)
+  const [dragOverCategory, setDragOverCategory] = useState(null)
+  const [editorItem, setEditorItem] = useState(null)
+  const [detailItem, setDetailItem] = useState(null)
+  const [lightboxImage, setLightboxImage] = useState(null)
+  const [toast, setToast] = useState('')
+  const [cloudState, setCloudState] = useState('กำลังเชื่อมต่อ Firebase')
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  // ล็อคการเลื่อนหน้าจอพื้นหลังเมื่อเปิด Modal บนมือถือ ป้องกันหน้าจอไหลซ้อนกัน
+  useEffect(() => {
+    const hasModal = Boolean(editorItem || detailItem || lightboxImage)
+    if (hasModal) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [editorItem, detailItem, lightboxImage])
+
+  const syncData = async () => {
+    setIsSyncing(true)
+    try {
+      const [cloudItems, cloudFolders] = await Promise.all([
+        loadCloudPrompts(),
+        loadCloudFolders(),
+      ])
+      setItems(cloudItems)
+      writeLocalPrompts(cloudItems)
+      if (cloudFolders?.length) {
+        setFolders(cloudFolders)
+        writeLocalFolders(cloudFolders)
+      }
+      setCloudState('Firebase พร้อม')
+    } catch {
+      const local = readLocalPrompts()
+      const localFolders = readLocalFolders()
+      if (localFolders.length) setFolders(localFolders)
+      setCloudState(local.length ? 'ใช้ข้อมูลในเครื่อง' : 'รอตั้งค่า Firestore')
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!unlocked) return
+    const local = readLocalPrompts()
+    const localFolders = readLocalFolders()
+    setItems(local)
+    setFolders(localFolders)
+    syncData()
+  }, [unlocked])
+
+  useEffect(() => {
+    if (toast) {
+      const timer = window.setTimeout(() => setToast(''), 2600)
+      return () => window.clearTimeout(timer)
+    }
+  }, [toast])
+
+  // รวมโฟลเดอร์ที่สร้างไว้ กับโฟลเดอร์ที่ติดมากับรายการพรอมต์ โดย "แยกตามห้อง (หมวดหมู่)" ไม่ให้ปนกัน
+  // คีย์ของโฟลเดอร์ = หมวดหมู่ + ชื่อ ดังนั้นชื่อเดียวกันในคนละห้องจะเป็นคนละโฟลเดอร์
+  const allFolders = useMemo(() => {
+    const map = new Map()
+    for (const f of folders) {
+      const name = (f?.name || '').trim()
+      if (!name) continue
+      const cat = f.category && f.category !== 'all' ? f.category : 'all'
+      const key = `${cat}::${name}`
+      if (!map.has(key)) {
+        map.set(key, { id: f.id || `folder-${key}`, name, category: cat })
+      }
+    }
+    for (const item of items) {
+      const name = (item.folder || '').trim()
+      if (!name) continue
+      const cat = item.category || 'main'
+      const key = `${cat}::${name}`
+      if (!map.has(key)) {
+        map.set(key, { id: `derived-${key}`, name, category: cat })
+      }
+    }
+    return Array.from(map.values())
+  }, [folders, items])
+
+  // โฟลเดอร์จัดกลุ่มตามห้อง ใช้ในเมนูย้าย/ฟอร์ม เพื่อให้เห็นเฉพาะโฟลเดอร์ของห้องตัวเอง
+  const foldersByCategory = useMemo(() => {
+    const grouped = {}
+    for (const f of allFolders) {
+      if (f.category === 'all') continue
+      ;(grouped[f.category] ||= []).push(f)
+    }
+    return grouped
+  }, [allFolders])
+
+  // โฟลเดอร์ที่แสดง: เลือกห้องไหนเห็นเฉพาะโฟลเดอร์ของห้องนั้น / มุมมอง "ทั้งหมด" แสดงรวมโดยไม่ซ้ำชื่อ
+  const visibleFolders = useMemo(() => {
+    if (categoryFilter === 'all') {
+      const seen = new Set()
+      return allFolders.filter((f) => {
+        if (seen.has(f.name)) return false
+        seen.add(f.name)
+        return true
+      })
+    }
+    return allFolders.filter((f) => f.category === categoryFilter)
+  }, [allFolders, categoryFilter])
+
+  const { notesCount, favoritesCount, imagesCount } = useMemo(() => {
+    let notes = 0
+    let favs = 0
+    let imgs = 0
+    for (const item of items) {
+      if (item.notes || item.category === 'note') notes++
+      if (item.favorite) favs++
+      if (item.imageUrls?.length) imgs++
+    }
+    return { notesCount: notes, favoritesCount: favs, imagesCount: imgs }
+  }, [items])
+
+  // รายการที่ผ่านตัวกรองหมวดหมู่ คำค้นหา และตัวกรองด่วน (ก่อนกรองโฟลเดอร์ เพื่อให้นับจำนวนในแต่ละโฟลเดอร์ได้ถูกต้อง)
+  const categoryFilteredItems = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase()
+    return items.filter((item) => {
+      const inCategory = categoryFilter === 'all' || item.category === categoryFilter
+      if (!inCategory) return false
+
+      if (quickFilter === 'favorite' && !item.favorite) return false
+      if (quickFilter === 'hasNote' && !item.notes && item.category !== 'note') return false
+      if (quickFilter === 'hasImage' && (!item.imageUrls || !item.imageUrls.length)) return false
+
+      if (lockedDate) {
+        if (!item.createdAt) return false
+        if (!isSameDay(item.createdAt, lockedDate)) return false
+      }
+
+      if (normalizedQuery) {
+        const haystack = [
+          item.title,
+          item.promptText,
+          item.negativePrompt,
+          item.notes,
+          item.tool,
+          item.folder,
+          ...(item.tags || []),
+        ].join(' ').toLowerCase()
+        if (!haystack.includes(normalizedQuery)) return false
+      }
+
+      return true
+    })
+  }, [items, query, categoryFilter, quickFilter, lockedDate])
+
+  const filteredItems = useMemo(() => {
+    if (folderFilter === 'all') return categoryFilteredItems
+    if (folderFilter === '__unfiled__') {
+      return categoryFilteredItems.filter((item) => !item.folder)
+    }
+    return categoryFilteredItems.filter((item) => item.folder === folderFilter)
+  }, [categoryFilteredItems, folderFilter])
+
+  const folderPresets = useMemo(() => {
+    const presetCategory = categoryFilter === 'all' ? newFolderCategory : categoryFilter
+    switch (presetCategory) {
+      case 'portrait':
+        return ['รูปวีซ่า / ติดบัตร', 'ชุดนักเรียน / นักศึกษา', 'ชุดสูท / เสื้อขาวสุภาพ', 'ภาพอ้างอิง (Master)']
+      case 'product':
+        return ['แพ็กเกจจิ้งสินค้า', 'เครื่องสำอาง / สกินแคร์', 'ม็อคอัป 3D', 'ฉากสตูดิโอจัดแสง']
+      case 'landscape':
+        return ['วิวธรรมชาติ', 'เมืองไซเบอร์พังค์', 'อวกาศ / ดาราศาสตร์', 'โลกแฟนตาซี']
+      case 'sound':
+        return ['เพลงบรรเลงประกอบ', 'BGM โฆษณา', 'Lo-Fi Chill', 'Intro / Outro']
+      case 'note':
+        return ['เทคนิคการเจน', 'สูตรคำสั่งพิเศษ', 'Style Reference', 'Negative ชุดเก่ง']
+      default:
+        return ['โปรเจกต์งานด่วน', 'พรอมต์ทดลอง', 'ชุดภาพโปรด', 'คอลเลกชันหลัก']
+    }
+  }, [categoryFilter, newFolderCategory])
+
+  const flash = (message) => setToast(message)
+
+  const copyPromptText = async (text) => {
+    await safeCopyText(text || '')
+    flash('คัดลอกข้อความแล้ว')
+  }
+
+  const copyPrompt = async (item) => {
+    await safeCopyText(item.promptText || '')
+    flash('คัดลอกพรอมต์แล้ว')
+  }
+
+  // สร้างโฟลเดอร์ใหม่ (รองรับ Optimistic UI และเลือกหมวดหมู่ที่เหมาะสมโดยอัตโนมัติ)
+  const createFolder = async (customName, targetCategory) => {
+    const clean = (typeof customName === 'string' ? customName : newFolderName).trim()
+    if (!clean) return ''
+    const cat = targetCategory || (categoryFilter === 'all' ? newFolderCategory : categoryFilter)
+
+    const existing = allFolders.find(
+      (f) => f.category === cat && f.name.toLowerCase() === clean.toLowerCase()
+    )
+    if (existing) {
+      setNewFolderName('')
+      setIsCreatingFolder(false)
+      setFolderFilter(existing.name)
+      flash(`เปิดโฟลเดอร์ “${existing.name}”`)
+      return existing.name
+    }
+
+    // อัปเดตทันทีแบบ Optimistic UI ตอบสนองใน 0 มิลลิวินาที
+    const localId = `folder-${Date.now()}`
+    const nowIso = new Date().toISOString()
+    const newFolderObj = { id: localId, name: clean, category: cat, createdAt: nowIso }
+    const nextFolders = [...folders, newFolderObj]
+    setFolders(nextFolders)
+    writeLocalFolders(nextFolders)
+    setNewFolderName('')
+    setIsCreatingFolder(false)
+    setFolderFilter(clean)
+    flash(`สร้างโฟลเดอร์ “${clean}” แล้ว`)
+
+    // ซิงค์คลาวด์เบื้องหลัง
+    try {
+      const created = await saveCloudFolder({ name: clean, category: cat })
+      if (created?.id && created.id !== localId) {
+        setFolders((current) =>
+          current.map((f) => (f.id === localId ? { ...f, id: created.id } : f))
+        )
+      }
+    } catch {
+      // ใช้ข้อมูลโฟลเดอร์ในเครื่อง
+    }
+
+    return clean
+  }
+
+  // ลบโฟลเดอร์ (โดยไม่ลบพรอมต์ข้างใน แค่นำพรอมต์ออกจากโฟลเดอร์นั้น) — ลบเฉพาะโฟลเดอร์ในห้องของมันเท่านั้น
+  const removeFolder = async (folderObj, e) => {
+    e?.stopPropagation()
+    if (
+      !window.confirm(
+        `ต้องการลบโฟลเดอร์ “${folderObj.name}” ใช่หรือไม่?\n(พรอมต์ข้างในจะไม่ถูกลบ แต่จะถูกนำออกจากโฟลเดอร์)`
+      )
+    ) {
+      return
+    }
+    // มุมมอง "ทั้งหมด" ลบชื่อนี้ทุกห้อง / มุมมองในห้อง ลบเฉพาะห้องนั้น
+    const allScope = categoryFilter === 'all'
+    const sameScope = (cat) => allScope || (cat || 'all') === folderObj.category
+    const doomed = folders.filter((f) => f.name === folderObj.name && sameScope(f.category || 'all'))
+    const nextFolders = folders.filter((f) => !doomed.includes(f))
+    setFolders(nextFolders)
+    writeLocalFolders(nextFolders)
+    doomed.forEach((f) => deleteCloudFolder(f.id))
+
+    const affected = []
+    const nextItems = items.map((item) => {
+      if (item.folder === folderObj.name && (allScope || item.category === folderObj.category)) {
+        const updated = { ...item, folder: '' }
+        affected.push(updated)
+        return updated
+      }
+      return item
+    })
+    setItems(nextItems)
+    writeLocalPrompts(nextItems)
+    if (affected.length) {
+      updateCloudPromptsOrder(affected)
+    }
+    if (folderFilter === folderObj.name) {
+      setFolderFilter('all')
+    }
+    flash(`ลบโฟลเดอร์ “${folderObj.name}” แล้ว`)
+  }
+
+  // ย้ายพรอมต์ไปยังโฟลเดอร์ที่เลือก
+  const moveItemToFolder = async (item, targetFolderName) => {
+    const cleanFolder = (targetFolderName || '').trim()
+    if ((item.folder || '') === cleanFolder) return
+    const nextItem = {
+      ...item,
+      folder: cleanFolder,
+      updatedAt: new Date().toISOString(),
+    }
+    const next = items.map((current) => (current.id === item.id ? nextItem : current))
+    setItems(next)
+    writeLocalPrompts(next)
+    if (detailItem?.id === item.id) {
+      setDetailItem(nextItem)
+    }
+    flash(
+      cleanFolder
+        ? `ย้าย “${item.title}” ไปยังโฟลเดอร์ “${cleanFolder}” แล้ว`
+        : `นำ “${item.title}” ออกจากโฟลเดอร์แล้ว`
+    )
+    try {
+      await updateCloudPrompt(nextItem)
+    } catch {
+      setCloudState('ใช้ข้อมูลในเครื่อง')
+    }
+  }
+
+  // สร้างโฟลเดอร์ใหม่พร้อมย้ายการ์ดเข้าไปทันที
+  const createAndMoveToFolder = async (item, folderName) => {
+    const createdName = await createFolder(folderName, item?.category)
+    if (createdName) {
+      await moveItemToFolder(item, createdName)
+    }
+  }
+
+  // ย้ายพรอมต์ไปหมวดหมู่อื่น
+  const moveItemToCategory = async (item, targetCategoryId) => {
+    if (!targetCategoryId || targetCategoryId === 'all' || item.category === targetCategoryId) return
+    const catLabel = categories.find((c) => c.id === targetCategoryId)?.label || targetCategoryId
+    // ย้ายห้องแล้วโฟลเดอร์เดิมไม่ติดตามไป (กันโฟลเดอร์ปนกัน) ยกเว้นห้องปลายทางมีโฟลเดอร์ชื่อเดียวกันอยู่แล้ว
+    const keepFolder =
+      item.folder && allFolders.some((f) => f.category === targetCategoryId && f.name === item.folder)
+    const nextItem = {
+      ...item,
+      category: targetCategoryId,
+      folder: keepFolder ? item.folder : '',
+      updatedAt: new Date().toISOString(),
+    }
+    const next = items.map((current) => (current.id === item.id ? nextItem : current))
+    setItems(next)
+    writeLocalPrompts(next)
+    if (detailItem?.id === item.id) {
+      setDetailItem(nextItem)
+    }
+    flash(`ย้าย “${item.title}” ไปหมวด “${catLabel}” แล้ว`)
+    try {
+      await updateCloudPrompt(nextItem)
+    } catch {
+      setCloudState('ใช้ข้อมูลในเครื่อง')
+    }
+  }
+
+  const saveItem = async (draft) => {
+    const payload = { ...draft, imageFile: undefined, precompressedPreview: undefined }
+    const previous = editorItem
+    // หากสร้างพรอมต์พร้อมพิมพ์ชื่อโฟลเดอร์ใหม่ ให้บันทึกโฟลเดอร์นั้นไว้ในรายการโฟลเดอร์ด้วย
+    if (
+      payload.folder &&
+      !allFolders.some((f) => f.name === payload.folder && f.category === (payload.category || 'main'))
+    ) {
+      saveCloudFolder({ name: payload.folder, category: payload.category || 'main' }).then((created) => {
+        setFolders((curr) => {
+          const next = [...curr, created]
+          writeLocalFolders(next)
+          return next
+        })
+      })
+    }
+    try {
+      const saved = await saveCloudPrompt({
+        id: previous?.id,
+        data: payload,
+        imageFile: draft.imageFile,
+        precompressedPreview: draft.precompressedPreview || '',
+      })
+      const next = previous ? items.map((item) => item.id === previous.id ? saved : item) : [saved, ...items]
+      setItems(next)
+      writeLocalPrompts(next)
+      setEditorItem(null)
+      flash(previous ? 'บันทึกการแก้ไขแล้ว' : 'บันทึกพรอมต์ใหม่แล้ว')
+      setCloudState('Firebase พร้อม')
+    } catch (error) {
+      const localId = previous?.id || `local-${Date.now()}`
+      const localImage =
+        draft.precompressedPreview ||
+        (draft.imageFile ? await fileToLocalPreview(draft.imageFile).catch(() => '') : '')
+      const saved = normalizePrompt(localId, {
+        ...payload,
+        image_urls: localImage ? [localImage] : draft.imageUrls,
+        updated_at: new Date().toISOString(),
+        created_at: previous?.createdAt || new Date().toISOString(),
+      })
+      const next = previous ? items.map((item) => item.id === previous.id ? saved : item) : [saved, ...items]
+      setItems(next)
+      writeLocalPrompts(next)
+      setEditorItem(null)
+      setCloudState('ใช้ข้อมูลในเครื่อง')
+      flash(`บันทึกในเครื่องแล้ว: ${error?.message?.slice(0, 60) || 'Firebase ยังไม่พร้อม'}`)
+    }
+  }
+
+  const deleteItem = async (item) => {
+    if (!window.confirm(`ต้องการลบ “${item.title}” ใช่หรือไม่?`)) return
+    try {
+      await deleteCloudPrompt(item)
+    } catch {
+      /* keep local deletion usable when rules are not ready */
+    }
+    const next = items.filter((current) => current.id !== item.id)
+    setItems(next)
+    writeLocalPrompts(next)
+    if (detailItem?.id === item.id) setDetailItem(null)
+    flash('ลบพรอมต์แล้ว')
+  }
+
+  const toggleFavorite = async (item) => {
+    const nextItem = { ...item, favorite: !item.favorite, updatedAt: new Date().toISOString() }
+    const next = items.map((current) => current.id === item.id ? nextItem : current)
+    setItems(next)
+    writeLocalPrompts(next)
+    try {
+      await updateCloudPrompt(nextItem)
+    } catch {
+      setCloudState('ใช้ข้อมูลในเครื่อง')
+    }
+  }
+
+  if (!unlocked) return <PinGate onUnlock={() => setUnlocked(true)} />
+
+  const showLibrary = page === 'home' || page === 'prompts' || page === 'notes'
+  const hasActiveFilter =
+    categoryFilter !== 'all' ||
+    folderFilter !== 'all' ||
+    quickFilter !== 'all' ||
+    Boolean(query.trim())
+
+  const shownItems =
+    page === 'notes'
+      ? filteredItems.filter((item) => item.notes || item.category === 'note')
+      : page === 'home' && !hasActiveFilter
+      ? filteredItems.filter((item) => item.favorite)
+      : filteredItems
+
+  // ย้ายลำดับการ์ด (รองรับทั้งการคลิกค้างแล้วลากวาง และการกดปุ่มเลื่อน ◀ ▶)
+  const reorderCards = (sourceId, targetId) => {
+    if (!sourceId || !targetId || sourceId === targetId) return
+    const currentShown = [...shownItems]
+    const fromIdx = currentShown.findIndex((it) => it.id === sourceId)
+    const toIdx = currentShown.findIndex((it) => it.id === targetId)
+    if (fromIdx === -1 || toIdx === -1) return
+
+    const [moved] = currentShown.splice(fromIdx, 1)
+    currentShown.splice(toIdx, 0, moved)
+
+    const shownIds = new Set(currentShown.map((it) => it.id))
+    let replacementIdx = 0
+    const nextItems = items
+      .map((it) => (shownIds.has(it.id) ? currentShown[replacementIdx++] : it))
+      .map((it, idx) => ({
+        ...it,
+        sortOrder: (idx + 1) * 10,
+      }))
+
+    setItems(nextItems)
+    writeLocalPrompts(nextItems)
+    const affected = nextItems.filter((item) => {
+      const orig = items.find((it) => it.id === item.id)
+      return !orig || orig.sortOrder !== item.sortOrder
+    })
+    if (affected.length) {
+      updateCloudPromptsOrder(affected)
+    }
+    flash('ย้ายตำแหน่งการ์ดเรียบร้อยแล้ว')
+  }
+
+  const moveCardStep = (item, delta) => {
+    const idx = shownItems.findIndex((it) => it.id === item.id)
+    const targetIdx = idx + delta
+    if (idx === -1 || targetIdx < 0 || targetIdx >= shownItems.length) return
+    reorderCards(item.id, shownItems[targetIdx].id)
+  }
+
+  const handleCardDragStart = (e, item) => {
+    setDraggedId(item.id)
+    e.dataTransfer.effectAllowed = 'move'
+    try {
+      e.dataTransfer.setData('text/plain', item.id)
+    } catch {
+      // Ignore browser restrictions
+    }
+  }
+
+  const handleCardDragOver = (e, targetItem) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (draggedId && draggedId !== targetItem.id && dragOverCardId !== targetItem.id) {
+      setDragOverCardId(targetItem.id)
+    }
+  }
+
+  const handleCardDragLeave = (_, targetItem) => {
+    if (dragOverCardId === targetItem.id) {
+      setDragOverCardId(null)
+    }
+  }
+
+  const handleCardDrop = (e, targetItem) => {
+    e.preventDefault()
+    const sourceId = draggedId || e.dataTransfer.getData('text/plain')
+    setDragOverCardId(null)
+    setDraggedId(null)
+    if (sourceId && sourceId !== targetItem.id) {
+      reorderCards(sourceId, targetItem.id)
+    }
+  }
+
+  const handleCardDragEnd = () => {
+    setDraggedId(null)
+    setDragOverCardId(null)
+    setDragOverFolder(null)
+    setDragOverCategory(null)
+  }
+
+  const handleFolderDrop = (e, targetFolderName) => {
+    e.preventDefault()
+    const sourceId = draggedId || e.dataTransfer.getData('text/plain')
+    setDragOverFolder(null)
+    setDraggedId(null)
+    const draggedItem = items.find((it) => it.id === sourceId)
+    if (draggedItem) {
+      moveItemToFolder(draggedItem, targetFolderName === '__unfiled__' || targetFolderName === 'all' ? '' : targetFolderName)
+    }
+  }
+
+  const handleCategoryDrop = (e, targetCategoryId) => {
+    e.preventDefault()
+    const sourceId = draggedId || e.dataTransfer.getData('text/plain')
+    setDragOverCategory(null)
+    setDraggedId(null)
+    const draggedItem = items.find((it) => it.id === sourceId)
+    if (draggedItem && targetCategoryId !== 'all') {
+      moveItemToCategory(draggedItem, targetCategoryId)
+    }
+  }
+
+  const unfiledCount = categoryFilteredItems.filter((item) => !item.folder).length
+  const activeFolderDefault =
+    folderFilter !== 'all' && folderFilter !== '__unfiled__' ? folderFilter : ''
+
+  return (
+    <div className="app-shell">
+      <Sidebar
+        page={page}
+        onNavigate={setPage}
+        onAdd={() => {
+          setEditorItem({
+            ...emptyForm,
+            category: categoryFilter === 'all' ? 'main' : categoryFilter,
+            folder: activeFolderDefault,
+          })
+          setPage('add')
+        }}
+        totalCount={items.length}
+        notesCount={notesCount}
+      />
+
+      <main className="main-content">
+        <header className="topbar">
+          <div>
+            <p className="eyebrow">MIX-IMAGE ART & AUDIO</p>
+            <h1>
+              {page === 'home'
+                ? 'ยินดีต้อนรับสู่ Prompt Archive'
+                : page === 'notes'
+                ? 'โน้ตและเทคนิคส่วนตัว'
+                : page === 'profile'
+                ? 'โปรไฟล์และการตั้งค่า'
+                : 'คลังพรอมต์ทั้งหมด'}
+            </h1>
+          </div>
+
+          <div className="topbar-actions">
+            {/* แถบวันที่และเวลาเรียลไทม์บนหน้าแรก (แยก Component ไม่ให้ Re-render ทั้งหน้า) */}
+            <TopbarClockPill />
+
+            <button
+              type="button"
+              className={`cloud-status-btn ${isSyncing ? 'is-syncing' : ''}`}
+              onClick={syncData}
+              title="คลิกเพื่อรีเฟรชข้อมูลกับ Cloud"
+            >
+              <Icon name="cloud" />
+              <span>{isSyncing ? 'กำลังซิงค์...' : cloudState}</span>
+            </button>
+
+            <button
+              className="round-button"
+              type="button"
+              aria-label="ออกจากระบบ"
+              title="ออกจากระบบ (ล็อค PIN)"
+              onClick={() => {
+                clearUnlock()
+                setUnlocked(false)
+              }}
+            >
+              <Icon name="logout" />
+            </button>
+          </div>
+        </header>
+
+        {showLibrary && (
+          <>
+            {/* Search and Filter Row */}
+            <section className="search-row">
+              <label className="search-box">
+                <Icon name="search" />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="ค้นหาชื่อพรอมต์, โฟลเดอร์, ข้อความ, โมเดล, แท็ก, โน้ต..."
+                />
+                {query && (
+                  <button
+                    type="button"
+                    className="clear-search-btn"
+                    onClick={() => setQuery('')}
+                    aria-label="ล้างคำค้นหา"
+                  >
+                    <Icon name="close" />
+                  </button>
+                )}
+              </label>
+            </section>
+
+            {/* Quick Filter Pills + 3 Top Widgets (Keep Note, Calendar with Lock, Weather Mekha GPS) */}
+            <div className="filter-and-widgets-row">
+              <div className="quick-filter-bar">
+                <button
+                  type="button"
+                  className={`quick-pill ${quickFilter === 'all' && !lockedDate ? 'active' : ''}`}
+                  onClick={() => {
+                    setQuickFilter('all')
+                    setLockedDate(null)
+                    setCategoryFilter('all')
+                    setFolderFilter('all')
+                    setPage('home')
+                  }}
+                >
+                  ทั้งหมด ({items.length})
+                </button>
+                <button
+                  type="button"
+                  className={`quick-pill ${quickFilter === 'favorite' ? 'active' : ''}`}
+                  onClick={() => setQuickFilter(quickFilter === 'favorite' ? 'all' : 'favorite')}
+                >
+                  <Icon name="star" filled={quickFilter === 'favorite'} /> รายการโปรด ({favoritesCount})
+                </button>
+                <button
+                  type="button"
+                  className={`quick-pill ${quickFilter === 'hasNote' ? 'active' : ''}`}
+                  onClick={() => setQuickFilter(quickFilter === 'hasNote' ? 'all' : 'hasNote')}
+                >
+                  <Icon name="note" /> มีโน้ต ({notesCount})
+                </button>
+                <button
+                  type="button"
+                  className={`quick-pill ${quickFilter === 'hasImage' ? 'active' : ''}`}
+                  onClick={() => setQuickFilter(quickFilter === 'hasImage' ? 'all' : 'hasImage')}
+                >
+                  <Icon name="image" /> มีรูปตัวอย่าง ({imagesCount})
+                </button>
+              </div>
+
+              <div className="top-widget-strip">
+                {/* 1. เครื่องมือเขียนโน๊ต กด ui หน้าจอจะขยายขึ้นเหมือน Google Keep รองรับรูปภาพ */}
+                <QuickKeepNoteWidget onSaveNote={saveItem} />
+
+                {/* 2. ปฏิทิน มีล็อควันได้ */}
+                <CalendarLockWidget
+                  items={items}
+                  lockedDate={lockedDate}
+                  onLockDate={(d) => setLockedDate(d)}
+                  onClearLock={() => setLockedDate(null)}
+                />
+
+                {/* 3. เครื่องคิดเลขคำนวณจริงสำหรับราคา จำนวนภาพ และต้นทุนงาน */}
+                <CalculatorWidget />
+
+                {/* 4. พยากรณ์อากาศ ดึงข้อมูลจาก mekha พื้นที่จริงอ้างอิงจาก GPS แบบเรียลไทม์ */}
+                <WeatherMekhaWidget />
+              </div>
+            </div>
+
+            {/* แถบแจ้งเตือนเมื่อมีการล็อควัน */}
+            {lockedDate && (
+              <div className="date-locked-banner">
+                <div className="date-locked-info">
+                  <Icon name="lock" />
+                  <span>
+                    กำลังล็อคแสดงข้อมูลเฉพาะวันที่: <strong>{formatThaiDateFull(lockedDate)}</strong> (พบ {filteredItems.length} รายการ)
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="unlock-banner-btn"
+                  onClick={() => setLockedDate(null)}
+                  title="ปลดล็อคเพื่อดูทั้งหมด"
+                >
+                  <Icon name="unlock" /> ปลดล็อควันที่
+                </button>
+              </div>
+            )}
+
+            {/* Hero Banner ใหม่ แสดงภาพ 3D Hero พร้อมนาฬิกาเรียลไทม์ */}
+            {page === 'home' && (
+              <section className="hero-strip">
+                <div className="hero-content-col">
+                  <span className="hero-label">MEET THE JONGJANG · PROMPT DESK</span>
+                  <h2>สวัสดีครับลูกพี่<br />วันนี้จะเก็บไอเดียอะไรดีครับ?</h2>
+                  <p>
+                    จ๋องแจ๋งช่วยจัดเก็บ ค้นหา และต่อยอดพรอมต์งานภาพ งานเสียง และไอเดียสร้างสรรค์ให้เป็นระบบครับ
+                  </p>
+                  <HeroClockBadge />
+                </div>
+                <div className="hero-image-frame">
+                  <img src="/brand/jongjang-mascot.png" alt="จ๋องแจ๋งหุ่นยนต์ผู้ช่วยสร้างสรรค์" decoding="async" />
+                </div>
+              </section>
+            )}
+
+            {/* Interactive Stat Cards */}
+            <section className="stat-grid">
+              <StatCard
+                icon="prompt"
+                label="พรอมต์ทั้งหมด"
+                value={items.length}
+                tone="orange"
+                onClick={() => { setPage('prompts'); setCategoryFilter('all'); setFolderFilter('all'); setQuickFilter('all') }}
+                active={page === 'prompts' && quickFilter === 'all' && folderFilter === 'all'}
+              />
+              <StatCard
+                icon="note"
+                label="มีโน้ตเทคนิค"
+                value={notesCount}
+                tone="purple"
+                onClick={() => { setPage('notes'); setQuickFilter('hasNote') }}
+                active={page === 'notes' || quickFilter === 'hasNote'}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  setDragOverCategory('note')
+                }}
+                onDragLeave={() => {
+                  if (dragOverCategory === 'note') setDragOverCategory(null)
+                }}
+                onDrop={(e) => handleCategoryDrop(e, 'note')}
+                isDropActive={dragOverCategory === 'note'}
+              />
+              <StatCard
+                icon="star"
+                label="ติดดาว (หน้าแรก)"
+                value={favoritesCount}
+                tone="cyan"
+                onClick={() => { setPage('home'); setCategoryFilter('all'); setFolderFilter('all'); setQuickFilter('all') }}
+                active={page === 'home'}
+              />
+              <StatCard
+                icon="cloud"
+                label="Cloud Sync"
+                value={cloudState === 'Firebase พร้อม' ? 'พร้อม' : 'Local'}
+                tone="green"
+                onClick={syncData}
+              />
+            </section>
+
+            {/* Category Tiles */}
+            <section className="section-block">
+              <div className="section-heading">
+                <h2>หมวดหมู่งาน</h2>
+                {categoryFilter !== 'all' && (
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => { setCategoryFilter('all'); setFolderFilter('all') }}
+                  >
+                    ล้างตัวกรองหมวดหมู่ ({categoryFilter})
+                  </button>
+                )}
+              </div>
+              <div className="category-row">
+                {categories.map((category) => {
+                  const count =
+                    category.id === 'all'
+                      ? items.length
+                      : items.filter((item) => item.category === category.id).length
+                  return (
+                    <button
+                      type="button"
+                      className={`category-tile ${categoryFilter === category.id ? 'selected' : ''} ${dragOverCategory === category.id ? 'drop-target-active' : ''}`}
+                      key={category.id}
+                      onClick={() => {
+                        const nextCat = categoryFilter === category.id && category.id !== 'all' ? 'all' : category.id
+                        setCategoryFilter(nextCat)
+                        setFolderFilter('all')
+                        setQuickFilter('all')
+                        setLockedDate(null)
+                        setPage(nextCat === 'all' ? 'home' : 'prompts')
+                      }}
+                      onDragOver={(e) => {
+                        if (category.id === 'all') return
+                        e.preventDefault()
+                        setDragOverCategory(category.id)
+                      }}
+                      onDragLeave={() => {
+                        if (dragOverCategory === category.id) setDragOverCategory(null)
+                      }}
+                      onDrop={(e) => handleCategoryDrop(e, category.id)}
+                    >
+                      <span className={`category-icon ${category.color}`}>
+                        <Icon name={category.icon} />
+                      </span>
+                      <strong>{category.label}</strong>
+                      <small>{count} รายการ</small>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+
+            {/* โฟลเดอร์จัดกลุ่ม (Folder Management Bar) */}
+            <section className="section-block folder-section-block">
+              <div className="section-heading folder-section-heading">
+                <div>
+                  <h2>
+                    <Icon name="folder" filled />
+                    <span>
+                      โฟลเดอร์จัดกลุ่ม
+                      {categoryFilter !== 'all'
+                        ? ` (${categories.find((c) => c.id === categoryFilter)?.label || categoryFilter})`
+                        : ''}
+                    </span>
+                    <span className="count-tag">({visibleFolders.length} โฟลเดอร์)</span>
+                  </h2>
+                  <p className="folder-hint-sub">
+                    ลากการ์ดมาวางทับโฟลเดอร์เพื่อย้ายกลุ่ม หรือกดปุ่ม <strong>📁 ใส่โฟลเดอร์</strong> บนการ์ดได้เลย
+                  </p>
+                </div>
+
+                <div className="heading-actions">
+                  {folderFilter !== 'all' && (
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => setFolderFilter('all')}
+                    >
+                      ดูทุกโฟลเดอร์
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="create-folder-btn"
+                    onClick={() => setIsCreatingFolder((prev) => !prev)}
+                  >
+                    <Icon name={isCreatingFolder ? "close" : "folder-plus"} />
+                    <span>{isCreatingFolder ? 'ปิดฟอร์ม' : 'สร้างโฟลเดอร์ใหม่'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {isCreatingFolder && (
+                <form
+                  className="create-folder-bar glass-panel"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    createFolder()
+                  }}
+                >
+                  <div className="create-folder-input-row">
+                    <div className="create-folder-input-wrap">
+                      <Icon name="folder-plus" />
+                      <input
+                        value={newFolderName}
+                        onChange={(e) => setNewFolderName(e.target.value)}
+                        placeholder={`ตั้งชื่อโฟลเดอร์ใหม่${categoryFilter !== 'all' ? ` (ห้อง: ${categories.find((c) => c.id === categoryFilter)?.label || categoryFilter})` : ''}...`}
+                        autoFocus
+                      />
+                    </div>
+                    {categoryFilter === 'all' && (
+                      <select
+                        className="create-folder-category-select"
+                        value={newFolderCategory}
+                        onChange={(e) => setNewFolderCategory(e.target.value)}
+                        aria-label="เลือกห้องที่จะสร้างโฟลเดอร์"
+                        title="โฟลเดอร์จะอยู่เฉพาะห้องที่เลือกนี้เท่านั้น"
+                      >
+                        {categories.filter((c) => c.id !== 'all').map((c) => (
+                          <option key={c.id} value={c.id}>ห้อง: {c.label}</option>
+                        ))}
+                      </select>
+                    )}
+                    <div className="create-folder-actions">
+                      <button type="submit" className="primary-button compact-button folder-save-btn" disabled={!newFolderName.trim()}>
+                        บันทึกโฟลเดอร์
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button compact-button"
+                        onClick={() => { setIsCreatingFolder(false); setNewFolderName('') }}
+                      >
+                        ยกเลิก
+                      </button>
+                    </div>
+                  </div>
+                  <div className="folder-preset-row">
+                    <span>สร้างด่วน{` (${categories.find((c) => c.id === (categoryFilter === 'all' ? newFolderCategory : categoryFilter))?.label || ''}):`}</span>
+                    {folderPresets.map((preset) => (
+                      <button
+                        type="button"
+                        key={preset}
+                        className="tool-quick-btn"
+                        onClick={() => createFolder(preset)}
+                      >
+                        + 📁 {preset}
+                      </button>
+                    ))}
+                  </div>
+                </form>
+              )}
+
+              <div className="folder-pills-row">
+                <button
+                  type="button"
+                  className={`folder-tile ${folderFilter === 'all' ? 'selected' : ''}`}
+                  onClick={() => setFolderFilter('all')}
+                >
+                  <Icon name="sparkles" />
+                  <span>ทั้งหมดในหมวดนี้</span>
+                  <span className="folder-count-badge">{categoryFilteredItems.length}</span>
+                </button>
+
+                {visibleFolders.map((folderObj) => {
+                  const countInFolder = categoryFilteredItems.filter(
+                    (item) => item.folder === folderObj.name
+                  ).length
+                  const isSelected = folderFilter === folderObj.name
+                  const isDropOver = dragOverFolder === folderObj.name
+                  return (
+                    <div
+                      key={folderObj.name}
+                      className={`folder-tile ${isSelected ? 'selected' : ''} ${isDropOver ? 'folder-drop-active' : ''}`}
+                      onClick={() => setFolderFilter(isSelected ? 'all' : folderObj.name)}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        e.dataTransfer.dropEffect = 'move'
+                        if (dragOverFolder !== folderObj.name) setDragOverFolder(folderObj.name)
+                      }}
+                      onDragLeave={() => {
+                        if (dragOverFolder === folderObj.name) setDragOverFolder(null)
+                      }}
+                      onDrop={(e) => handleFolderDrop(e, folderObj.name)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setFolderFilter(isSelected ? 'all' : folderObj.name)
+                        }
+                      }}
+                      title={`คลิกเพื่อเปิดโฟลเดอร์ "${folderObj.name}" หรือลากการ์ดมาวางที่นี่`}
+                    >
+                      <Icon name="folder" filled={isSelected || isDropOver} />
+                      <span className="folder-tile-name">{folderObj.name}</span>
+                      <span className="folder-count-badge">{countInFolder}</span>
+                      <button
+                        type="button"
+                        className="folder-delete-mini"
+                        onClick={(e) => removeFolder(folderObj, e)}
+                        title={`ลบโฟลเดอร์ ${folderObj.name}`}
+                        aria-label={`ลบโฟลเดอร์ ${folderObj.name}`}
+                      >
+                        <Icon name="close" />
+                      </button>
+                    </div>
+                  )
+                })}
+
+                {visibleFolders.length > 0 && (
+                  <button
+                    type="button"
+                    className={`folder-tile unfiled-tile ${folderFilter === '__unfiled__' ? 'selected' : ''} ${dragOverFolder === '__unfiled__' ? 'folder-drop-active' : ''}`}
+                    onClick={() => setFolderFilter(folderFilter === '__unfiled__' ? 'all' : '__unfiled__')}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      if (dragOverFolder !== '__unfiled__') setDragOverFolder('__unfiled__')
+                    }}
+                    onDragLeave={() => {
+                      if (dragOverFolder === '__unfiled__') setDragOverFolder(null)
+                    }}
+                    onDrop={(e) => handleFolderDrop(e, '__unfiled__')}
+                    title="แสดงรายการที่ยังไม่ได้จัดเข้าโฟลเดอร์ (ลากการ์ดมาวางที่นี่เพื่อเอาออกจากโฟลเดอร์)"
+                  >
+                    <Icon name="prompt" />
+                    <span>ยังไม่จัดโฟลเดอร์</span>
+                    <span className="folder-count-badge">{unfiledCount}</span>
+                  </button>
+                )}
+              </div>
+            </section>
+
+            {/* Prompts Section */}
+            <section className="section-block">
+              <div className="section-heading">
+                <div>
+                  <h2>
+                    {folderFilter !== 'all' && folderFilter !== '__unfiled__'
+                      ? `📁 โฟลเดอร์: ${folderFilter}`
+                      : folderFilter === '__unfiled__'
+                      ? 'รายการที่ยังไม่จัดโฟลเดอร์'
+                      : page === 'home' && !hasActiveFilter
+                      ? '⭐ พรอมต์ที่ติดดาว'
+                      : page === 'notes'
+                      ? 'รายการที่มีโน้ตส่วนตัว'
+                      : 'พรอมต์ทั้งหมด'}
+                    <span className="count-tag">({shownItems.length})</span>
+                  </h2>
+                </div>
+                <div className="heading-actions">
+                  {page === 'home' && !hasActiveFilter && items.length > shownItems.length && (
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => { setPage('prompts'); setCategoryFilter('all'); setQuickFilter('all'); setFolderFilter('all') }}
+                    >
+                      ดูพรอมต์ทั้งหมด ({items.length}) →
+                    </button>
+                  )}
+                  {page === 'home' && hasActiveFilter && (
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => { setFolderFilter('all'); setCategoryFilter('all'); setQuickFilter('all'); setQuery('') }}
+                    >
+                      ดูเฉพาะที่ติดดาว (หน้าแรก) ⭐
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="primary-button compact-button"
+                    onClick={() => {
+                      setEditorItem({
+                        ...emptyForm,
+                        category: categoryFilter === 'all' ? 'main' : categoryFilter,
+                        folder: activeFolderDefault,
+                      })
+                      setPage('add')
+                    }}
+                  >
+                    <Icon name="add" />
+                    <span>
+                      {activeFolderDefault ? `เพิ่มใน “${activeFolderDefault}”` : 'เพิ่มพรอมต์'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {shownItems.length ? (
+                <div className="prompt-grid">
+                  {shownItems.map((item, index) => (
+                    <PromptCard
+                      item={item}
+                      index={index}
+                      totalShown={shownItems.length}
+                      folders={foldersByCategory[item.category] || []}
+                      key={item.id}
+                      isDragging={draggedId === item.id}
+                      isDragOver={dragOverCardId === item.id}
+                      onDragStart={handleCardDragStart}
+                      onDragOver={handleCardDragOver}
+                      onDragLeave={handleCardDragLeave}
+                      onDrop={handleCardDrop}
+                      onDragEnd={handleCardDragEnd}
+                      onMoveStep={moveCardStep}
+                      onMoveToFolder={moveItemToFolder}
+                      onCreateAndMoveFolder={createAndMoveToFolder}
+                      onMoveToCategory={moveItemToCategory}
+                      onFolderClick={(fName) => setFolderFilter(fName)}
+                      onCopy={copyPrompt}
+                      onEdit={(current) => { setEditorItem(current); setPage('add') }}
+                      onDelete={deleteItem}
+                      onFavorite={toggleFavorite}
+                      onOpen={setDetailItem}
+                      onTagClick={(tag) => setQuery(tag)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state glass-panel">
+                  <div className="empty-icon">
+                    <Icon name={page === 'home' && !hasActiveFilter ? 'star' : folderFilter !== 'all' ? 'folder' : 'prompt'} filled={page === 'home' && !hasActiveFilter} />
+                  </div>
+                  <h2>
+                    {page === 'home' && !hasActiveFilter
+                      ? 'ยังไม่มีพรอมต์ที่ติดดาวไว้'
+                      : folderFilter !== 'all' && folderFilter !== '__unfiled__'
+                      ? `ยังไม่มีพรอมต์ในโฟลเดอร์ “${folderFilter}”`
+                      : query || categoryFilter !== 'all' || quickFilter !== 'all' || folderFilter !== 'all'
+                      ? 'ไม่พบรายการที่ตรงกับเงื่อนไข'
+                      : 'ยังไม่มีพรอมต์ในคลัง'}
+                  </h2>
+                  <p>
+                    {page === 'home' && !hasActiveFilter
+                      ? 'คุณสามารถกดที่ไอคอนรูปดาว ⭐ บนการ์ดใดก็ได้ เพื่อนำมาแสดงไว้ในหน้าแรกนี้'
+                      : folderFilter !== 'all' && folderFilter !== '__unfiled__'
+                      ? 'คุณสามารถกด “ดูทุกโฟลเดอร์” แล้วลากการ์ดมาวางใส่โฟลเดอร์นี้ หรือกดปุ่มเพิ่มพรอมต์ในโฟลเดอร์นี้ได้ทันที'
+                      : query || categoryFilter !== 'all' || quickFilter !== 'all'
+                      ? 'ลองปรับคำค้นหา หรือกดล้างตัวกรองเพื่อดูรายการทั้งหมด'
+                      : 'เริ่มสร้างและจัดเก็บพรอมต์สำหรับงาน AI ภาพและเสียงของคุณได้เลย'}
+                  </p>
+                  <div className="empty-actions">
+                    {page === 'home' && !hasActiveFilter && (
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => setPage('prompts')}
+                      >
+                        <Icon name="prompt" /> ไปที่คลังพรอมต์ทั้งหมด ({items.length})
+                      </button>
+                    )}
+                    {(query || categoryFilter !== 'all' || quickFilter !== 'all' || folderFilter !== 'all') && (
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => {
+                          setQuery('')
+                          setFolderFilter('all')
+                          setQuickFilter('all')
+                        }}
+                      >
+                        แสดงพรอมต์ทั้งหมดในหมวดนี้
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="primary-button"
+                      onClick={() => {
+                        setEditorItem({
+                          ...emptyForm,
+                          category: categoryFilter === 'all' ? 'main' : categoryFilter,
+                          folder: activeFolderDefault,
+                        })
+                        setPage('add')
+                      }}
+                    >
+                      <Icon name="add" /> เพิ่มพรอมต์ใหม่
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          </>
+        )}
+
+        {page === 'profile' && (
+          <>
+            <section className="profile-panel glass-panel">
+              <img src="/brand/jongjang-mascot.png" alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" decoding="async" />
+              <div>
+                <p className="eyebrow">OWNER PROFILE</p>
+                <h2>MIX NATTANON</h2>
+                <p className="profile-bio">
+                  MIX-IMAGE Art & Audio — คลังเก็บไอเดีย พรอมต์ งานภาพ และเสียงสังเคราะห์สำหรับงาน AI Production
+                </p>
+                <div className="profile-stats-row">
+                  <div className="profile-stat-item">
+                    <span>พรอมต์ทั้งหมด</span>
+                    <strong>{items.length}</strong>
+                  </div>
+                  <div className="profile-stat-item">
+                    <span>โฟลเดอร์ทั้งหมด</span>
+                    <strong>{allFolders.length}</strong>
+                  </div>
+                  <div className="profile-stat-item">
+                    <span>รายการโปรด</span>
+                    <strong>{favoritesCount}</strong>
+                  </div>
+                  <div className="profile-stat-item">
+                    <span>สถานะคลาวด์</span>
+                    <strong className="cloud-note"><Icon name="cloud" /> {cloudState}</strong>
+                  </div>
+                </div>
+                <div className="profile-actions">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={syncData}
+                    disabled={isSyncing}
+                  >
+                    <Icon name="sync" /> ซิงค์ข้อมูลกับ Firebase
+                  </button>
+                  <button
+                    type="button"
+                    className="danger-button"
+                    onClick={() => {
+                      clearUnlock()
+                      setUnlocked(false)
+                    }}
+                  >
+                    <Icon name="logout" /> ออกจากระบบ
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <section className="section-block">
+              <div className="section-heading">
+                <h2>
+                  <Icon name="globe" /> เว็บและเครื่องมือในเครือ MIX-IMAGE
+                  <span className="count-tag">({externalLinksTopToBottom.length})</span>
+                </h2>
+              </div>
+              <div className="profile-links-grid">
+                {externalLinksTopToBottom.map((link) => (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`sidebar-link-btn accent-${link.color}`}
+                  >
+                    <span className={`sidebar-link-dot dot-${link.color}`} />
+                    <div className="sidebar-link-text">
+                      <strong>{link.sub}</strong>
+                      <span>{link.label}</span>
+                    </div>
+                    <Icon name="external" className="sidebar-link-arrow" />
+                  </a>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
+
+        {page === 'add' && !editorItem && (
+          <div className="empty-state glass-panel">
+            <h2>พร้อมเพิ่มพรอมต์</h2>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() =>
+                setEditorItem({
+                  ...emptyForm,
+                  category: categoryFilter === 'all' ? 'main' : categoryFilter,
+                  folder: activeFolderDefault,
+                })
+              }
+            >
+              <Icon name="add" /> เปิดฟอร์มเพิ่มพรอมต์
+            </button>
+          </div>
+        )}
+      </main>
+
+      <MobileNav
+        page={page}
+        onNavigate={setPage}
+        onAdd={() => {
+          setEditorItem({
+            ...emptyForm,
+            category: categoryFilter === 'all' ? 'main' : categoryFilter,
+            folder: activeFolderDefault,
+          })
+          setPage('add')
+        }}
+      />
+
+      {editorItem && (
+        <PromptEditor
+          item={editorItem?.id ? editorItem : null}
+          folders={allFolders}
+          defaultFolder={editorItem?.folder || activeFolderDefault}
+          onClose={() => { setEditorItem(null); setPage('home') }}
+          onSave={saveItem}
+        />
+      )}
+
+      {detailItem && (
+        <DetailModal
+          item={detailItem}
+          folders={foldersByCategory[detailItem.category] || []}
+          onClose={() => setDetailItem(null)}
+          onCopy={copyPromptText}
+          onEdit={(current) => { setDetailItem(null); setEditorItem(current); setPage('add') }}
+          onLightbox={(url) => setLightboxImage(url)}
+          onMoveToCategory={moveItemToCategory}
+          onMoveToFolder={moveItemToFolder}
+        />
+      )}
+
+      {lightboxImage && (
+        <Lightbox imageUrl={lightboxImage} onClose={() => setLightboxImage(null)} />
+      )}
+
+      {toast && (
+        <div className="toast-message" role="status">
+          <Icon name="check" />
+          <span>{toast}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default App

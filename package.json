@@ -1,0 +1,22 @@
+{
+  "name": "mix-image-prompt-vault",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:zip": "vite build && python package-deploy.py",
+    "preview": "vite preview",
+    "package": "python package-deploy.py"
+  },
+  "dependencies": {
+    "firebase": "^12.4.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "vite": "^7.1.7"
+  }
+}

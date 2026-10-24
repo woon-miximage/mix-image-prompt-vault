@@ -1,0 +1,23 @@
+{
+  "name": "MIX Image Prompt Archive",
+  "short_name": "MIX Prompt",
+  "description": "คลังรวมพรอมต์สร้างสรรค์ ภาพและเสียง ด้วย AI",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fbff",
+  "theme_color": "#f6fbff",
+  "icons": [
+    {
+      "src": "/brand/jongjang-app-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/brand/jongjang-app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
