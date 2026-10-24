@@ -9,7 +9,9 @@
     "build:zip": "vite build && python package-deploy.py",
     "preview": "vite preview",
     "package": "python package-deploy.py",
-    "deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1"
+    "deploy": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy.ps1",
+    "desktop:build": "cd desktop-app && dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -o ../dist-desktop",
+    "desktop:install": "powershell -ExecutionPolicy Bypass -File ./scripts/Install-Desktop-App.ps1"
   },
   "dependencies": {
     "firebase": "^12.4.0",

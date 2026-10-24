@@ -6,7 +6,13 @@ node_modules/
 # Production build outputs
 dist/
 dist-deploy.zip
+dist-desktop/
+dist-desktop-lite/
 *.zip
+
+# .NET / Desktop build outputs
+**/bin/
+**/obj/
 
 # Local environment & logs
 .env
