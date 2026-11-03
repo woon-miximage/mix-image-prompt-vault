@@ -418,3 +418,108 @@ export const deleteCloudSavingsTxn = async (id) => {
     console.warn('deleteDoc (savings) error:', err)
   }
 }
+
+// =====================================================================
+// Savings Virtual Accounts & Cards — CRUD helpers
+// =====================================================================
+
+const SAVINGS_ACCOUNTS_COLLECTION = 'savings_accounts'
+const LOCAL_ACCOUNTS_KEY = 'mix-image-prompt-vault.savings-accounts.v1'
+
+const DEFAULT_ACCOUNTS = [
+  {
+    id: 'kbank-main',
+    type: 'bank',
+    bank: 'kbank',
+    bankName: 'ธนาคารกสิกรไทย',
+    bankCode: 'KBANK',
+    accNumber: '199-8-81994-2',
+    accName: 'NATTANONT VONGKASAI',
+    label: 'บัญชีหลักรับเงิน',
+    color: 'kbank',
+    createdAt: new Date().toISOString(),
+  }
+]
+
+export const readLocalAccounts = () => {
+  try {
+    const raw = localStorage.getItem(LOCAL_ACCOUNTS_KEY)
+    if (!raw) return DEFAULT_ACCOUNTS
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_ACCOUNTS
+  } catch {
+    return DEFAULT_ACCOUNTS
+  }
+}
+
+export const writeLocalAccounts = (accounts) => {
+  try {
+    localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(accounts))
+  } catch {
+    // ignore
+  }
+}
+
+const normalizeAccount = (id, data = {}) => ({
+  id,
+  type: data.type || 'bank',
+  bank: data.bank || 'kbank',
+  bankName: data.bankName || 'ธนาคารกสิกรไทย',
+  bankCode: data.bankCode || 'KBANK',
+  accNumber: data.accNumber || data.account_number || '',
+  accName: data.accName || data.account_name || '',
+  label: data.label || '',
+  color: data.color || 'kbank',
+  createdAt: asDateValue(data.created_at || data.createdAt),
+})
+
+export const loadCloudAccounts = async () => {
+  const snap = await getDocs(collection(db, SAVINGS_ACCOUNTS_COLLECTION))
+  if (snap.empty) {
+    return DEFAULT_ACCOUNTS
+  }
+  return snap.docs.map((d) => normalizeAccount(d.id, d.data()))
+}
+
+export const saveCloudAccount = async (acc) => {
+  const docRef = await addDoc(collection(db, SAVINGS_ACCOUNTS_COLLECTION), {
+    type: acc.type || 'bank',
+    bank: acc.bank || 'kbank',
+    bankName: acc.bankName || 'ธนาคารกสิกรไทย',
+    bankCode: acc.bankCode || 'KBANK',
+    accNumber: acc.accNumber || '',
+    accName: acc.accName || '',
+    label: acc.label || '',
+    color: acc.color || 'kbank',
+    created_at: serverTimestamp(),
+  })
+  return docRef.id
+}
+
+export const updateCloudAccount = async (acc) => {
+  if (!acc?.id || String(acc.id).startsWith('local-')) return
+  try {
+    await updateDoc(doc(db, SAVINGS_ACCOUNTS_COLLECTION, acc.id), {
+      type: acc.type || 'bank',
+      bank: acc.bank || 'kbank',
+      bankName: acc.bankName || 'ธนาคารกสิกรไทย',
+      bankCode: acc.bankCode || 'KBANK',
+      accNumber: acc.accNumber || '',
+      accName: acc.accName || '',
+      label: acc.label || '',
+      color: acc.color || 'kbank',
+      updated_at: serverTimestamp(),
+    })
+  } catch (err) {
+    console.warn('updateDoc (account) error:', err)
+  }
+}
+
+export const deleteCloudAccount = async (id) => {
+  if (!id || String(id).startsWith('local-')) return
+  try {
+    await deleteDoc(doc(db, SAVINGS_ACCOUNTS_COLLECTION, id))
+  } catch (err) {
+    console.warn('deleteDoc (account) error:', err)
+  }
+}

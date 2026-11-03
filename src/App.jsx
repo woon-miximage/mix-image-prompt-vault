@@ -1,21 +1,27 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  deleteCloudAccount,
   deleteCloudFolder,
   deleteCloudPrompt,
   deleteCloudSavingsTxn,
   fileToLocalPreview,
+  loadCloudAccounts,
   loadCloudFolders,
   loadCloudPrompts,
   loadCloudSavings,
   normalizePrompt,
+  readLocalAccounts,
   readLocalFolders,
   readLocalPrompts,
   readLocalSavings,
+  saveCloudAccount,
   saveCloudFolder,
   saveCloudPrompt,
   saveCloudSavingsTxn,
+  updateCloudAccount,
   updateCloudPrompt,
   updateCloudPromptsOrder,
+  writeLocalAccounts,
   writeLocalFolders,
   writeLocalPrompts,
   writeLocalSavings,
@@ -644,6 +650,35 @@ function Icon({ name, className = '', filled = false }) {
         <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
           <polyline points="17 18 23 18 23 12" />
+        </svg>
+      )
+    case 'card':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+          <line x1="1" y1="10" x2="23" y2="10" />
+        </svg>
+      )
+    case 'bank':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 2 7 22 7 12 2" />
+          <line x1="4" y1="7" x2="4" y2="18" />
+          <line x1="8" y1="7" x2="8" y2="18" />
+          <line x1="12" y1="7" x2="12" y2="18" />
+          <line x1="16" y1="7" x2="16" y2="18" />
+          <line x1="20" y1="7" x2="20" y2="18" />
+          <line x1="2" y1="18" x2="22" y2="18" />
+          <line x1="1" y1="22" x2="23" y2="22" />
+        </svg>
+      )
+    case 'wifi':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+          <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+          <line x1="12" y1="20" x2="12.01" y2="20" strokeWidth="3" />
         </svg>
       )
     default:
@@ -3161,35 +3196,317 @@ const AppDownloadModal = memo(function AppDownloadModal({
 })
 
 // =====================================================================
-// SavingsPage — ฟังก์ชันเงินออม (รายรับ / รายจ่าย / ตัดยอดรวมอัตโนมัติ)
+// SavingsPage — ฟังก์ชันเงินออม (รายรับ / รายจ่าย / บัญชีธนาคาร & การ์ดเสมือน)
 // =====================================================================
-const SAVINGS_LOCAL_KEY = 'mix-image-prompt-vault.savings-txns.v1'
+const BANK_PRESETS = [
+  { id: 'kbank', name: 'ธนาคารกสิกรไทย', code: 'KBANK', color: 'kbank', bg: 'linear-gradient(135deg, rgba(7, 94, 58, 0.88) 0%, rgba(19, 168, 104, 0.8) 100%)' },
+  { id: 'scb', name: 'ธนาคารไทยพาณิชย์', code: 'SCB', color: 'scb', bg: 'linear-gradient(135deg, rgba(78, 41, 120, 0.9) 0%, rgba(135, 76, 185, 0.82) 100%)' },
+  { id: 'bbl', name: 'ธนาคารกรุงเทพ', code: 'BBL', color: 'bbl', bg: 'linear-gradient(135deg, rgba(10, 59, 130, 0.9) 0%, rgba(26, 98, 198, 0.82) 100%)' },
+  { id: 'ktb', name: 'ธนาคารกรุงไทย', code: 'KTB', color: 'ktb', bg: 'linear-gradient(135deg, rgba(2, 132, 199, 0.9) 0%, rgba(6, 182, 212, 0.82) 100%)' },
+  { id: 'ttb', name: 'ทีเอ็มบีธนชาต (ttb)', code: 'TTB', color: 'ttb', bg: 'linear-gradient(135deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 64, 175, 0.85) 50%, rgba(234, 88, 12, 0.85) 100%)' },
+  { id: 'bay', name: 'ธนาคารกรุงศรีอยุธยา', code: 'BAY', color: 'bay', bg: 'linear-gradient(135deg, rgba(180, 83, 9, 0.9) 0%, rgba(245, 158, 11, 0.82) 100%)' },
+  { id: 'gsb', name: 'ธนาคารออมสิน', code: 'GSB', color: 'gsb', bg: 'linear-gradient(135deg, rgba(190, 24, 93, 0.9) 0%, rgba(236, 72, 153, 0.82) 100%)' },
+  { id: 'truemoney', name: 'ทรูมันนี่ (TrueMoney)', code: 'TRUE', color: 'truemoney', bg: 'linear-gradient(135deg, rgba(194, 65, 12, 0.9) 0%, rgba(249, 115, 22, 0.82) 100%)' },
+  { id: 'promptpay', name: 'พร้อมเพย์ (PromptPay)', code: 'PROMPT', color: 'promptpay', bg: 'linear-gradient(135deg, rgba(0, 45, 98, 0.92) 0%, rgba(0, 102, 153, 0.85) 100%)' },
+  { id: 'card', name: 'บัตรเครดิต / เดบิต', code: 'CARD', color: 'card', bg: 'linear-gradient(135deg, rgba(24, 24, 27, 0.95) 0%, rgba(63, 63, 70, 0.88) 50%, rgba(39, 39, 42, 0.95) 100%)' },
+]
+
+function formatAccNumber(val, type) {
+  if (!val) return ''
+  const clean = String(val).replace(/\D/g, '')
+  if (type === 'card' && clean.length === 16) {
+    return clean.replace(/(\d{4})(\d{4})(\d{4})(\d{4})/, '$1 $2 $3 $4')
+  }
+  if (clean.length === 10) {
+    return clean.replace(/(\d{3})(\d{1})(\d{5})(\d{1})/, '$1-$2-$3-$4')
+  }
+  if (clean.length === 12) {
+    return clean.replace(/(\d{3})(\d{6})(\d{3})/, '$1-$2-$3')
+  }
+  if (clean.length === 13) {
+    return clean.replace(/(\d{1})(\d{4})(\d{5})(\d{2})(\d{1})/, '$1-$2-$3-$4-$5')
+  }
+  if (clean.length > 4) {
+    return clean.replace(/(\d{3})(?=\d)/g, '$1-')
+  }
+  return val
+}
+
+const VirtualCard = memo(function VirtualCard({ account, onCopyNumber, onCopyAll, onEdit, onDelete, copiedField }) {
+  const preset = BANK_PRESETS.find(b => b.id === account.bank) || BANK_PRESETS[0]
+  const formattedNumber = formatAccNumber(account.accNumber, account.type)
+  const isCopiedNum = copiedField === `${account.id}-num`
+  const isCopiedAll = copiedField === `${account.id}-all`
+
+  return (
+    <div className={`virtual-card-glass theme-${account.color || preset.color}`} style={{ background: preset.bg }}>
+      <div className="card-gloss-shimmer" />
+      <div className="card-glass-orb orb-a" />
+      <div className="card-glass-orb orb-b" />
+
+      {/* Top row */}
+      <div className="virtual-card-header">
+        <div className="card-bank-brand">
+          <span className="card-bank-badge">{preset.code}</span>
+          <span className="card-bank-name">{account.bankName || preset.name}</span>
+        </div>
+        <div className="card-tech-icons">
+          <Icon name="wifi" className="card-contactless-icon" />
+          <span className="card-type-tag">
+            {account.type === 'card' ? 'VIRTUAL CARD' : account.type === 'promptpay' ? 'PROMPTPAY' : 'SAVINGS'}
+          </span>
+        </div>
+      </div>
+
+      {/* EMV Chip & Nickname */}
+      <div className="virtual-card-chip-row">
+        <div className="card-emv-chip" title="EMV Smart Chip">
+          <div className="chip-line horizontal" />
+          <div className="chip-line vertical" />
+        </div>
+        {account.label && (
+          <span className="card-nickname-tag">{account.label}</span>
+        )}
+      </div>
+
+      {/* Account Number Box with instant copy */}
+      <div
+        className="virtual-card-number-box"
+        onClick={() => onCopyNumber(account)}
+        title="คลิกเพื่อคัดลอกเลขบัญชี"
+        role="button"
+        tabIndex={0}
+      >
+        <span className="virtual-card-number">{formattedNumber || '•••• •••• ••••'}</span>
+        <button
+          type="button"
+          className={`card-quick-copy-btn ${isCopiedNum ? 'copied' : ''}`}
+          onClick={(e) => { e.stopPropagation(); onCopyNumber(account); }}
+          title="คัดลอกเฉพาะเลข"
+        >
+          <Icon name={isCopiedNum ? 'check' : 'copy'} />
+          <span>{isCopiedNum ? 'คัดลอกแล้ว' : 'คัดลอกเลข'}</span>
+        </button>
+      </div>
+
+      {/* Card Footer */}
+      <div className="virtual-card-footer">
+        <div className="card-holder-info">
+          <span className="card-holder-label">ACCOUNT HOLDER</span>
+          <strong className="card-holder-name">{account.accName || 'NATTANONT VONGKASAI'}</strong>
+        </div>
+
+        <div className="card-actions-row">
+          <button
+            type="button"
+            className={`card-glass-btn share-btn ${isCopiedAll ? 'copied' : ''}`}
+            onClick={() => onCopyAll(account)}
+            title="คัดลอกข้อมูลทั้งหมด สำหรับส่งให้คนโอนเงิน"
+          >
+            <Icon name={isCopiedAll ? 'check' : 'copy'} />
+            <span>{isCopiedAll ? 'คัดลอกครบแล้ว' : 'ส่งต่อ'}</span>
+          </button>
+          <button
+            type="button"
+            className="card-glass-btn edit-btn"
+            onClick={() => onEdit(account)}
+            title="แก้ไขบัญชีนี้"
+          >
+            <Icon name="edit" />
+          </button>
+          <button
+            type="button"
+            className="card-glass-btn delete-btn"
+            onClick={() => onDelete(account.id)}
+            title="ลบบัญชีนี้"
+          >
+            <Icon name="trash" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+})
+
+function AccountModal({ account, onClose, onSave }) {
+  const [form, setForm] = useState(() => ({
+    type: account?.type || 'bank',
+    bank: account?.bank || 'kbank',
+    bankName: account?.bankName || 'ธนาคารกสิกรไทย',
+    bankCode: account?.bankCode || 'KBANK',
+    accNumber: account?.accNumber || '',
+    accName: account?.accName || 'NATTANONT VONGKASAI',
+    label: account?.label || '',
+    color: account?.color || 'kbank',
+  }))
+
+  const handleBankChange = (bankId) => {
+    const preset = BANK_PRESETS.find(b => b.id === bankId)
+    if (preset) {
+      setForm(prev => ({
+        ...prev,
+        bank: preset.id,
+        bankName: preset.name,
+        bankCode: preset.code,
+        color: preset.color,
+      }))
+    }
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!form.accNumber.trim()) return
+    onSave({
+      ...account,
+      ...form,
+      accNumber: form.accNumber.trim(),
+      accName: form.accName.trim() || 'NATTANONT VONGKASAI',
+      label: form.label.trim(),
+    })
+  }
+
+  const preset = BANK_PRESETS.find(b => b.id === form.bank) || BANK_PRESETS[0]
+
+  return (
+    <div className="account-modal-overlay" onClick={onClose}>
+      <div className="account-modal-card glass-panel" onClick={e => e.stopPropagation()}>
+        <div className="modal-header-row">
+          <h3>
+            <Icon name="card" />
+            {account?.id ? 'แก้ไขบัญชี / บัตร' : 'เพิ่มบัญชีธนาคาร & บัตรเสมือน'}
+          </h3>
+          <button type="button" className="modal-close-btn" onClick={onClose}>
+            <Icon name="close" />
+          </button>
+        </div>
+
+        {/* Live Preview of Glassmorphism Card */}
+        <div className="modal-live-preview">
+          <VirtualCard
+            account={{
+              ...form,
+              id: 'preview',
+              bankName: form.bankName || preset.name,
+              bankCode: form.bankCode || preset.code
+            }}
+            onCopyNumber={() => {}}
+            onCopyAll={() => {}}
+            onEdit={() => {}}
+            onDelete={() => {}}
+            copiedField={null}
+          />
+        </div>
+
+        <form onSubmit={handleSubmit} className="account-form-body">
+          <div className="account-form-grid">
+            <div className="form-group">
+              <label>ประเภท</label>
+              <select
+                value={form.type}
+                onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                className="account-select"
+              >
+                <option value="bank">บัญชีธนาคาร (Bank Account)</option>
+                <option value="card">บัตรเครดิต / เดบิตเสมือน (Virtual Card)</option>
+                <option value="promptpay">พร้อมเพย์ (PromptPay)</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>สถาบันการเงิน / ธนาคาร</label>
+              <select
+                value={form.bank}
+                onChange={e => handleBankChange(e.target.value)}
+                className="account-select"
+              >
+                {BANK_PRESETS.map(b => (
+                  <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group full-width">
+              <label>เลขที่บัญชี / เลขบัตร / เบอร์พร้อมเพย์</label>
+              <input
+                type="text"
+                required
+                placeholder="เช่น 199-8-81994-2"
+                value={form.accNumber}
+                onChange={e => setForm(f => ({ ...f, accNumber: e.target.value }))}
+                className="account-input mono"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>ชื่อเจ้าของบัญชี</label>
+              <input
+                type="text"
+                placeholder="เช่น NATTANONT VONGKASAI"
+                value={form.accName}
+                onChange={e => setForm(f => ({ ...f, accName: e.target.value }))}
+                className="account-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>ชื่อเรียกบัญชี (ไม่จำเป็น)</label>
+              <input
+                type="text"
+                placeholder="เช่น บัญชีรับเงินร้าน, เงินเก็บ"
+                value={form.label}
+                onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
+                className="account-input"
+              />
+            </div>
+          </div>
+
+          <div className="modal-actions-row">
+            <button type="button" className="btn-cancel" onClick={onClose}>
+              ยกเลิก
+            </button>
+            <button type="submit" className="primary-button btn-save" disabled={!form.accNumber.trim()}>
+              <Icon name="check" /> บันทึกบัญชีเสมือน
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
 
 function SavingsPage({ flash }) {
   const [txns, setTxns] = useState([])
+  const [accounts, setAccounts] = useState([])
   const [form, setForm] = useState({ type: 'income', amount: '', label: '', date: new Date().toISOString().slice(0, 10) })
   const [cloudSync, setCloudSync] = useState('loading')
   const [filterMonth, setFilterMonth] = useState(() => {
     const now = new Date()
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
-  const [showHistory, setShowHistory] = useState(false)
+  const [editingAccount, setEditingAccount] = useState(null)
+  const [showAccountModal, setShowAccountModal] = useState(false)
+  const [copiedField, setCopiedField] = useState(null)
 
-  // ── โหลดข้อมูล ──
+  // ── โหลดข้อมูลรายรับรายจ่าย & บัญชีธนาคาร ──
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      // ลองโหลดจาก Cloud ก่อน แล้ว fallback เป็น local
       try {
-        const cloud = await loadCloudSavings()
+        const [cloudTxns, cloudAccs] = await Promise.all([
+          loadCloudSavings().catch(() => readLocalSavings()),
+          loadCloudAccounts().catch(() => readLocalAccounts()),
+        ])
         if (!cancelled) {
-          setTxns(cloud)
-          writeLocalSavings(cloud)
+          setTxns(cloudTxns || [])
+          writeLocalSavings(cloudTxns || [])
+          setAccounts(cloudAccs || [])
+          writeLocalAccounts(cloudAccs || [])
           setCloudSync('cloud')
         }
       } catch {
         if (!cancelled) {
           setTxns(readLocalSavings())
+          setAccounts(readLocalAccounts())
           setCloudSync('local')
         }
       }
@@ -3197,10 +3514,14 @@ function SavingsPage({ flash }) {
     return () => { cancelled = true }
   }, [])
 
-  // ── บันทึกลง local ทุกครั้งที่ txns เปลี่ยน ──
+  // ── บันทึกลง local ทุกครั้งที่ txns หรือ accounts เปลี่ยน ──
   useEffect(() => {
     if (txns.length > 0) writeLocalSavings(txns)
   }, [txns])
+
+  useEffect(() => {
+    if (accounts.length > 0) writeLocalAccounts(accounts)
+  }, [accounts])
 
   // ── ระบบตัดยอดอัตโนมัติเมื่อข้ามวัน (00:00) ──
   useEffect(() => {
@@ -3208,7 +3529,6 @@ function SavingsPage({ flash }) {
       const today = new Date().toISOString().slice(0, 10)
       const lastCutoff = localStorage.getItem('savings-last-cutoff')
       if (lastCutoff === today) return
-      // ถ้ามี txns ของวันก่อนๆ ที่ยังไม่ถูกตัดยอด → สร้าง daily summary
       const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
       const yesterdayTxns = txns.filter(t => t.date === yesterday)
       if (yesterdayTxns.length > 0) {
@@ -3225,7 +3545,6 @@ function SavingsPage({ flash }) {
             createdAt: new Date().toISOString(),
             isCutoff: true,
           }
-          // ไม่ซ้ำถ้ามีตัดยอดแล้ว
           setTxns(prev => {
             if (prev.some(t => t.id === cutoffTxn.id)) return prev
             return [...prev, cutoffTxn]
@@ -3236,11 +3555,11 @@ function SavingsPage({ flash }) {
     }
 
     checkMidnight()
-    const timer = setInterval(checkMidnight, 60000) // ตรวจทุก 1 นาที
+    const timer = setInterval(checkMidnight, 60000)
     return () => clearInterval(timer)
   }, [txns])
 
-  // ── เพิ่มรายการ ──
+  // ── เพิ่มรายการรายรับ/รายจ่าย ──
   const addTxn = async () => {
     const amt = parseFloat(form.amount)
     if (!amt || amt <= 0) return
@@ -3275,6 +3594,65 @@ function SavingsPage({ flash }) {
     }
   }
 
+  // ── จัดการบัญชีธนาคาร & การ์ดเสมือน ──
+  const handleSaveAccount = async (accData) => {
+    setShowAccountModal(false)
+    setEditingAccount(null)
+
+    if (accData.id && !String(accData.id).startsWith('local-') && accData.id !== 'kbank-main') {
+      // Edit existing
+      setAccounts(prev => prev.map(a => a.id === accData.id ? accData : a))
+      flash('บันทึกการแก้ไขแล้ว ✓')
+      try {
+        await updateCloudAccount(accData)
+      } catch {
+        // ignore
+      }
+    } else {
+      // Create new
+      const newAcc = {
+        ...accData,
+        id: `local-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+      }
+      setAccounts(prev => [...prev, newAcc])
+      flash('เพิ่มบัญชีเสมือนเรียบร้อย ✓')
+      try {
+        const cloudId = await saveCloudAccount(newAcc)
+        setAccounts(prev => prev.map(a => a.id === newAcc.id ? { ...a, id: cloudId } : a))
+      } catch {
+        // keep local only
+      }
+    }
+  }
+
+  const handleDeleteAccount = async (id) => {
+    if (!window.confirm('ต้องการลบบัญชี/บัตรเสมือนนี้ใช่หรือไม่?')) return
+    setAccounts(prev => prev.filter(a => a.id !== id))
+    flash('ลบบัญชีแล้ว')
+    try {
+      await deleteCloudAccount(id)
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleCopyNumber = async (acc) => {
+    const clean = String(acc.accNumber).replace(/\D/g, '') || acc.accNumber
+    await safeCopyText(clean)
+    setCopiedField(`${acc.id}-num`)
+    flash(`คัดลอกเลข ${acc.accNumber} แล้ว ✓`)
+    setTimeout(() => setCopiedField(null), 2000)
+  }
+
+  const handleCopyAll = async (acc) => {
+    const text = `${acc.bankName || acc.bankCode}\nเลขที่บัญชี: ${acc.accNumber}\nชื่อบัญชี: ${acc.accName}${acc.label ? `\n(${acc.label})` : ''}`
+    await safeCopyText(text)
+    setCopiedField(`${acc.id}-all`)
+    flash('คัดลอกข้อมูลโอนเงินแล้ว ✓')
+    setTimeout(() => setCopiedField(null), 2000)
+  }
+
   // ── คำนวณยอด ──
   const totalIncome = txns.filter(t => t.type === 'income' && !t.isCutoff).reduce((s, t) => s + t.amount, 0)
   const totalExpense = txns.filter(t => t.type === 'expense' && !t.isCutoff).reduce((s, t) => s + t.amount, 0)
@@ -3285,11 +3663,10 @@ function SavingsPage({ flash }) {
   const monthIncome = monthTxns.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
   const monthExpense = monthTxns.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
 
-  // ── สร้างรายการเดือนทั้งหมดจาก txns ──
+  // ── รายการเดือน ──
   const allMonths = useMemo(() => {
     const months = new Set()
     txns.forEach(t => { if (t.date) months.add(t.date.slice(0, 7)) })
-    // เพิ่มเดือนปัจจุบันเสมอ
     const now = new Date()
     months.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
     return [...months].sort().reverse()
@@ -3304,177 +3681,232 @@ function SavingsPage({ flash }) {
 
   return (
     <section className="savings-page">
-      {/* ── บัตรยอดเงินออม ── */}
-      <div className="savings-hero glass-panel">
-        <div className="savings-hero-top">
-          <div className="savings-hero-icon-box">
-            <Icon name="wallet" />
-          </div>
-          <div className="savings-hero-label">
-            <span className="eyebrow">SAVINGS ACCOUNT</span>
-            <h2>เงินออมรวม</h2>
-          </div>
-          <span className={`savings-sync-badge ${cloudSync}`}>
-            <Icon name="cloud" /> {cloudSync === 'cloud' ? 'Cloud Sync' : cloudSync === 'loading' ? 'กำลังโหลด...' : 'ข้อมูลในเครื่อง'}
-          </span>
-        </div>
-        <div className={`savings-hero-amount ${totalSavings < 0 ? 'negative' : ''}`}>
-          ฿{fmt(totalSavings)}
-        </div>
-        <div className="savings-hero-stats">
-          <div className="savings-stat income">
-            <Icon name="trending-up" />
-            <div>
-              <span>รายรับรวม</span>
-              <strong>฿{fmt(totalIncome)}</strong>
-            </div>
-          </div>
-          <div className="savings-stat expense">
-            <Icon name="trending-down" />
-            <div>
-              <span>รายจ่ายรวม</span>
-              <strong>฿{fmt(totalExpense)}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── ฟอร์มเพิ่มรายการ ── */}
-      <div className="savings-form-card glass-panel">
-        <h3><Icon name="add" /> เพิ่มรายการ</h3>
-        <div className="savings-type-toggle">
-          <button
-            type="button"
-            className={`type-btn income ${form.type === 'income' ? 'active' : ''}`}
-            onClick={() => setForm(f => ({ ...f, type: 'income' }))}
-          >
-            <Icon name="plus-circle" /> รายรับ
-          </button>
-          <button
-            type="button"
-            className={`type-btn expense ${form.type === 'expense' ? 'active' : ''}`}
-            onClick={() => setForm(f => ({ ...f, type: 'expense' }))}
-          >
-            <Icon name="minus-circle" /> รายจ่าย
-          </button>
-        </div>
-        <div className="savings-form-fields">
-          <div className="savings-field">
-            <label>จำนวนเงิน (บาท)</label>
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-              value={form.amount}
-              onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-              className="savings-amount-input"
-            />
-          </div>
-          <div className="savings-field">
-            <label>รายละเอียด (ไม่จำเป็น)</label>
-            <input
-              type="text"
-              placeholder={form.type === 'income' ? 'เช่น ค่าจ้าง, รางวัล' : 'เช่น ค่าอาหาร, ค่ารถ'}
-              value={form.label}
-              onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
-              className="savings-label-input"
-            />
-          </div>
-          <div className="savings-field">
-            <label>วันที่</label>
-            <input
-              type="date"
-              value={form.date}
-              onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-              className="savings-date-input"
-            />
-          </div>
-        </div>
-        <button
-          type="button"
-          className={`savings-submit-btn ${form.type}`}
-          onClick={addTxn}
-          disabled={!form.amount || parseFloat(form.amount) <= 0}
-        >
-          <Icon name="check" /> บันทึก{form.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
-        </button>
-      </div>
-
-      {/* ── ประวัติรายเดือน ── */}
-      <div className="savings-history-card glass-panel">
-        <div className="savings-history-header">
-          <h3><Icon name="calendar" /> ประวัติรายเดือน</h3>
-          <select
-            value={filterMonth}
-            onChange={e => setFilterMonth(e.target.value)}
-            className="savings-month-select"
-          >
-            {allMonths.map(m => (
-              <option key={m} value={m}>{thaiMonth(m)}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="savings-month-summary">
-          <div className="month-stat income">
-            <span>รายรับ</span>
-            <strong className="income-text">+฿{fmt(monthIncome)}</strong>
-          </div>
-          <div className="month-stat expense">
-            <span>รายจ่าย</span>
-            <strong className="expense-text">-฿{fmt(monthExpense)}</strong>
-          </div>
-          <div className="month-stat net">
-            <span>คงเหลือ</span>
-            <strong className={monthIncome - monthExpense >= 0 ? 'income-text' : 'expense-text'}>
-              ฿{fmt(monthIncome - monthExpense)}
-            </strong>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className="savings-toggle-history"
-          onClick={() => setShowHistory(!showHistory)}
-        >
-          {showHistory ? 'ซ่อนรายการ' : `แสดงรายการ (${monthTxns.length})`}
-          <Icon name={showHistory ? 'arrow-left' : 'arrow-right'} />
-        </button>
-
-        {showHistory && (
-          <div className="savings-txn-list">
-            {monthTxns.length === 0 && (
-              <p className="savings-empty">ยังไม่มีรายการในเดือนนี้</p>
-            )}
-            {monthTxns.map(txn => (
-              <div key={txn.id} className={`savings-txn-row ${txn.type} ${txn.isCutoff ? 'cutoff' : ''}`}>
-                <div className="txn-icon-box">
-                  <Icon name={txn.type === 'income' ? 'plus-circle' : 'minus-circle'} />
-                </div>
-                <div className="txn-info">
-                  <strong>{txn.label || (txn.type === 'income' ? 'รายรับ' : 'รายจ่าย')}</strong>
-                  <span className="txn-date">{txn.date}</span>
-                </div>
-                <span className={`txn-amount ${txn.type}`}>
-                  {txn.type === 'income' ? '+' : '-'}฿{fmt(txn.amount)}
-                </span>
-                {!txn.isCutoff && (
-                  <button
-                    type="button"
-                    className="txn-delete-btn"
-                    onClick={() => deleteTxn(txn.id)}
-                    title="ลบรายการนี้"
-                  >
-                    <Icon name="trash" />
-                  </button>
-                )}
+      {/* ── แถวบน: ซ้ายเป็น ยอดเงินออมรวม & ฟอร์มบันทึก / ขวาเป็น ประวัติการเงิน ── */}
+      <div className="savings-top-grid">
+        <div className="savings-left-col">
+          {/* 1. บัตรยอดเงินออม */}
+          <div className="savings-hero glass-panel">
+            <div className="savings-hero-top">
+              <div className="savings-hero-icon-box">
+                <Icon name="wallet" />
               </div>
-            ))}
+              <div className="savings-hero-label">
+                <span className="eyebrow">SAVINGS ACCOUNT</span>
+                <h2>เงินออมรวม</h2>
+              </div>
+              <span className={`savings-sync-badge ${cloudSync}`}>
+                <Icon name="cloud" /> {cloudSync === 'cloud' ? 'Cloud Sync' : cloudSync === 'loading' ? 'กำลังโหลด...' : 'ข้อมูลในเครื่อง'}
+              </span>
+            </div>
+            <div className={`savings-hero-amount ${totalSavings < 0 ? 'negative' : ''}`}>
+              ฿{fmt(totalSavings)}
+            </div>
+            <div className="savings-hero-stats">
+              <div className="savings-stat income">
+                <Icon name="trending-up" />
+                <div>
+                  <span>รายรับรวม</span>
+                  <strong>฿{fmt(totalIncome)}</strong>
+                </div>
+              </div>
+              <div className="savings-stat expense">
+                <Icon name="trending-down" />
+                <div>
+                  <span>รายจ่ายรวม</span>
+                  <strong>฿{fmt(totalExpense)}</strong>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* 2. ฟอร์มเพิ่มรายการ */}
+          <div className="savings-form-card glass-panel">
+            <h3><Icon name="add" /> เพิ่มรายการ</h3>
+            <div className="savings-type-toggle">
+              <button
+                type="button"
+                className={`type-btn income ${form.type === 'income' ? 'active' : ''}`}
+                onClick={() => setForm(f => ({ ...f, type: 'income' }))}
+              >
+                <Icon name="plus-circle" /> รายรับ
+              </button>
+              <button
+                type="button"
+                className={`type-btn expense ${form.type === 'expense' ? 'active' : ''}`}
+                onClick={() => setForm(f => ({ ...f, type: 'expense' }))}
+              >
+                <Icon name="minus-circle" /> รายจ่าย
+              </button>
+            </div>
+            <div className="savings-form-fields">
+              <div className="savings-field">
+                <label>จำนวนเงิน (บาท)</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={form.amount}
+                  onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                  className="savings-amount-input"
+                />
+              </div>
+              <div className="savings-field">
+                <label>รายละเอียด (ไม่จำเป็น)</label>
+                <input
+                  type="text"
+                  placeholder={form.type === 'income' ? 'เช่น ค่าจ้าง, รางวัล' : 'เช่น ค่าอาหาร, ค่ารถ'}
+                  value={form.label}
+                  onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
+                  className="savings-label-input"
+                />
+              </div>
+              <div className="savings-field">
+                <label>วันที่</label>
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                  className="savings-date-input"
+                />
+              </div>
+            </div>
+            <button
+              type="button"
+              className={`savings-submit-btn ${form.type}`}
+              onClick={addTxn}
+              disabled={!form.amount || parseFloat(form.amount) <= 0}
+            >
+              <Icon name="check" /> บันทึก{form.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
+            </button>
+          </div>
+        </div>
+
+        {/* 3. ประวัติการเงิน (ย้ายขึ้นมาพื้นที่ว่างด้านขวา) */}
+        <div className="savings-right-col">
+          <div className="savings-history-card glass-panel">
+            <div className="savings-history-header">
+              <h3><Icon name="calendar" /> ประวัติการเงิน</h3>
+              <select
+                value={filterMonth}
+                onChange={e => setFilterMonth(e.target.value)}
+                className="savings-month-select"
+              >
+                {allMonths.map(m => (
+                  <option key={m} value={m}>{thaiMonth(m)}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="savings-month-summary">
+              <div className="month-stat income">
+                <span>รายรับ</span>
+                <strong className="income-text">+฿{fmt(monthIncome)}</strong>
+              </div>
+              <div className="month-stat expense">
+                <span>รายจ่าย</span>
+                <strong className="expense-text">-฿{fmt(monthExpense)}</strong>
+              </div>
+              <div className="month-stat net">
+                <span>คงเหลือ</span>
+                <strong className={monthIncome - monthExpense >= 0 ? 'income-text' : 'expense-text'}>
+                  ฿{fmt(monthIncome - monthExpense)}
+                </strong>
+              </div>
+            </div>
+
+            <div className="savings-history-list-header">
+              <span>รายการทั้งหมด ({monthTxns.length})</span>
+            </div>
+
+            <div className="savings-txn-list">
+              {monthTxns.length === 0 && (
+                <p className="savings-empty">ยังไม่มีรายการในเดือนนี้</p>
+              )}
+              {monthTxns.map(txn => (
+                <div key={txn.id} className={`savings-txn-row ${txn.type} ${txn.isCutoff ? 'cutoff' : ''}`}>
+                  <div className="txn-icon-box">
+                    <Icon name={txn.type === 'income' ? 'plus-circle' : 'minus-circle'} />
+                  </div>
+                  <div className="txn-info">
+                    <strong>{txn.label || (txn.type === 'income' ? 'รายรับ' : 'รายจ่าย')}</strong>
+                    <span className="txn-date">{txn.date}</span>
+                  </div>
+                  <span className={`txn-amount ${txn.type}`}>
+                    {txn.type === 'income' ? '+' : '-'}฿{fmt(txn.amount)}
+                  </span>
+                  {!txn.isCutoff && (
+                    <button
+                      type="button"
+                      className="txn-delete-btn"
+                      onClick={() => deleteTxn(txn.id)}
+                      title="ลบรายการนี้"
+                    >
+                      <Icon name="trash" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* ── แถวล่าง: บัญชีธนาคารและการ์ดเสมือน (Glassmorphism Virtual Cards) ── */}
+      <div className="savings-accounts-section glass-panel">
+        <div className="accounts-section-header">
+          <div>
+            <span className="eyebrow">VIRTUAL CARDS &amp; ACCOUNTS</span>
+            <h2>
+              <Icon name="card" /> บัญชีธนาคาร &amp; บัตรเสมือน
+              <span className="count-tag">({accounts.length})</span>
+            </h2>
+            <p className="section-subtext">การ์ดสไตล์กลาสมอร์ฟิซึมโปร่งแสง คลิกคัดลอกเลขบัญชีหรือกดส่งต่อข้อมูลโอนเงินได้ทันที</p>
+          </div>
+          <button
+            type="button"
+            className="primary-button add-account-btn"
+            onClick={() => {
+              setEditingAccount({
+                type: 'bank',
+                bank: 'kbank',
+                bankName: 'ธนาคารกสิกรไทย',
+                bankCode: 'KBANK',
+                accNumber: '',
+                accName: 'NATTANONT VONGKASAI',
+                label: '',
+                color: 'kbank'
+              })
+              setShowAccountModal(true)
+            }}
+          >
+            <Icon name="add" /> เพิ่มบัญชี / บัตร
+          </button>
+        </div>
+
+        <div className="virtual-cards-grid">
+          {accounts.map(acc => (
+            <VirtualCard
+              key={acc.id}
+              account={acc}
+              onCopyNumber={handleCopyNumber}
+              onCopyAll={handleCopyAll}
+              onEdit={(target) => { setEditingAccount(target); setShowAccountModal(true); }}
+              onDelete={handleDeleteAccount}
+              copiedField={copiedField}
+            />
+          ))}
+        </div>
+      </div>
+
+      {showAccountModal && (
+        <AccountModal
+          account={editingAccount}
+          onClose={() => { setShowAccountModal(false); setEditingAccount(null); }}
+          onSave={handleSaveAccount}
+        />
+      )}
     </section>
   )
 }

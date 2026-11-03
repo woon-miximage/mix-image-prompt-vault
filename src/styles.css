@@ -5701,14 +5701,35 @@ body {
 }
 
 /* ==========================================================================
-   SAVINGS PAGE — เงินออม (รายรับ / รายจ่าย)
+   SAVINGS PAGE — เงินออม (รายรับ / รายจ่าย / บัญชีธนาคาร & บัตรเสมือน Glassmorphism)
    ========================================================================== */
 
 .savings-page {
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* ── แถวบน: แบ่ง 2 คอลัมน์ (ซ้าย: ยอดรวม & ฟอร์ม / ขวา: ประวัติการเงิน) ── */
+.savings-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   gap: 1.25rem;
-  max-width: 720px;
+  align-items: start;
+}
+
+.savings-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.savings-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 /* ── Hero Card ── */
@@ -6023,13 +6044,15 @@ body {
   transform: none;
 }
 
-/* ── History Card ── */
+/* ── History Card (ย้ายขึ้นมาด้านขวา) ── */
 .savings-history-card {
   padding: 1.35rem 1.5rem;
   border-radius: 1.4rem;
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.94);
   box-shadow: 0 16px 42px rgba(70, 93, 130, 0.1);
+  display: flex;
+  flex-direction: column;
 }
 
 .savings-history-header {
@@ -6072,7 +6095,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 0.65rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
 }
 
 .month-stat {
@@ -6105,36 +6128,22 @@ body {
   color: #ef4444;
 }
 
-.savings-toggle-history {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.85rem;
-  border-radius: 0.7rem;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #475569;
-  font-size: 0.76rem;
+.savings-history-list-header {
+  font-size: 0.72rem;
   font-weight: 800;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  margin-bottom: 0.75rem;
-}
-
-.savings-toggle-history:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-}
-
-.savings-toggle-history .svg-icon {
-  width: 0.72rem;
-  height: 0.72rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
 }
 
 .savings-txn-list {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
 }
 
 .savings-empty {
@@ -6142,7 +6151,7 @@ body {
   color: #94a3b8;
   font-size: 0.82rem;
   font-weight: 600;
-  padding: 1.5rem 0;
+  padding: 2.5rem 0;
 }
 
 .savings-txn-row {
@@ -6252,10 +6261,571 @@ body {
   height: 14px;
 }
 
-/* Savings Responsive */
-@media (max-width: 600px) {
-  .savings-hero {
-    padding: 1.25rem;
+/* ==========================================================================
+   VIRTUAL BANK ACCOUNTS & CARDS (GLASSMORPHISM / CARDMORPHISM)
+   ========================================================================== */
+
+.savings-accounts-section {
+  padding: 1.5rem 1.65rem;
+  border-radius: 1.6rem;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16px 42px rgba(70, 93, 130, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.accounts-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.accounts-section-header .eyebrow {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #0284c7;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.accounts-section-header h2 {
+  margin: 0.1rem 0 0.15rem;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.accounts-section-header .count-tag {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.section-subtext {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #64748b;
+}
+
+.add-account-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1.15rem;
+  border-radius: 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.2);
+}
+
+/* ── Virtual Cards Grid ── */
+.virtual-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 1.25rem;
+}
+
+/* ── Glassmorphism Virtual Card ── */
+.virtual-card-glass {
+  position: relative;
+  border-radius: 1.35rem;
+  padding: 1.35rem 1.45rem;
+  min-height: 205px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #ffffff;
+  overflow: hidden;
+  box-shadow:
+    0 18px 40px rgba(15, 23, 42, 0.2),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+.virtual-card-glass:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow:
+    0 24px 50px rgba(15, 23, 42, 0.26),
+    inset 0 2px 2px rgba(255, 255, 255, 0.6);
+}
+
+/* Glass lighting effects */
+.card-gloss-shimmer {
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 80%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.16) 50%,
+    transparent 100%
+  );
+  transform: skewX(-24deg);
+  pointer-events: none;
+  animation: cardShimmer 6s infinite ease-in-out;
+}
+
+@keyframes cardShimmer {
+  0% { left: -120%; }
+  35% { left: 160%; }
+  100% { left: 160%; }
+}
+
+.card-glass-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.card-glass-orb.orb-a {
+  width: 140px;
+  height: 140px;
+  top: -40px;
+  right: -30px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.card-glass-orb.orb-b {
+  width: 120px;
+  height: 120px;
+  bottom: -30px;
+  left: -20px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+/* Card Header */
+.virtual-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+}
+
+.card-bank-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-bank-badge {
+  font-size: 0.66rem;
+  font-weight: 900;
+  padding: 0.18rem 0.52rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.card-bank-name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.card-tech-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.card-contactless-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.85;
+}
+
+.card-type-tag {
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 0.15rem 0.42rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  opacity: 0.88;
+}
+
+/* EMV Chip */
+.virtual-card-chip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0.65rem 0 0.4rem;
+  position: relative;
+  z-index: 2;
+}
+
+.card-emv-chip {
+  width: 38px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #fef08a 100%);
+  border: 1px solid rgba(180, 140, 20, 0.6);
+  position: relative;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.chip-line {
+  position: absolute;
+  background: rgba(140, 100, 10, 0.5);
+}
+
+.chip-line.horizontal {
+  width: 100%;
+  height: 1px;
+  top: 50%;
+  left: 0;
+}
+
+.chip-line.vertical {
+  width: 1px;
+  height: 100%;
+  top: 0;
+  left: 50%;
+}
+
+.card-nickname-tag {
+  font-size: 0.66rem;
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(6px);
+  color: #ffffff;
+}
+
+/* Account Number */
+.virtual-card-number-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.42rem 0.65rem;
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.virtual-card-number-box:hover {
+  background: rgba(0, 0, 0, 0.26);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.virtual-card-number {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.card-quick-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.24rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.card-quick-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+  border-color: #ffffff;
+}
+
+.card-quick-copy-btn.copied {
+  background: #10b981;
+  border-color: #34d399;
+  color: #ffffff;
+}
+
+.card-quick-copy-btn .svg-icon {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+/* Card Footer */
+.virtual-card-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.65rem;
+  position: relative;
+  z-index: 2;
+}
+
+.card-holder-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-holder-label {
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  opacity: 0.75;
+}
+
+.card-holder-name {
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.card-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.card-glass-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  padding: 0.28rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-size: 0.64rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  backdrop-filter: blur(8px);
+}
+
+.card-glass-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-1px);
+}
+
+.card-glass-btn.share-btn {
+  background: rgba(255, 255, 255, 0.25);
+  font-weight: 900;
+}
+
+.card-glass-btn.share-btn.copied {
+  background: #10b981;
+  border-color: #34d399;
+}
+
+.card-glass-btn.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.8);
+  border-color: #f87171;
+}
+
+.card-glass-btn .svg-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+/* ── Modal for Adding / Editing Account ── */
+.account-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.account-modal-card {
+  width: min(100%, 520px);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 1.6rem;
+  padding: 1.5rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.98);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.modal-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.modal-header-row h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background: #fee2e2;
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+
+.modal-live-preview {
+  margin-bottom: 1.25rem;
+  max-width: 380px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.account-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.account-form-grid .form-group.full-width {
+  grid-column: span 2;
+}
+
+.account-form-grid label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #475569;
+  margin-bottom: 0.35rem;
+}
+
+.account-input,
+.account-select {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.75rem;
+  border: 1.5px solid #cbd5e1;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.account-input:focus,
+.account-select:focus {
+  border-color: #0284c7;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.account-input.mono {
+  font-family: monospace;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+}
+
+.modal-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-cancel {
+  padding: 0.65rem 1.15rem;
+  border-radius: 0.75rem;
+  border: 1px solid #cbd5e1;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cancel:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.btn-save {
+  padding: 0.65rem 1.35rem;
+  font-size: 0.85rem;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* ── Responsive for Savings & Virtual Cards ── */
+@media (max-width: 980px) {
+  .savings-top-grid {
+    grid-template-columns: 1fr;
+    gap: 1.15rem;
+  }
+}
+
+@media (max-width: 680px) {
+  .virtual-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .virtual-card-glass {
+    padding: 1.15rem 1.25rem;
+    min-height: 195px;
+  }
+
+  .virtual-card-number {
+    font-size: 1.05rem;
+    letter-spacing: 0.08em;
   }
 
   .savings-hero-amount {
@@ -6264,16 +6834,18 @@ body {
 
   .savings-hero-stats {
     grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-
-  .savings-form-card,
-  .savings-history-card {
-    padding: 1rem 1.15rem;
   }
 
   .savings-month-summary {
     grid-template-columns: 1fr;
+  }
+
+  .account-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-form-grid .form-group.full-width {
+    grid-column: span 1;
   }
 }
 
