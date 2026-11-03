@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import {
   deleteCloudAccount,
   deleteCloudFolder,
@@ -32,6 +32,7 @@ const PIN = '1449'
 const PIN_SESSION_KEY = 'mix-image-prompt-vault.unlocked'
 const PIN_PERSIST_KEY = 'mix-image-prompt-vault.unlocked.until'
 const UNLOCK_TTL_MS = 24 * 60 * 60 * 1000 // จดจำการปลดล็อกบนมือถือ 24 ชม. ไม่ต้องกรอกใหม่เมื่อสลับแอป
+const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
 
 function isSessionUnlocked() {
   try {
@@ -1106,12 +1107,12 @@ const PromptCard = memo(function PromptCard({
   return (
     <article
       className={`prompt-card ${isDragging ? 'is-dragging' : ''} ${isDragOver ? 'is-drag-over' : ''} ${showMoveMenu ? 'popover-open' : ''}`}
-      draggable={!showMoveMenu}
-      onDragStart={(e) => onDragStart?.(e, item)}
-      onDragOver={(e) => onDragOver?.(e, item)}
-      onDragLeave={(e) => onDragLeave?.(e, item)}
-      onDrop={(e) => onDrop?.(e, item)}
-      onDragEnd={onDragEnd}
+      draggable={!showMoveMenu && !isTouchDevice}
+      onDragStart={(e) => !isTouchDevice && onDragStart?.(e, item)}
+      onDragOver={(e) => !isTouchDevice && onDragOver?.(e, item)}
+      onDragLeave={(e) => !isTouchDevice && onDragLeave?.(e, item)}
+      onDrop={(e) => !isTouchDevice && onDrop?.(e, item)}
+      onDragEnd={!isTouchDevice ? onDragEnd : undefined}
     >
       {/* แถบจับลากย้ายตำแหน่งด้านบนการ์ด */}
       <div className="card-drag-bar" title="คลิกค้างที่การ์ดเพื่อลากย้ายตำแหน่ง หรือลากไปวางในโฟลเดอร์">
@@ -1152,15 +1153,17 @@ const PromptCard = memo(function PromptCard({
         >
           {item.imageUrls?.[0] ? (
             <div className="thumbnail-aspect-frame">
-              {/* ภาพพื้นหลังเบลอแบบ Ambient ให้เข้ากับโทนสีภาพ ไม่เห็นขอบตัดหรือช่องว่างทึบ */}
-              <img
-                className="thumbnail-img-blur"
-                src={item.imageUrls[0]}
-                alt=""
-                aria-hidden="true"
-                loading="lazy"
-                decoding="async"
-              />
+              {/* ภาพพื้นหลังเบลอแบบ Ambient เฉพาะบน PC ไม่โหลดบนมือถือเพื่อลดภาระ GPU */}
+              {!isTouchDevice && (
+                <img
+                  className="thumbnail-img-blur"
+                  src={item.imageUrls[0]}
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                  decoding="async"
+                />
+              )}
               {/* ภาพตัวอย่างหลักที่แสดงสัดส่วนเต็มทั้งภาพ ไม่ตัดขอบ ไม่ยืด (Contain Full View) */}
               <img
                 className="thumbnail-img-main"
@@ -3501,12 +3504,12 @@ const BankPassbookCard = memo(function BankPassbookCard({
     <div
       className={`virtual-card-glass passbook-style theme-${account.color || preset.color} ${isDragging ? 'is-dragging' : ''} ${isDragOver ? 'is-drag-over' : ''}`}
       style={{ background: preset.bg }}
-      draggable={!isPreview}
-      onDragStart={(e) => !isPreview && onDragStart?.(e, account)}
-      onDragOver={(e) => !isPreview && onDragOver?.(e, account)}
-      onDragLeave={(e) => !isPreview && onDragLeave?.(e, account)}
-      onDrop={(e) => !isPreview && onDrop?.(e, account)}
-      onDragEnd={!isPreview ? onDragEnd : undefined}
+      draggable={!isPreview && !isTouchDevice}
+      onDragStart={(e) => !isPreview && !isTouchDevice && onDragStart?.(e, account)}
+      onDragOver={(e) => !isPreview && !isTouchDevice && onDragOver?.(e, account)}
+      onDragLeave={(e) => !isPreview && !isTouchDevice && onDragLeave?.(e, account)}
+      onDrop={(e) => !isPreview && !isTouchDevice && onDrop?.(e, account)}
+      onDragEnd={!isPreview && !isTouchDevice ? onDragEnd : undefined}
     >
       <div className="passbook-spine">
         <div className="passbook-stitch-line" />
@@ -3642,12 +3645,12 @@ const CreditDebitCard = memo(function CreditDebitCard({
     <div
       className={`virtual-card-glass card-style theme-${account.color || preset.color} ${isDragging ? 'is-dragging' : ''} ${isDragOver ? 'is-drag-over' : ''}`}
       style={{ background: preset.bg }}
-      draggable={!isPreview}
-      onDragStart={(e) => !isPreview && onDragStart?.(e, account)}
-      onDragOver={(e) => !isPreview && onDragOver?.(e, account)}
-      onDragLeave={(e) => !isPreview && onDragLeave?.(e, account)}
-      onDrop={(e) => !isPreview && onDrop?.(e, account)}
-      onDragEnd={!isPreview ? onDragEnd : undefined}
+      draggable={!isPreview && !isTouchDevice}
+      onDragStart={(e) => !isPreview && !isTouchDevice && onDragStart?.(e, account)}
+      onDragOver={(e) => !isPreview && !isTouchDevice && onDragOver?.(e, account)}
+      onDragLeave={(e) => !isPreview && !isTouchDevice && onDragLeave?.(e, account)}
+      onDrop={(e) => !isPreview && !isTouchDevice && onDrop?.(e, account)}
+      onDragEnd={!isPreview && !isTouchDevice ? onDragEnd : undefined}
     >
       <div className="card-gloss-shimmer" />
       <div className="card-glass-orb orb-a" />
@@ -3803,12 +3806,12 @@ const PromptPayCard = memo(function PromptPayCard({
   return (
     <div
       className={`virtual-card-glass promptpay-style theme-promptpay ${isDragging ? 'is-dragging' : ''} ${isDragOver ? 'is-drag-over' : ''}`}
-      draggable={!isPreview}
-      onDragStart={(e) => !isPreview && onDragStart?.(e, account)}
-      onDragOver={(e) => !isPreview && onDragOver?.(e, account)}
-      onDragLeave={(e) => !isPreview && onDragLeave?.(e, account)}
-      onDrop={(e) => !isPreview && onDrop?.(e, account)}
-      onDragEnd={!isPreview ? onDragEnd : undefined}
+      draggable={!isPreview && !isTouchDevice}
+      onDragStart={(e) => !isPreview && !isTouchDevice && onDragStart?.(e, account)}
+      onDragOver={(e) => !isPreview && !isTouchDevice && onDragOver?.(e, account)}
+      onDragLeave={(e) => !isPreview && !isTouchDevice && onDragLeave?.(e, account)}
+      onDrop={(e) => !isPreview && !isTouchDevice && onDrop?.(e, account)}
+      onDragEnd={!isPreview && !isTouchDevice ? onDragEnd : undefined}
     >
       <div className="card-gloss-shimmer" />
 
@@ -5013,6 +5016,7 @@ function App() {
   const [folders, setFolders] = useState([])
   const [page, setPage] = useState('home')
   const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [folderFilter, setFolderFilter] = useState('all') // 'all' | '__unfiled__' | folderName
   const [quickFilter, setQuickFilter] = useState('all') // 'all' | 'favorite' | 'hasNote' | 'hasImage'
@@ -5188,7 +5192,7 @@ function App() {
 
   // รายการที่ผ่านตัวกรองหมวดหมู่ คำค้นหา และตัวกรองด่วน (ก่อนกรองโฟลเดอร์ เพื่อให้นับจำนวนในแต่ละโฟลเดอร์ได้ถูกต้อง)
   const categoryFilteredItems = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
+    const normalizedQuery = deferredQuery.trim().toLowerCase()
     return items.filter((item) => {
       // ตรวจสอบห้อง: ตรงกับ categoryFilter หรือกรณีที่พรอมต์อยู่ในโฟลเดอร์ของห้องนั้น
       const isFolderInCategory =
@@ -5226,7 +5230,7 @@ function App() {
 
       return true
     })
-  }, [items, query, categoryFilter, quickFilter, lockedDate, allFolders])
+  }, [items, deferredQuery, categoryFilter, quickFilter, lockedDate, allFolders])
 
   const filteredItems = useMemo(() => {
     if (folderFilter === 'all') return categoryFilteredItems
@@ -5576,12 +5580,18 @@ function App() {
     quickFilter !== 'all' ||
     Boolean(query.trim())
 
-  const shownItems =
-    page === 'notes'
+  const shownItems = useMemo(() => {
+    return page === 'notes'
       ? filteredItems.filter((item) => item.notes || item.category === 'note')
       : page === 'home' && !hasActiveFilter
       ? filteredItems.filter((item) => item.favorite)
       : filteredItems
+  }, [page, filteredItems, hasActiveFilter])
+
+  const handleFolderClick = useCallback((fName) => setFolderFilter(fName), [])
+  const handleEditItem = useCallback((current) => { setEditorItem(current); setPage('add') }, [])
+  const handleTagClick = useCallback((tag) => setQuery(tag), [])
+  const handleOpenItem = useCallback((item) => setDetailItem(item), [])
 
   // ย้ายลำดับการ์ด (รองรับทั้งการคลิกค้างแล้วลากวาง และการกดปุ่มเลื่อน ◀ ▶)
   const reorderCards = (sourceId, targetId) => {
@@ -6256,13 +6266,13 @@ function App() {
                       onMoveToFolder={moveItemToFolder}
                       onCreateAndMoveFolder={createAndMoveToFolder}
                       onMoveToCategory={moveItemToCategory}
-                      onFolderClick={(fName) => setFolderFilter(fName)}
+                      onFolderClick={handleFolderClick}
                       onCopy={copyPrompt}
-                      onEdit={(current) => { setEditorItem(current); setPage('add') }}
+                      onEdit={handleEditItem}
                       onDelete={deleteItem}
                       onFavorite={toggleFavorite}
-                      onOpen={setDetailItem}
-                      onTagClick={(tag) => setQuery(tag)}
+                      onOpen={handleOpenItem}
+                      onTagClick={handleTagClick}
                     />
                   ))}
                 </div>

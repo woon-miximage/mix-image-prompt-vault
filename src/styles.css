@@ -48,6 +48,8 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 body {
@@ -2496,7 +2498,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   box-shadow: 0 8px 22px rgba(35, 52, 86, 0.05);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   content-visibility: auto;
-  contain-intrinsic-size: 0 280px;
+  contain-intrinsic-size: auto 380px;
+  contain: layout paint;
+  transform: translateZ(0);
 }
 
 .prompt-card:hover {
@@ -2533,18 +2537,21 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   justify-content: center;
   overflow: hidden;
   background: radial-gradient(circle at 50% 50%, #ffffff 0%, #f1f5f9 70%, #e2e8f0 100%);
+  contain: paint;
 }
 
 .thumbnail-img-blur {
   position: absolute;
-  inset: -18%;
-  width: 136%;
-  height: 136%;
+  inset: -15%;
+  width: 130%;
+  height: 130%;
   object-fit: cover;
-  filter: blur(22px) brightness(0.96) saturate(1.25);
-  opacity: 0.35;
+  filter: blur(10px) brightness(0.96) saturate(1.15);
+  opacity: 0.3;
   pointer-events: none;
-  transform: scale(1.1);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  will-change: transform;
 }
 
 .thumbnail-img-main {
@@ -6348,24 +6355,25 @@ body {
     inset 0 1.5px 1px rgba(255, 255, 255, 0.45),
     inset 0 -1px 2px rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.35);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transform: translateZ(0);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
 }
 
 .virtual-card-glass:hover {
-  transform: translateY(-4px) scale(1.01);
+  transform: translateY(-4px) scale(1.01) translateZ(0);
   box-shadow:
     0 24px 50px rgba(15, 23, 42, 0.26),
     inset 0 2px 2px rgba(255, 255, 255, 0.6);
 }
 
-/* Glass lighting effects */
+/* Glass lighting effects (ใช้ transform แทน left เพื่อรันบน GPU Compositor Thread 60/120fps) */
 .card-gloss-shimmer {
   position: absolute;
   top: 0;
-  left: -120%;
+  left: 0;
   width: 80%;
   height: 100%;
   background: linear-gradient(
@@ -6374,21 +6382,22 @@ body {
     rgba(255, 255, 255, 0.16) 50%,
     transparent 100%
   );
-  transform: skewX(-24deg);
+  transform: translateX(-150%) skewX(-24deg);
+  will-change: transform;
   pointer-events: none;
   animation: cardShimmer 6s infinite ease-in-out;
 }
 
 @keyframes cardShimmer {
-  0% { left: -120%; }
-  35% { left: 160%; }
-  100% { left: 160%; }
+  0% { transform: translateX(-150%) skewX(-24deg); }
+  35% { transform: translateX(250%) skewX(-24deg); }
+  100% { transform: translateX(250%) skewX(-24deg); }
 }
 
+/* ปรับ Orb ให้ใช้ radial-gradient แทน Gaussian blur filter 40px เพื่อขจัด GPU fillrate bottleneck */
 .card-glass-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(40px);
   pointer-events: none;
   opacity: 0.35;
 }
@@ -6398,7 +6407,7 @@ body {
   height: 140px;
   top: -40px;
   right: -30px;
-  background: rgba(255, 255, 255, 0.6);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 70%);
 }
 
 .card-glass-orb.orb-b {
@@ -6406,7 +6415,7 @@ body {
   height: 120px;
   bottom: -30px;
   left: -20px;
-  background: rgba(0, 0, 0, 0.35);
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0) 70%);
 }
 
 /* Card Header */
@@ -7275,6 +7284,13 @@ body {
   }
 }
 
+@media (max-width: 900px) {
+  /* ปิด ambient blur บนมือถือเพื่อลดภาระ GPU และเพิ่มความลื่น 120Hz */
+  .thumbnail-img-blur {
+    display: none !important;
+  }
+}
+
 @media (max-width: 680px) {
   .virtual-cards-grid {
     grid-template-columns: 1fr;
@@ -7283,6 +7299,8 @@ body {
   .virtual-card-glass {
     padding: 1.15rem 1.15rem;
     min-height: 215px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
 
   .virtual-card-number {
