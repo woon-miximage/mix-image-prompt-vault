@@ -12,8 +12,10 @@ import { db, storage } from './firebase'
 
 const COLLECTION = 'prompts'
 const FOLDERS_COLLECTION = 'prompt_folders'
+const SAVINGS_COLLECTION = 'savings_transactions'
 const LOCAL_KEY = 'mix-image-prompt-vault.local.v1'
 const LOCAL_FOLDERS_KEY = 'mix-image-prompt-vault.folders.v1'
+const LOCAL_SAVINGS_KEY = 'mix-image-prompt-vault.savings.v1'
 
 const asDateValue = (value) => {
   if (!value) return new Date().toISOString()
@@ -360,5 +362,59 @@ export const deleteCloudPrompt = async (item) => {
     } catch {
       // A missing image must not make the prompt record look undeletable.
     }
+  }
+}
+
+// =====================================================================
+// Savings / เงินออม — CRUD helpers
+// =====================================================================
+
+const normalizeTxn = (id, data = {}) => ({
+  id,
+  type: data.type || 'income', // 'income' | 'expense'
+  amount: Number(data.amount) || 0,
+  label: data.label || '',
+  date: data.date || new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+  createdAt: asDateValue(data.created_at || data.createdAt),
+})
+
+export const readLocalSavings = () => {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_SAVINGS_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+
+export const writeLocalSavings = (txns) => {
+  try {
+    localStorage.setItem(LOCAL_SAVINGS_KEY, JSON.stringify(txns))
+  } catch {
+    // storage full – ignore
+  }
+}
+
+export const loadCloudSavings = async () => {
+  const snap = await getDocs(collection(db, SAVINGS_COLLECTION))
+  return snap.docs.map((d) => normalizeTxn(d.id, d.data()))
+}
+
+export const saveCloudSavingsTxn = async (txn) => {
+  const docRef = await addDoc(collection(db, SAVINGS_COLLECTION), {
+    type: txn.type,
+    amount: txn.amount,
+    label: txn.label,
+    date: txn.date,
+    created_at: serverTimestamp(),
+  })
+  return docRef.id
+}
+
+export const deleteCloudSavingsTxn = async (id) => {
+  if (!id || String(id).startsWith('local-')) return
+  try {
+    await deleteDoc(doc(db, SAVINGS_COLLECTION, id))
+  } catch (err) {
+    console.warn('deleteDoc (savings) error:', err)
   }
 }

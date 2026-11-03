@@ -2,18 +2,23 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import {
   deleteCloudFolder,
   deleteCloudPrompt,
+  deleteCloudSavingsTxn,
   fileToLocalPreview,
   loadCloudFolders,
   loadCloudPrompts,
+  loadCloudSavings,
   normalizePrompt,
   readLocalFolders,
   readLocalPrompts,
+  readLocalSavings,
   saveCloudFolder,
   saveCloudPrompt,
+  saveCloudSavingsTxn,
   updateCloudPrompt,
   updateCloudPromptsOrder,
   writeLocalFolders,
   writeLocalPrompts,
+  writeLocalSavings,
 } from './lib/repository'
 
 const PIN = '1449'
@@ -604,6 +609,43 @@ function Icon({ name, className = '', filled = false }) {
           <polyline points="9 18 15 12 9 6" />
         </svg>
       )
+    case 'wallet':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="5" width="20" height="16" rx="2" />
+          <path d="M2 10h20" />
+          <path d="M16 14h.01" />
+        </svg>
+      )
+    case 'plus-circle':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+      )
+    case 'minus-circle':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+      )
+    case 'trending-up':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+          <polyline points="17 6 23 6 23 12" />
+        </svg>
+      )
+    case 'trending-down':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+          <polyline points="17 18 23 18 23 12" />
+        </svg>
+      )
     default:
       return <span className="icon-fallback">•</span>
   }
@@ -768,6 +810,7 @@ const Sidebar = memo(function Sidebar({ page, onNavigate, onAdd, onOpenDownload,
     ['prompts', 'คลังพรอมต์', 'prompt'],
     ['add', 'เพิ่มพรอมต์', 'add'],
     ['notes', 'โน้ตส่วนตัว', 'note'],
+    ['savings', 'เงินออม', 'wallet'],
     ['profile', 'โปรไฟล์', 'user'],
   ]
 
@@ -859,6 +902,7 @@ const MobileNav = memo(function MobileNav({ page, onNavigate, onAdd }) {
     ['prompts', 'พรอมต์', 'prompt'],
     ['add', 'เพิ่ม', 'add'],
     ['notes', 'โน้ต', 'note'],
+    ['savings', 'เงินออม', 'wallet'],
     ['profile', 'โปรไฟล์', 'user'],
   ]
 
@@ -3116,6 +3160,325 @@ const AppDownloadModal = memo(function AppDownloadModal({
   )
 })
 
+// =====================================================================
+// SavingsPage — ฟังก์ชันเงินออม (รายรับ / รายจ่าย / ตัดยอดรวมอัตโนมัติ)
+// =====================================================================
+const SAVINGS_LOCAL_KEY = 'mix-image-prompt-vault.savings-txns.v1'
+
+function SavingsPage({ flash }) {
+  const [txns, setTxns] = useState([])
+  const [form, setForm] = useState({ type: 'income', amount: '', label: '', date: new Date().toISOString().slice(0, 10) })
+  const [cloudSync, setCloudSync] = useState('loading')
+  const [filterMonth, setFilterMonth] = useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  })
+  const [showHistory, setShowHistory] = useState(false)
+
+  // ── โหลดข้อมูล ──
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      // ลองโหลดจาก Cloud ก่อน แล้ว fallback เป็น local
+      try {
+        const cloud = await loadCloudSavings()
+        if (!cancelled) {
+          setTxns(cloud)
+          writeLocalSavings(cloud)
+          setCloudSync('cloud')
+        }
+      } catch {
+        if (!cancelled) {
+          setTxns(readLocalSavings())
+          setCloudSync('local')
+        }
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
+  // ── บันทึกลง local ทุกครั้งที่ txns เปลี่ยน ──
+  useEffect(() => {
+    if (txns.length > 0) writeLocalSavings(txns)
+  }, [txns])
+
+  // ── ระบบตัดยอดอัตโนมัติเมื่อข้ามวัน (00:00) ──
+  useEffect(() => {
+    const checkMidnight = () => {
+      const today = new Date().toISOString().slice(0, 10)
+      const lastCutoff = localStorage.getItem('savings-last-cutoff')
+      if (lastCutoff === today) return
+      // ถ้ามี txns ของวันก่อนๆ ที่ยังไม่ถูกตัดยอด → สร้าง daily summary
+      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+      const yesterdayTxns = txns.filter(t => t.date === yesterday)
+      if (yesterdayTxns.length > 0) {
+        const income = yesterdayTxns.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+        const expense = yesterdayTxns.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+        const dailyNet = income - expense
+        if (dailyNet !== 0) {
+          const cutoffTxn = {
+            id: `cutoff-${yesterday}`,
+            type: dailyNet >= 0 ? 'income' : 'expense',
+            amount: Math.abs(dailyNet),
+            label: `ยอดรวมวันที่ ${yesterday} (ตัดยอดอัตโนมัติ)`,
+            date: yesterday,
+            createdAt: new Date().toISOString(),
+            isCutoff: true,
+          }
+          // ไม่ซ้ำถ้ามีตัดยอดแล้ว
+          setTxns(prev => {
+            if (prev.some(t => t.id === cutoffTxn.id)) return prev
+            return [...prev, cutoffTxn]
+          })
+        }
+      }
+      localStorage.setItem('savings-last-cutoff', today)
+    }
+
+    checkMidnight()
+    const timer = setInterval(checkMidnight, 60000) // ตรวจทุก 1 นาที
+    return () => clearInterval(timer)
+  }, [txns])
+
+  // ── เพิ่มรายการ ──
+  const addTxn = async () => {
+    const amt = parseFloat(form.amount)
+    if (!amt || amt <= 0) return
+    const newTxn = {
+      id: `local-${Date.now()}`,
+      type: form.type,
+      amount: amt,
+      label: form.label.trim() || (form.type === 'income' ? 'รายรับ' : 'รายจ่าย'),
+      date: form.date,
+      createdAt: new Date().toISOString(),
+    }
+    setTxns(prev => [...prev, newTxn])
+    setForm({ type: 'income', amount: '', label: '', date: new Date().toISOString().slice(0, 10) })
+    flash('บันทึกสำเร็จ ✓')
+
+    try {
+      const cloudId = await saveCloudSavingsTxn(newTxn)
+      setTxns(prev => prev.map(t => t.id === newTxn.id ? { ...t, id: cloudId } : t))
+    } catch {
+      // keep local only
+    }
+  }
+
+  // ── ลบรายการ ──
+  const deleteTxn = async (id) => {
+    setTxns(prev => prev.filter(t => t.id !== id))
+    flash('ลบรายการแล้ว')
+    try {
+      await deleteCloudSavingsTxn(id)
+    } catch {
+      // ignore
+    }
+  }
+
+  // ── คำนวณยอด ──
+  const totalIncome = txns.filter(t => t.type === 'income' && !t.isCutoff).reduce((s, t) => s + t.amount, 0)
+  const totalExpense = txns.filter(t => t.type === 'expense' && !t.isCutoff).reduce((s, t) => s + t.amount, 0)
+  const totalSavings = totalIncome - totalExpense
+
+  // ── กรองตามเดือน ──
+  const monthTxns = txns.filter(t => t.date?.startsWith(filterMonth)).sort((a, b) => b.createdAt?.localeCompare(a.createdAt) || 0)
+  const monthIncome = monthTxns.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const monthExpense = monthTxns.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+
+  // ── สร้างรายการเดือนทั้งหมดจาก txns ──
+  const allMonths = useMemo(() => {
+    const months = new Set()
+    txns.forEach(t => { if (t.date) months.add(t.date.slice(0, 7)) })
+    // เพิ่มเดือนปัจจุบันเสมอ
+    const now = new Date()
+    months.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+    return [...months].sort().reverse()
+  }, [txns])
+
+  const fmt = (n) => n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const thaiMonth = (ym) => {
+    const [y, m] = ym.split('-')
+    const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
+    return `${months[parseInt(m, 10) - 1]} ${parseInt(y, 10) + 543}`
+  }
+
+  return (
+    <section className="savings-page">
+      {/* ── บัตรยอดเงินออม ── */}
+      <div className="savings-hero glass-panel">
+        <div className="savings-hero-top">
+          <div className="savings-hero-icon-box">
+            <Icon name="wallet" />
+          </div>
+          <div className="savings-hero-label">
+            <span className="eyebrow">SAVINGS ACCOUNT</span>
+            <h2>เงินออมรวม</h2>
+          </div>
+          <span className={`savings-sync-badge ${cloudSync}`}>
+            <Icon name="cloud" /> {cloudSync === 'cloud' ? 'Cloud Sync' : cloudSync === 'loading' ? 'กำลังโหลด...' : 'ข้อมูลในเครื่อง'}
+          </span>
+        </div>
+        <div className={`savings-hero-amount ${totalSavings < 0 ? 'negative' : ''}`}>
+          ฿{fmt(totalSavings)}
+        </div>
+        <div className="savings-hero-stats">
+          <div className="savings-stat income">
+            <Icon name="trending-up" />
+            <div>
+              <span>รายรับรวม</span>
+              <strong>฿{fmt(totalIncome)}</strong>
+            </div>
+          </div>
+          <div className="savings-stat expense">
+            <Icon name="trending-down" />
+            <div>
+              <span>รายจ่ายรวม</span>
+              <strong>฿{fmt(totalExpense)}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── ฟอร์มเพิ่มรายการ ── */}
+      <div className="savings-form-card glass-panel">
+        <h3><Icon name="add" /> เพิ่มรายการ</h3>
+        <div className="savings-type-toggle">
+          <button
+            type="button"
+            className={`type-btn income ${form.type === 'income' ? 'active' : ''}`}
+            onClick={() => setForm(f => ({ ...f, type: 'income' }))}
+          >
+            <Icon name="plus-circle" /> รายรับ
+          </button>
+          <button
+            type="button"
+            className={`type-btn expense ${form.type === 'expense' ? 'active' : ''}`}
+            onClick={() => setForm(f => ({ ...f, type: 'expense' }))}
+          >
+            <Icon name="minus-circle" /> รายจ่าย
+          </button>
+        </div>
+        <div className="savings-form-fields">
+          <div className="savings-field">
+            <label>จำนวนเงิน (บาท)</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              value={form.amount}
+              onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+              className="savings-amount-input"
+            />
+          </div>
+          <div className="savings-field">
+            <label>รายละเอียด (ไม่จำเป็น)</label>
+            <input
+              type="text"
+              placeholder={form.type === 'income' ? 'เช่น ค่าจ้าง, รางวัล' : 'เช่น ค่าอาหาร, ค่ารถ'}
+              value={form.label}
+              onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
+              className="savings-label-input"
+            />
+          </div>
+          <div className="savings-field">
+            <label>วันที่</label>
+            <input
+              type="date"
+              value={form.date}
+              onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+              className="savings-date-input"
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          className={`savings-submit-btn ${form.type}`}
+          onClick={addTxn}
+          disabled={!form.amount || parseFloat(form.amount) <= 0}
+        >
+          <Icon name="check" /> บันทึก{form.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
+        </button>
+      </div>
+
+      {/* ── ประวัติรายเดือน ── */}
+      <div className="savings-history-card glass-panel">
+        <div className="savings-history-header">
+          <h3><Icon name="calendar" /> ประวัติรายเดือน</h3>
+          <select
+            value={filterMonth}
+            onChange={e => setFilterMonth(e.target.value)}
+            className="savings-month-select"
+          >
+            {allMonths.map(m => (
+              <option key={m} value={m}>{thaiMonth(m)}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="savings-month-summary">
+          <div className="month-stat income">
+            <span>รายรับ</span>
+            <strong className="income-text">+฿{fmt(monthIncome)}</strong>
+          </div>
+          <div className="month-stat expense">
+            <span>รายจ่าย</span>
+            <strong className="expense-text">-฿{fmt(monthExpense)}</strong>
+          </div>
+          <div className="month-stat net">
+            <span>คงเหลือ</span>
+            <strong className={monthIncome - monthExpense >= 0 ? 'income-text' : 'expense-text'}>
+              ฿{fmt(monthIncome - monthExpense)}
+            </strong>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="savings-toggle-history"
+          onClick={() => setShowHistory(!showHistory)}
+        >
+          {showHistory ? 'ซ่อนรายการ' : `แสดงรายการ (${monthTxns.length})`}
+          <Icon name={showHistory ? 'arrow-left' : 'arrow-right'} />
+        </button>
+
+        {showHistory && (
+          <div className="savings-txn-list">
+            {monthTxns.length === 0 && (
+              <p className="savings-empty">ยังไม่มีรายการในเดือนนี้</p>
+            )}
+            {monthTxns.map(txn => (
+              <div key={txn.id} className={`savings-txn-row ${txn.type} ${txn.isCutoff ? 'cutoff' : ''}`}>
+                <div className="txn-icon-box">
+                  <Icon name={txn.type === 'income' ? 'plus-circle' : 'minus-circle'} />
+                </div>
+                <div className="txn-info">
+                  <strong>{txn.label || (txn.type === 'income' ? 'รายรับ' : 'รายจ่าย')}</strong>
+                  <span className="txn-date">{txn.date}</span>
+                </div>
+                <span className={`txn-amount ${txn.type}`}>
+                  {txn.type === 'income' ? '+' : '-'}฿{fmt(txn.amount)}
+                </span>
+                {!txn.isCutoff && (
+                  <button
+                    type="button"
+                    className="txn-delete-btn"
+                    onClick={() => deleteTxn(txn.id)}
+                    title="ลบรายการนี้"
+                  >
+                    <Icon name="trash" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
 function App() {
   const [unlocked, setUnlocked] = useState(() => isSessionUnlocked())
   const [items, setItems] = useState([])
@@ -3825,6 +4188,8 @@ function App() {
                 ? 'ยินดีต้อนรับสู่ Prompt Archive'
                 : page === 'notes'
                 ? 'โน้ตและเทคนิคส่วนตัว'
+                : page === 'savings'
+                ? 'เงินออมส่วนตัว'
                 : page === 'profile'
                 ? 'โปรไฟล์และการตั้งค่า'
                 : 'คลังพรอมต์ทั้งหมด'}
@@ -4438,6 +4803,10 @@ function App() {
               )}
             </section>
           </>
+        )}
+
+        {page === 'savings' && (
+          <SavingsPage flash={flash} />
         )}
 
         {page === 'profile' && (
