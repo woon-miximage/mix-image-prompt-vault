@@ -6736,6 +6736,388 @@ body {
   height: 0.75rem;
 }
 
+/* ══════════════════════════════════════════════════════════
+   1. Passbook Style (สมุดบัญชีเงินฝาก)
+   ══════════════════════════════════════════════════════════ */
+.virtual-card-glass.passbook-style {
+  padding-left: 2.2rem;
+  box-shadow:
+    0 18px 42px rgba(15, 23, 42, 0.22),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.4),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.3);
+}
+
+.passbook-spine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 24px;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0.22) 75%, rgba(255, 255, 255, 0.12) 100%);
+  border-right: 1px dashed rgba(255, 255, 255, 0.35);
+  box-shadow: inset -2px 0 5px rgba(0, 0, 0, 0.25);
+  z-index: 3;
+}
+
+.passbook-stitch-line {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 10px;
+  width: 2px;
+  background: repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.55) 0, rgba(255, 255, 255, 0.55) 5px, transparent 5px, transparent 10px);
+}
+
+.passbook-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+.passbook-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.passbook-bank-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.passbook-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.passbook-type-sub {
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: uppercase;
+}
+
+.passbook-seal {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(250, 204, 21, 0.65);
+  background: radial-gradient(circle, rgba(234, 179, 8, 0.28) 0%, rgba(234, 179, 8, 0.05) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fef08a;
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.25);
+}
+
+.passbook-seal .svg-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.passbook-account-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0.2rem 0;
+}
+
+.passbook-field-label {
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.passbook-number-box {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  padding: 0.38rem 0.65rem;
+}
+
+.passbook-number {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: clamp(0.95rem, 3.2vw, 1.25rem);
+  letter-spacing: 0.1em;
+}
+
+.passbook-meta-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 0.6rem;
+  margin: 0.25rem 0;
+}
+
+.passbook-meta-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.passbook-holder-name {
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.passbook-branch-text {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.passbook-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.passbook-magnetic-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.passbook-barcode {
+  height: 12px;
+  width: 90px;
+  background: repeating-linear-gradient(90deg, #ffffff 0, #ffffff 2px, transparent 2px, transparent 4px, #ffffff 4px, #ffffff 7px, transparent 7px, transparent 10px, #ffffff 10px, #ffffff 13px, transparent 13px, transparent 15px);
+  opacity: 0.65;
+  border-radius: 2px;
+}
+
+.passbook-serial {
+  font-family: 'SF Mono', monospace;
+  font-size: 0.48rem;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+  font-weight: 700;
+}
+
+/* ══════════════════════════════════════════════════════════
+   2. PromptPay Style (พร้อมเพย์)
+   ══════════════════════════════════════════════════════════ */
+.virtual-card-glass.promptpay-style {
+  background: linear-gradient(135deg, #001f3f 0%, #003e74 45%, #006b99 80%, #0099cc 100%) !important;
+  border: 1px solid rgba(0, 220, 255, 0.38);
+  box-shadow:
+    0 18px 45px rgba(0, 31, 63, 0.35),
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.5),
+    inset 0 -1.5px 1.5px rgba(0, 168, 204, 0.3);
+}
+
+.promptpay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+  margin-bottom: 0.35rem;
+}
+
+.promptpay-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.promptpay-logo-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #003e74;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.promptpay-logo-badge .svg-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.promptpay-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.promptpay-name {
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+}
+
+.promptpay-tagline {
+  font-size: 0.54rem;
+  font-weight: 700;
+  color: #7dd3fc;
+}
+
+.promptpay-free-tag {
+  font-size: 0.56rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.22);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  color: #e0f2fe;
+}
+
+.promptpay-center-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  margin: 0.3rem 0;
+}
+
+.promptpay-id-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.promptpay-label {
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #bae6fd;
+  text-transform: uppercase;
+}
+
+.promptpay-number-box {
+  background: rgba(0, 18, 38, 0.35);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.promptpay-number {
+  color: #ffffff;
+  font-size: clamp(0.98rem, 3.2vw, 1.25rem);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.promptpay-payee-info {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+  font-size: 0.68rem;
+  color: #f0f9ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.promptpay-payee-label {
+  font-size: 0.52rem;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.promptpay-payee-name {
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+}
+
+.promptpay-note {
+  font-size: 0.62rem;
+  opacity: 0.85;
+}
+
+.promptpay-qr-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #002d5a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+  border: 2px solid #38bdf8;
+}
+
+.promptpay-qr-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.12rem;
+}
+
+.promptpay-qr-inner .svg-icon {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.promptpay-qr-text {
+  font-size: 0.42rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #003e74;
+}
+
+.promptpay-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  position: relative;
+  z-index: 2;
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.promptpay-status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #7dd3fc;
+}
+
+.promptpay-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 6px #10b981;
+}
+
 /* ── Modal for Adding / Editing Account ── */
 .account-modal-overlay {
   position: fixed;

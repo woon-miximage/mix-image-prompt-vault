@@ -695,6 +695,35 @@ function Icon({ name, className = '', filled = false }) {
           <line x1="1" y1="1" x2="23" y2="23" />
         </svg>
       )
+    case 'book':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        </svg>
+      )
+    case 'qr':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <rect x="7" y="7" width="1" height="1" strokeWidth="2" />
+          <rect x="17" y="7" width="1" height="1" strokeWidth="2" />
+          <rect x="7" y="17" width="1" height="1" strokeWidth="2" />
+          <line x1="14" y1="14" x2="14.01" y2="14" strokeWidth="3" />
+          <line x1="17" y1="14" x2="21" y2="14" />
+          <line x1="21" y1="17" x2="21" y2="21" />
+          <line x1="14" y1="21" x2="17" y2="21" />
+          <line x1="17" y1="17" x2="17.01" y2="17" strokeWidth="3" />
+        </svg>
+      )
+    case 'promptpay':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2L4 7v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V7l-8-5zm0 3.18l5 3.12v4.2c0 3.73-2.5 7.15-5 8.28-2.5-1.13-5-4.55-5-8.28V8.3l5-3.12z" />
+        </svg>
+      )
     default:
       return <span className="icon-fallback">•</span>
   }
@@ -3237,6 +3266,16 @@ function formatAccNumber(val, type) {
     }
     return clean || val
   }
+  if (type === 'promptpay') {
+    if (clean.length === 10) {
+      return clean.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')
+    }
+    if (clean.length === 13) {
+      return clean.replace(/(\d{1})(\d{4})(\d{5})(\d{2})(\d{1})/, '$1-$2-$3-$4-$5')
+    }
+    return val
+  }
+  // Bank Account
   if (clean.length === 10) {
     return clean.replace(/(\d{3})(\d{1})(\d{5})(\d{1})/, '$1-$2-$3-$4')
   }
@@ -3252,27 +3291,134 @@ function formatAccNumber(val, type) {
   return val
 }
 
-const VirtualCard = memo(function VirtualCard({
+// ── 1. Bank Passbook Card (สมุดบัญชีเงินฝาก) ──
+const BankPassbookCard = memo(function BankPassbookCard({
   account,
+  preset,
+  formattedNumber,
+  isCopiedNum,
+  isCopiedAll,
+  onCopyNumber,
+  onCopyAll,
+  onEdit,
+  onDelete
+}) {
+  return (
+    <div className={`virtual-card-glass passbook-style theme-${account.color || preset.color}`} style={{ background: preset.bg }}>
+      <div className="passbook-spine">
+        <div className="passbook-stitch-line" />
+      </div>
+      <div className="card-gloss-shimmer" />
+
+      <div className="passbook-inner">
+        {/* Passbook Header */}
+        <div className="passbook-header">
+          <div className="passbook-bank-brand">
+            <span className="card-bank-badge">{preset.code}</span>
+            <div className="passbook-titles">
+              <span className="card-bank-name">{account.bankName || preset.name}</span>
+              <span className="passbook-type-sub">สมุดคู่ฝากเงินฝากออมทรัพย์ • SAVINGS PASSBOOK</span>
+            </div>
+          </div>
+          <div className="passbook-seal" title="ตราประทับสมุดบัญชี">
+            <Icon name="bank" />
+          </div>
+        </div>
+
+        {/* Passbook Account Number */}
+        <div className="passbook-account-box">
+          <span className="passbook-field-label">เลขที่บัญชี / ACCOUNT NO.</span>
+          <div
+            className="virtual-card-number-box passbook-number-box"
+            onClick={() => onCopyNumber(account)}
+            title="คลิกเพื่อคัดลอกเลขบัญชี"
+            role="button"
+            tabIndex={0}
+          >
+            <span className="virtual-card-number passbook-number">{formattedNumber || '•••-•-•••••-•'}</span>
+            <button
+              type="button"
+              className={`card-quick-copy-pill ${isCopiedNum ? 'copied' : ''}`}
+              onClick={(e) => { e.stopPropagation(); onCopyNumber(account); }}
+              title={isCopiedNum ? 'คัดลอกแล้ว' : 'คัดลอกเลขบัญชี'}
+            >
+              <Icon name={isCopiedNum ? 'check' : 'copy'} />
+            </button>
+          </div>
+        </div>
+
+        {/* Passbook Details */}
+        <div className="passbook-meta-grid">
+          <div className="passbook-meta-col">
+            <span className="passbook-field-label">ชื่อบัญชี / ACCOUNT NAME</span>
+            <strong className="passbook-holder-name">{account.accName || 'NATTANONT VONGKASAI'}</strong>
+          </div>
+          <div className="passbook-meta-col">
+            <span className="passbook-field-label">สาขา / สาขาบัญชี</span>
+            <span className="passbook-branch-text">{account.label || 'สำนักงานใหญ่ (ออมทรัพย์)'}</span>
+          </div>
+        </div>
+
+        {/* Passbook Footer */}
+        <div className="passbook-footer">
+          <div className="passbook-magnetic-strip">
+            <div className="passbook-barcode" />
+            <span className="passbook-serial">NO. {String(account.accNumber || '0000').slice(-4)} // PASSBOOK VERIFIED</span>
+          </div>
+
+          <div className="card-actions-row">
+            <button
+              type="button"
+              className={`card-glass-btn share-btn ${isCopiedAll ? 'copied' : ''}`}
+              onClick={() => onCopyAll(account)}
+              title="คัดลอกข้อมูลโอนเงิน"
+            >
+              <Icon name={isCopiedAll ? 'check' : 'copy'} />
+              <span>{isCopiedAll ? 'คัดลอกครบแล้ว' : 'ส่งต่อ'}</span>
+            </button>
+            <button
+              type="button"
+              className="card-glass-btn edit-btn"
+              onClick={() => onEdit(account)}
+              title="แก้ไขสมุดบัญชี"
+            >
+              <Icon name="edit" />
+            </button>
+            <button
+              type="button"
+              className="card-glass-btn delete-btn"
+              onClick={() => onDelete(account.id)}
+              title="ลบสมุดบัญชี"
+            >
+              <Icon name="trash" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+})
+
+// ── 2. Virtual Credit/Debit Card (การ์ดเสมือน) ──
+const CreditDebitCard = memo(function CreditDebitCard({
+  account,
+  preset,
+  formattedNumber,
+  isCopiedNum,
+  isCopiedCvv,
+  isCopiedAll,
   onCopyNumber,
   onCopyCvv,
   onCopyAll,
   onEdit,
   onDelete,
-  copiedField
+  expiryText,
+  cvvText,
+  showCvv,
+  setShowCvv
 }) {
-  const [showCvv, setShowCvv] = useState(false)
-  const preset = BANK_PRESETS.find(b => b.id === account.bank) || BANK_PRESETS[0]
-  const formattedNumber = formatAccNumber(account.accNumber, account.type)
-  const isCopiedNum = copiedField === `${account.id}-num`
-  const isCopiedCvv = copiedField === `${account.id}-cvv`
-  const isCopiedAll = copiedField === `${account.id}-all`
-
-  const expiryText = account.expiry || '12/29'
-  const cvvText = account.cvv || '888'
-
   return (
-    <div className={`virtual-card-glass theme-${account.color || preset.color}`} style={{ background: preset.bg }}>
+    <div className={`virtual-card-glass card-style theme-${account.color || preset.color}`} style={{ background: preset.bg }}>
       <div className="card-gloss-shimmer" />
       <div className="card-glass-orb orb-a" />
       <div className="card-glass-orb orb-b" />
@@ -3285,9 +3431,7 @@ const VirtualCard = memo(function VirtualCard({
         </div>
         <div className="card-tech-icons">
           <Icon name="wifi" className="card-contactless-icon" />
-          <span className="card-type-tag">
-            {account.type === 'card' ? 'VIRTUAL CARD' : account.type === 'promptpay' ? 'PROMPTPAY' : 'SAVINGS'}
-          </span>
+          <span className="card-type-tag">VIRTUAL CARD</span>
         </div>
       </div>
 
@@ -3302,11 +3446,11 @@ const VirtualCard = memo(function VirtualCard({
         )}
       </div>
 
-      {/* Account / Card Number (Guaranteed Single Line) */}
+      {/* 16-Digit Card Number (Guaranteed Single Line) */}
       <div
         className="virtual-card-number-box"
         onClick={() => onCopyNumber(account)}
-        title="คลิกเพื่อคัดลอกเลขบัญชี/เลขบัตร"
+        title="คลิกเพื่อคัดลอกเลขบัตร"
         role="button"
         tabIndex={0}
       >
@@ -3315,7 +3459,7 @@ const VirtualCard = memo(function VirtualCard({
           type="button"
           className={`card-quick-copy-pill ${isCopiedNum ? 'copied' : ''}`}
           onClick={(e) => { e.stopPropagation(); onCopyNumber(account); }}
-          title={isCopiedNum ? 'คัดลอกแล้ว' : 'คัดลอกเฉพาะเลข'}
+          title={isCopiedNum ? 'คัดลอกแล้ว' : 'คัดลอกเลขบัตร'}
         >
           <Icon name={isCopiedNum ? 'check' : 'copy'} />
         </button>
@@ -3357,7 +3501,7 @@ const VirtualCard = memo(function VirtualCard({
       {/* Card Footer: Holder Name & Action Buttons */}
       <div className="virtual-card-footer">
         <div className="card-holder-info">
-          <span className="card-holder-label">CARD / ACCOUNT HOLDER</span>
+          <span className="card-holder-label">CARDHOLDER NAME</span>
           <strong className="card-holder-name">{account.accName || 'NATTANONT VONGKASAI'}</strong>
         </div>
 
@@ -3366,7 +3510,7 @@ const VirtualCard = memo(function VirtualCard({
             type="button"
             className={`card-glass-btn share-btn ${isCopiedAll ? 'copied' : ''}`}
             onClick={() => onCopyAll(account)}
-            title="คัดลอกข้อมูลทั้งหมด สำหรับส่งให้คนโอนเงิน"
+            title="คัดลอกข้อมูลบัตร"
           >
             <Icon name={isCopiedAll ? 'check' : 'copy'} />
             <span>{isCopiedAll ? 'คัดลอกครบแล้ว' : 'ส่งต่อ'}</span>
@@ -3375,7 +3519,7 @@ const VirtualCard = memo(function VirtualCard({
             type="button"
             className="card-glass-btn edit-btn"
             onClick={() => onEdit(account)}
-            title="แก้ไขบัญชีนี้"
+            title="แก้ไขบัตร"
           >
             <Icon name="edit" />
           </button>
@@ -3383,7 +3527,7 @@ const VirtualCard = memo(function VirtualCard({
             type="button"
             className="card-glass-btn delete-btn"
             onClick={() => onDelete(account.id)}
-            title="ลบบัญชีนี้"
+            title="ลบบัตร"
           >
             <Icon name="trash" />
           </button>
@@ -3391,6 +3535,170 @@ const VirtualCard = memo(function VirtualCard({
       </div>
     </div>
   )
+})
+
+// ── 3. PromptPay Card (พร้อมเพย์) ──
+const PromptPayCard = memo(function PromptPayCard({
+  account,
+  preset,
+  formattedNumber,
+  isCopiedNum,
+  isCopiedAll,
+  onCopyNumber,
+  onCopyAll,
+  onEdit,
+  onDelete
+}) {
+  const isNationalId = account.accNumber?.replace(/\D/g, '').length === 13
+
+  return (
+    <div className="virtual-card-glass promptpay-style theme-promptpay">
+      <div className="card-gloss-shimmer" />
+
+      {/* PromptPay Header */}
+      <div className="promptpay-header">
+        <div className="promptpay-brand">
+          <div className="promptpay-logo-badge">
+            <Icon name="promptpay" />
+          </div>
+          <div className="promptpay-titles">
+            <span className="promptpay-name">พร้อมเพย์ • PROMPTPAY</span>
+            <span className="promptpay-tagline">ระบบรับ-โอนเงินทันที ทุกธนาคาร</span>
+          </div>
+        </div>
+        <span className="promptpay-free-tag">โอนฟรี 24 ชม.</span>
+      </div>
+
+      {/* PromptPay Center: ID Box + Stylized QR Badge */}
+      <div className="promptpay-center-grid">
+        <div className="promptpay-id-block">
+          <span className="promptpay-label">
+            {isNationalId ? 'เลขประจำตัวประชาชน (NATIONAL ID)' : 'เบอร์โทรศัพท์พร้อมเพย์ (MOBILE NO.)'}
+          </span>
+          <div
+            className="virtual-card-number-box promptpay-number-box"
+            onClick={() => onCopyNumber(account)}
+            title="คลิกเพื่อคัดลอกเบอร์พร้อมเพย์"
+            role="button"
+            tabIndex={0}
+          >
+            <span className="virtual-card-number promptpay-number">{formattedNumber || '08X-XXX-XXXX'}</span>
+            <button
+              type="button"
+              className={`card-quick-copy-pill ${isCopiedNum ? 'copied' : ''}`}
+              onClick={(e) => { e.stopPropagation(); onCopyNumber(account); }}
+              title={isCopiedNum ? 'คัดลอกแล้ว' : 'คัดลอกเบอร์พร้อมเพย์'}
+            >
+              <Icon name={isCopiedNum ? 'check' : 'copy'} />
+            </button>
+          </div>
+
+          <div className="promptpay-payee-info">
+            <span className="promptpay-payee-label">ชื่อบัญชีรับเงิน (PAYEE):</span>
+            <strong className="promptpay-payee-name">{account.accName || 'NATTANONT VONGKASAI'}</strong>
+            {account.label && <span className="promptpay-note">({account.label})</span>}
+          </div>
+        </div>
+
+        {/* QR Badge */}
+        <div className="promptpay-qr-badge" title="สแกนโอนผ่านแอปธนาคารทุกแห่ง">
+          <div className="promptpay-qr-inner">
+            <Icon name="qr" />
+            <span className="promptpay-qr-text">SCAN ME</span>
+          </div>
+        </div>
+      </div>
+
+      {/* PromptPay Footer */}
+      <div className="promptpay-footer">
+        <div className="promptpay-status">
+          <span className="promptpay-status-dot" />
+          <span>ANY ID • พร้อมรับเงินตลอด 24 ชั่วโมง</span>
+        </div>
+
+        <div className="card-actions-row">
+          <button
+            type="button"
+            className={`card-glass-btn share-btn ${isCopiedAll ? 'copied' : ''}`}
+            onClick={() => onCopyAll(account)}
+            title="คัดลอกข้อมูลพร้อมเพย์สำหรับส่งต่อ"
+          >
+            <Icon name={isCopiedAll ? 'check' : 'copy'} />
+            <span>{isCopiedAll ? 'คัดลอกครบแล้ว' : 'ส่งต่อ'}</span>
+          </button>
+          <button
+            type="button"
+            className="card-glass-btn edit-btn"
+            onClick={() => onEdit(account)}
+            title="แก้ไขพร้อมเพย์"
+          >
+            <Icon name="edit" />
+          </button>
+          <button
+            type="button"
+            className="card-glass-btn delete-btn"
+            onClick={() => onDelete(account.id)}
+            title="ลบพร้อมเพย์"
+          >
+            <Icon name="trash" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+})
+
+// ── Unified VirtualCard Dispatcher ──
+const VirtualCard = memo(function VirtualCard({
+  account,
+  onCopyNumber,
+  onCopyCvv,
+  onCopyAll,
+  onEdit,
+  onDelete,
+  copiedField
+}) {
+  const [showCvv, setShowCvv] = useState(false)
+  const preset = BANK_PRESETS.find(b => b.id === account.bank) || BANK_PRESETS[0]
+  const formattedNumber = formatAccNumber(account.accNumber, account.type)
+  const isCopiedNum = copiedField === `${account.id}-num`
+  const isCopiedCvv = copiedField === `${account.id}-cvv`
+  const isCopiedAll = copiedField === `${account.id}-all`
+  const expiryText = account.expiry || '12/29'
+  const cvvText = account.cvv || '888'
+
+  const commonProps = {
+    account,
+    preset,
+    formattedNumber,
+    isCopiedNum,
+    isCopiedAll,
+    onCopyNumber,
+    onCopyAll,
+    onEdit,
+    onDelete,
+  }
+
+  if (account.type === 'promptpay') {
+    return <PromptPayCard {...commonProps} />
+  }
+
+  if (account.type === 'card') {
+    return (
+      <CreditDebitCard
+        {...commonProps}
+        isCopiedCvv={isCopiedCvv}
+        onCopyCvv={onCopyCvv}
+        expiryText={expiryText}
+        cvvText={cvvText}
+        showCvv={showCvv}
+        setShowCvv={setShowCvv}
+      />
+    )
+  }
+
+  // Default: Bank Passbook
+  return <BankPassbookCard {...commonProps} />
 })
 
 function AccountModal({ account, onClose, onSave }) {
@@ -3406,6 +3714,44 @@ function AccountModal({ account, onClose, onSave }) {
     expiry: account?.expiry || '12/29',
     cvv: account?.cvv || '888',
   }))
+
+  const handleTypeChange = (newType) => {
+    setForm(prev => {
+      let newBank = prev.bank
+      let newBankName = prev.bankName
+      let newBankCode = prev.bankCode
+      let newColor = prev.color
+
+      if (newType === 'promptpay') {
+        const p = BANK_PRESETS.find(b => b.id === 'promptpay') || { id: 'promptpay', name: 'พร้อมเพย์ (PromptPay)', code: 'PROMPT', color: 'promptpay' }
+        newBank = p.id
+        newBankName = p.name
+        newBankCode = p.code
+        newColor = p.color
+      } else if (newType === 'card' && prev.bank === 'promptpay') {
+        const c = BANK_PRESETS.find(b => b.id === 'card') || { id: 'card', name: 'บัตรเครดิต / เดบิต', code: 'CARD', color: 'card' }
+        newBank = c.id
+        newBankName = c.name
+        newBankCode = c.code
+        newColor = c.color
+      } else if (newType === 'bank' && (prev.bank === 'promptpay' || prev.bank === 'card')) {
+        const k = BANK_PRESETS.find(b => b.id === 'kbank') || { id: 'kbank', name: 'ธนาคารกสิกรไทย', code: 'KBANK', color: 'kbank' }
+        newBank = k.id
+        newBankName = k.name
+        newBankCode = k.code
+        newColor = k.color
+      }
+
+      return {
+        ...prev,
+        type: newType,
+        bank: newBank,
+        bankName: newBankName,
+        bankCode: newBankCode,
+        color: newColor,
+      }
+    })
+  }
 
   const handleBankChange = (bankId) => {
     const preset = BANK_PRESETS.find(b => b.id === bankId)
@@ -3455,15 +3801,15 @@ function AccountModal({ account, onClose, onSave }) {
       <div className="account-modal-card glass-panel" onClick={e => e.stopPropagation()}>
         <div className="modal-header-row">
           <h3>
-            <Icon name="card" />
-            {account?.id ? 'แก้ไขบัญชี / บัตร' : 'เพิ่มบัญชีธนาคาร & บัตรเสมือน'}
+            <Icon name={form.type === 'bank' ? 'book' : form.type === 'promptpay' ? 'promptpay' : 'card'} />
+            {account?.id ? 'แก้ไขข้อมูล' : 'เพิ่มบัญชี / บัตร / พร้อมเพย์'}
           </h3>
           <button type="button" className="modal-close-btn" onClick={onClose}>
             <Icon name="close" />
           </button>
         </div>
 
-        {/* Live Preview of Glassmorphism Card */}
+        {/* Live Preview of Specific Card Type */}
         <div className="modal-live-preview">
           <VirtualCard
             account={{
@@ -3486,69 +3832,93 @@ function AccountModal({ account, onClose, onSave }) {
         <form onSubmit={handleSubmit} className="account-form-body">
           <div className="account-form-grid">
             <div className="form-group">
-              <label>ประเภท</label>
+              <label>รูปแบบการ์ดที่ต้องการบันทึก</label>
               <select
                 value={form.type}
-                onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                onChange={e => handleTypeChange(e.target.value)}
                 className="account-select"
               >
-                <option value="bank">บัญชีธนาคาร (Bank Account)</option>
-                <option value="card">บัตรเครดิต / เดบิตเสมือน (Virtual Card)</option>
-                <option value="promptpay">พร้อมเพย์ (PromptPay)</option>
+                <option value="bank">📖 สมุดบัญชีเงินฝาก (Passbook)</option>
+                <option value="card">💳 บัตรเครดิต / เดบิตเสมือน (Virtual Card)</option>
+                <option value="promptpay">⚡ พร้อมเพย์ (PromptPay)</option>
               </select>
             </div>
 
-            <div className="form-group">
-              <label>สถาบันการเงิน / ธนาคาร</label>
-              <select
-                value={form.bank}
-                onChange={e => handleBankChange(e.target.value)}
-                className="account-select"
-              >
-                {BANK_PRESETS.map(b => (
-                  <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
-                ))}
-              </select>
-            </div>
+            {form.type !== 'promptpay' && (
+              <div className="form-group">
+                <label>สถาบันการเงิน / ธนาคาร</label>
+                <select
+                  value={form.bank}
+                  onChange={e => handleBankChange(e.target.value)}
+                  className="account-select"
+                >
+                  {BANK_PRESETS.filter(b => b.id !== 'promptpay').map(b => (
+                    <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
-            <div className="form-group full-width">
-              <label>เลขที่บัญชี / เลขบัตร / เบอร์พร้อมเพย์</label>
+            <div className={`form-group ${form.type === 'promptpay' ? '' : 'full-width'}`}>
+              <label>
+                {form.type === 'bank'
+                  ? 'เลขที่บัญชีธนาคาร (10-12 หลัก)'
+                  : form.type === 'promptpay'
+                  ? 'เบอร์มือถือ หรือ เลขบัตรประชาชน'
+                  : 'เลขหน้าบัตร 16 หลัก'}
+              </label>
               <input
                 type="text"
                 required
-                placeholder="เช่น 199-8-81994-2"
+                placeholder={
+                  form.type === 'bank'
+                    ? 'เช่น 199-8-81994-2'
+                    : form.type === 'promptpay'
+                    ? 'เช่น 089-123-4567 หรือ 1-1234-56789-01-2'
+                    : 'เช่น 4532 8901 2345 6789'
+                }
                 value={form.accNumber}
                 onChange={e => setForm(f => ({ ...f, accNumber: e.target.value }))}
                 className="account-input mono"
               />
             </div>
 
-            <div className="form-group">
-              <label>วันหมดอายุ (EXP: MM/YY)</label>
-              <input
-                type="text"
-                placeholder="เช่น 12/29"
-                maxLength={5}
-                value={form.expiry}
-                onChange={handleExpiryChange}
-                className="account-input mono"
-              />
-            </div>
+            {form.type === 'card' && (
+              <>
+                <div className="form-group">
+                  <label>วันหมดอายุ (EXP: MM/YY)</label>
+                  <input
+                    type="text"
+                    placeholder="เช่น 12/29"
+                    maxLength={5}
+                    value={form.expiry}
+                    onChange={handleExpiryChange}
+                    className="account-input mono"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>รหัสความปลอดภัย (CVV / CVC 3-4 ตัว)</label>
+                  <input
+                    type="text"
+                    placeholder="เช่น 888 หรือ 123"
+                    maxLength={4}
+                    value={form.cvv}
+                    onChange={handleCvvChange}
+                    className="account-input mono"
+                  />
+                </div>
+              </>
+            )}
 
             <div className="form-group">
-              <label>รหัสความปลอดภัย (CVV / CVC 3-4 ตัว)</label>
-              <input
-                type="text"
-                placeholder="เช่น 888 หรือ 123"
-                maxLength={4}
-                value={form.cvv}
-                onChange={handleCvvChange}
-                className="account-input mono"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>ชื่อเจ้าของบัญชี / ชื่อบนบัตร</label>
+              <label>
+                {form.type === 'promptpay'
+                  ? 'ชื่อ-นามสกุล ผู้รับเงิน'
+                  : form.type === 'card'
+                  ? 'ชื่อบนหน้าบัตร'
+                  : 'ชื่อเจ้าของบัญชี'}
+              </label>
               <input
                 type="text"
                 placeholder="เช่น NATTANONT VONGKASAI"
@@ -3559,10 +3929,18 @@ function AccountModal({ account, onClose, onSave }) {
             </div>
 
             <div className="form-group">
-              <label>ชื่อเรียกบัญชี (ไม่จำเป็น)</label>
+              <label>
+                {form.type === 'bank'
+                  ? 'สาขาธนาคาร / บันทึก (เช่น สำนักงานใหญ่)'
+                  : 'บันทึกช่วยจำ (ไม่จำเป็น)'}
+              </label>
               <input
                 type="text"
-                placeholder="เช่น บัญชีรับเงินร้าน, เงินเก็บ"
+                placeholder={
+                  form.type === 'bank'
+                    ? 'เช่น สาขาหลัก, บัญชีรับเงินร้าน'
+                    : 'เช่น บัญชีส่วนตัว, บัญชีออม'
+                }
                 value={form.label}
                 onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
                 className="account-input"
@@ -3764,13 +4142,18 @@ function SavingsPage({ flash }) {
   }
 
   const handleCopyAll = async (acc) => {
-    let text = `${acc.bankName || acc.bankCode}\nเลขที่บัญชี: ${acc.accNumber}\nชื่อบัญชี: ${acc.accName}`
-    if (acc.expiry) text += `\nวันหมดอายุ (EXP): ${acc.expiry}`
-    if (acc.cvv) text += `\nCVV/CVC: ${acc.cvv}`
-    if (acc.label) text += `\n(${acc.label})`
+    let text = ''
+    if (acc.type === 'promptpay') {
+      text = `พร้อมเพย์ (PromptPay)\nเบอร์/เลขบัตร: ${formatAccNumber(acc.accNumber, 'promptpay')}\nชื่อผู้รับเงิน: ${acc.accName}${acc.label ? `\n(${acc.label})` : ''}`
+    } else if (acc.type === 'card') {
+      text = `${acc.bankName || 'บัตรเครดิต/เดบิต'}\nเลขบัตร: ${formatAccNumber(acc.accNumber, 'card')}\nชื่อบนบัตร: ${acc.accName}${acc.expiry ? `\nวันหมดอายุ (EXP): ${acc.expiry}` : ''}${acc.cvv ? `\nCVV: ${acc.cvv}` : ''}${acc.label ? `\n(${acc.label})` : ''}`
+    } else {
+      // bank passbook
+      text = `${acc.bankName || acc.bankCode} (สมุดบัญชีเงินฝาก)\nเลขที่บัญชี: ${formatAccNumber(acc.accNumber, 'bank')}\nชื่อบัญชี: ${acc.accName}${acc.label ? `\n(${acc.label})` : ''}`
+    }
     await safeCopyText(text)
     setCopiedField(`${acc.id}-all`)
-    flash('คัดลอกข้อมูลบัญชี/การ์ดแล้ว ✓')
+    flash('คัดลอกข้อมูลเรียบร้อยแล้ว ✓')
     setTimeout(() => setCopiedField(null), 2000)
   }
 
