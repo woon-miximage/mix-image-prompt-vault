@@ -681,6 +681,20 @@ function Icon({ name, className = '', filled = false }) {
           <line x1="12" y1="20" x2="12.01" y2="20" strokeWidth="3" />
         </svg>
       )
+    case 'eye':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      )
+    case 'eye-off':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+          <line x1="1" y1="1" x2="23" y2="23" />
+        </svg>
+      )
     default:
       return <span className="icon-fallback">•</span>
   }
@@ -3214,8 +3228,14 @@ const BANK_PRESETS = [
 function formatAccNumber(val, type) {
   if (!val) return ''
   const clean = String(val).replace(/\D/g, '')
-  if (type === 'card' && clean.length === 16) {
-    return clean.replace(/(\d{4})(\d{4})(\d{4})(\d{4})/, '$1 $2 $3 $4')
+  if (type === 'card') {
+    if (clean.length === 16) {
+      return clean.replace(/(\d{4})(\d{4})(\d{4})(\d{4})/, '$1 $2 $3 $4')
+    }
+    if (clean.length > 4) {
+      return clean.replace(/(\d{4})(?=\d)/g, '$1 ')
+    }
+    return clean || val
   }
   if (clean.length === 10) {
     return clean.replace(/(\d{3})(\d{1})(\d{5})(\d{1})/, '$1-$2-$3-$4')
@@ -3232,11 +3252,24 @@ function formatAccNumber(val, type) {
   return val
 }
 
-const VirtualCard = memo(function VirtualCard({ account, onCopyNumber, onCopyAll, onEdit, onDelete, copiedField }) {
+const VirtualCard = memo(function VirtualCard({
+  account,
+  onCopyNumber,
+  onCopyCvv,
+  onCopyAll,
+  onEdit,
+  onDelete,
+  copiedField
+}) {
+  const [showCvv, setShowCvv] = useState(false)
   const preset = BANK_PRESETS.find(b => b.id === account.bank) || BANK_PRESETS[0]
   const formattedNumber = formatAccNumber(account.accNumber, account.type)
   const isCopiedNum = copiedField === `${account.id}-num`
+  const isCopiedCvv = copiedField === `${account.id}-cvv`
   const isCopiedAll = copiedField === `${account.id}-all`
+
+  const expiryText = account.expiry || '12/29'
+  const cvvText = account.cvv || '888'
 
   return (
     <div className={`virtual-card-glass theme-${account.color || preset.color}`} style={{ background: preset.bg }}>
@@ -3269,30 +3302,62 @@ const VirtualCard = memo(function VirtualCard({ account, onCopyNumber, onCopyAll
         )}
       </div>
 
-      {/* Account Number Box with instant copy */}
+      {/* Account / Card Number (Guaranteed Single Line) */}
       <div
         className="virtual-card-number-box"
         onClick={() => onCopyNumber(account)}
-        title="คลิกเพื่อคัดลอกเลขบัญชี"
+        title="คลิกเพื่อคัดลอกเลขบัญชี/เลขบัตร"
         role="button"
         tabIndex={0}
       >
-        <span className="virtual-card-number">{formattedNumber || '•••• •••• ••••'}</span>
+        <span className="virtual-card-number">{formattedNumber || '•••• •••• •••• ••••'}</span>
         <button
           type="button"
-          className={`card-quick-copy-btn ${isCopiedNum ? 'copied' : ''}`}
+          className={`card-quick-copy-pill ${isCopiedNum ? 'copied' : ''}`}
           onClick={(e) => { e.stopPropagation(); onCopyNumber(account); }}
-          title="คัดลอกเฉพาะเลข"
+          title={isCopiedNum ? 'คัดลอกแล้ว' : 'คัดลอกเฉพาะเลข'}
         >
           <Icon name={isCopiedNum ? 'check' : 'copy'} />
-          <span>{isCopiedNum ? 'คัดลอกแล้ว' : 'คัดลอกเลข'}</span>
         </button>
       </div>
 
-      {/* Card Footer */}
+      {/* Expiry Date (วันหมดอายุ) & Security Code (CVV 3-4 ตัว) */}
+      <div className="virtual-card-sec-row">
+        <div className="card-sec-col">
+          <span className="card-sec-label">VALID THRU</span>
+          <span className="card-sec-val mono">{expiryText}</span>
+        </div>
+
+        <div className="card-sec-col">
+          <span className="card-sec-label">CVV / CVC</span>
+          <div className="card-cvv-interactive">
+            <span className="card-sec-val mono">
+              {showCvv ? cvvText : '•••'}
+            </span>
+            <button
+              type="button"
+              className="card-sec-icon-btn"
+              onClick={(e) => { e.stopPropagation(); setShowCvv(v => !v); }}
+              title={showCvv ? 'ซ่อนรหัส CVV' : 'แสดงรหัส CVV'}
+            >
+              <Icon name={showCvv ? 'eye-off' : 'eye'} />
+            </button>
+            <button
+              type="button"
+              className={`card-sec-icon-btn ${isCopiedCvv ? 'copied' : ''}`}
+              onClick={(e) => { e.stopPropagation(); onCopyCvv(account); }}
+              title="คัดลอกรหัส CVV"
+            >
+              <Icon name={isCopiedCvv ? 'check' : 'copy'} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Card Footer: Holder Name & Action Buttons */}
       <div className="virtual-card-footer">
         <div className="card-holder-info">
-          <span className="card-holder-label">ACCOUNT HOLDER</span>
+          <span className="card-holder-label">CARD / ACCOUNT HOLDER</span>
           <strong className="card-holder-name">{account.accName || 'NATTANONT VONGKASAI'}</strong>
         </div>
 
@@ -3338,6 +3403,8 @@ function AccountModal({ account, onClose, onSave }) {
     accName: account?.accName || 'NATTANONT VONGKASAI',
     label: account?.label || '',
     color: account?.color || 'kbank',
+    expiry: account?.expiry || '12/29',
+    cvv: account?.cvv || '888',
   }))
 
   const handleBankChange = (bankId) => {
@@ -3353,6 +3420,20 @@ function AccountModal({ account, onClose, onSave }) {
     }
   }
 
+  const handleExpiryChange = (e) => {
+    let val = e.target.value.replace(/[^\d/]/g, '')
+    if (val.length === 2 && !val.includes('/') && form.expiry.length < 2) {
+      val = val + '/'
+    }
+    if (val.length > 5) val = val.slice(0, 5)
+    setForm(f => ({ ...f, expiry: val }))
+  }
+
+  const handleCvvChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 4)
+    setForm(f => ({ ...f, cvv: val }))
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!form.accNumber.trim()) return
@@ -3362,6 +3443,8 @@ function AccountModal({ account, onClose, onSave }) {
       accNumber: form.accNumber.trim(),
       accName: form.accName.trim() || 'NATTANONT VONGKASAI',
       label: form.label.trim(),
+      expiry: form.expiry.trim() || '12/29',
+      cvv: form.cvv.trim() || '888',
     })
   }
 
@@ -3387,9 +3470,12 @@ function AccountModal({ account, onClose, onSave }) {
               ...form,
               id: 'preview',
               bankName: form.bankName || preset.name,
-              bankCode: form.bankCode || preset.code
+              bankCode: form.bankCode || preset.code,
+              expiry: form.expiry || '12/29',
+              cvv: form.cvv || '888'
             }}
             onCopyNumber={() => {}}
+            onCopyCvv={() => {}}
             onCopyAll={() => {}}
             onEdit={() => {}}
             onDelete={() => {}}
@@ -3438,7 +3524,31 @@ function AccountModal({ account, onClose, onSave }) {
             </div>
 
             <div className="form-group">
-              <label>ชื่อเจ้าของบัญชี</label>
+              <label>วันหมดอายุ (EXP: MM/YY)</label>
+              <input
+                type="text"
+                placeholder="เช่น 12/29"
+                maxLength={5}
+                value={form.expiry}
+                onChange={handleExpiryChange}
+                className="account-input mono"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>รหัสความปลอดภัย (CVV / CVC 3-4 ตัว)</label>
+              <input
+                type="text"
+                placeholder="เช่น 888 หรือ 123"
+                maxLength={4}
+                value={form.cvv}
+                onChange={handleCvvChange}
+                className="account-input mono"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>ชื่อเจ้าของบัญชี / ชื่อบนบัตร</label>
               <input
                 type="text"
                 placeholder="เช่น NATTANONT VONGKASAI"
@@ -3645,11 +3755,22 @@ function SavingsPage({ flash }) {
     setTimeout(() => setCopiedField(null), 2000)
   }
 
+  const handleCopyCvv = async (acc) => {
+    const cvv = acc.cvv || '888'
+    await safeCopyText(cvv)
+    setCopiedField(`${acc.id}-cvv`)
+    flash(`คัดลอกรหัส CVV (${cvv}) แล้ว ✓`)
+    setTimeout(() => setCopiedField(null), 2000)
+  }
+
   const handleCopyAll = async (acc) => {
-    const text = `${acc.bankName || acc.bankCode}\nเลขที่บัญชี: ${acc.accNumber}\nชื่อบัญชี: ${acc.accName}${acc.label ? `\n(${acc.label})` : ''}`
+    let text = `${acc.bankName || acc.bankCode}\nเลขที่บัญชี: ${acc.accNumber}\nชื่อบัญชี: ${acc.accName}`
+    if (acc.expiry) text += `\nวันหมดอายุ (EXP): ${acc.expiry}`
+    if (acc.cvv) text += `\nCVV/CVC: ${acc.cvv}`
+    if (acc.label) text += `\n(${acc.label})`
     await safeCopyText(text)
     setCopiedField(`${acc.id}-all`)
-    flash('คัดลอกข้อมูลโอนเงินแล้ว ✓')
+    flash('คัดลอกข้อมูลบัญชี/การ์ดแล้ว ✓')
     setTimeout(() => setCopiedField(null), 2000)
   }
 
@@ -3876,7 +3997,9 @@ function SavingsPage({ flash }) {
                 accNumber: '',
                 accName: 'NATTANONT VONGKASAI',
                 label: '',
-                color: 'kbank'
+                color: 'kbank',
+                expiry: '12/29',
+                cvv: '888'
               })
               setShowAccountModal(true)
             }}
@@ -3891,6 +4014,7 @@ function SavingsPage({ flash }) {
               key={acc.id}
               account={acc}
               onCopyNumber={handleCopyNumber}
+              onCopyCvv={handleCopyCvv}
               onCopyAll={handleCopyAll}
               onEdit={(target) => { setEditingAccount(target); setShowAccountModal(true); }}
               onDelete={handleDeleteAccount}

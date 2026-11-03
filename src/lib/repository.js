@@ -437,6 +437,8 @@ const DEFAULT_ACCOUNTS = [
     accName: 'NATTANONT VONGKASAI',
     label: 'บัญชีหลักรับเงิน',
     color: 'kbank',
+    expiry: '12/29',
+    cvv: '888',
     createdAt: new Date().toISOString(),
   }
 ]
@@ -470,6 +472,8 @@ const normalizeAccount = (id, data = {}) => ({
   accName: data.accName || data.account_name || '',
   label: data.label || '',
   color: data.color || 'kbank',
+  expiry: data.expiry || data.exp || (id === 'kbank-main' ? '12/29' : ''),
+  cvv: data.cvv || data.cvc || (id === 'kbank-main' ? '888' : ''),
   createdAt: asDateValue(data.created_at || data.createdAt),
 })
 
@@ -491,6 +495,8 @@ export const saveCloudAccount = async (acc) => {
     accName: acc.accName || '',
     label: acc.label || '',
     color: acc.color || 'kbank',
+    expiry: acc.expiry || '',
+    cvv: acc.cvv || '',
     created_at: serverTimestamp(),
   })
   return docRef.id
@@ -508,6 +514,8 @@ export const updateCloudAccount = async (acc) => {
       accName: acc.accName || '',
       label: acc.label || '',
       color: acc.color || 'kbank',
+      expiry: acc.expiry || '',
+      cvv: acc.cvv || '',
       updated_at: serverTimestamp(),
     })
   } catch (err) {

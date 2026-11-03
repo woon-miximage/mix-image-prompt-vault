@@ -6337,7 +6337,7 @@ body {
   position: relative;
   border-radius: 1.35rem;
   padding: 1.35rem 1.45rem;
-  min-height: 205px;
+  min-height: 220px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -6515,65 +6515,145 @@ body {
   color: #ffffff;
 }
 
-/* Account Number */
+/* Account Number (Single Line Guaranteed) */
 .virtual-card-number-box {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
   gap: 0.5rem;
   padding: 0.42rem 0.65rem;
   border-radius: 0.65rem;
-  background: rgba(0, 0, 0, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
   z-index: 2;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .virtual-card-number-box:hover {
-  background: rgba(0, 0, 0, 0.26);
+  background: rgba(0, 0, 0, 0.28);
   border-color: rgba(255, 255, 255, 0.45);
 }
 
 .virtual-card-number {
-  font-family: 'SF Mono', Monaco, Consolas, monospace;
-  font-size: 1.15rem;
-  font-weight: 900;
-  letter-spacing: 0.12em;
+  font-family: 'SF Mono', Monaco, Consolas, 'Courier New', monospace;
+  font-size: clamp(0.92rem, 3.2vw, 1.18rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
   color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 
-.card-quick-copy-btn {
+.card-quick-copy-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.24rem 0.55rem;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.35);
   background: rgba(255, 255, 255, 0.2);
   color: #ffffff;
-  font-size: 0.62rem;
-  font-weight: 800;
   cursor: pointer;
   transition: all 0.15s ease;
+  padding: 0;
 }
 
-.card-quick-copy-btn:hover {
-  background: rgba(255, 255, 255, 0.35);
-  border-color: #ffffff;
+.card-quick-copy-pill:hover {
+  background: rgba(255, 255, 255, 0.38);
+  transform: scale(1.08);
 }
 
-.card-quick-copy-btn.copied {
+.card-quick-copy-pill.copied {
   background: #10b981;
   border-color: #34d399;
   color: #ffffff;
 }
 
-.card-quick-copy-btn .svg-icon {
-  width: 0.72rem;
-  height: 0.72rem;
+.card-quick-copy-pill .svg-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+/* ── Expiry & Security Row (วันหมดอายุ & CVV 3-4 ตัว) ── */
+.virtual-card-sec-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 0.35rem 0 0.1rem;
+  position: relative;
+  z-index: 2;
+}
+
+.card-sec-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.card-sec-label {
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  opacity: 0.78;
+  text-transform: uppercase;
+}
+
+.card-sec-val {
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.card-cvv-interactive {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(0, 0, 0, 0.18);
+  padding: 0.12rem 0.38rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.card-sec-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.card-sec-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.card-sec-icon-btn.copied {
+  background: #10b981;
+  border-color: #34d399;
+}
+
+.card-sec-icon-btn .svg-icon {
+  width: 0.7rem;
+  height: 0.7rem;
 }
 
 /* Card Footer */
@@ -6819,13 +6899,17 @@ body {
   }
 
   .virtual-card-glass {
-    padding: 1.15rem 1.25rem;
-    min-height: 195px;
+    padding: 1.15rem 1.15rem;
+    min-height: 215px;
   }
 
   .virtual-card-number {
-    font-size: 1.05rem;
-    letter-spacing: 0.08em;
+    font-size: 0.96rem;
+    letter-spacing: 0.05em;
+  }
+
+  .virtual-card-sec-row {
+    gap: 1rem;
   }
 
   .savings-hero-amount {
