@@ -474,6 +474,12 @@ const normalizeAccount = (id, data = {}) => ({
   color: data.color || 'kbank',
   expiry: data.expiry || data.exp || (id === 'kbank-main' ? '12/29' : ''),
   cvv: data.cvv || data.cvc || (id === 'kbank-main' ? '888' : ''),
+  sortOrder:
+    typeof data.sortOrder === 'number'
+      ? data.sortOrder
+      : typeof data.sort_order === 'number'
+      ? data.sort_order
+      : null,
   createdAt: asDateValue(data.created_at || data.createdAt),
 })
 
@@ -482,7 +488,13 @@ export const loadCloudAccounts = async () => {
   if (snap.empty) {
     return DEFAULT_ACCOUNTS
   }
-  return snap.docs.map((d) => normalizeAccount(d.id, d.data()))
+  const list = snap.docs.map((d) => normalizeAccount(d.id, d.data()))
+  return list.sort((a, b) => {
+    const aOrder = typeof a.sortOrder === 'number' ? a.sortOrder : Number.MAX_SAFE_INTEGER
+    const bOrder = typeof b.sortOrder === 'number' ? b.sortOrder : Number.MAX_SAFE_INTEGER
+    if (aOrder !== bOrder) return aOrder - bOrder
+    return String(a.createdAt || '').localeCompare(String(b.createdAt || ''))
+  })
 }
 
 export const saveCloudAccount = async (acc) => {
@@ -497,6 +509,7 @@ export const saveCloudAccount = async (acc) => {
     color: acc.color || 'kbank',
     expiry: acc.expiry || '',
     cvv: acc.cvv || '',
+    sortOrder: typeof acc.sortOrder === 'number' ? acc.sortOrder : 0,
     created_at: serverTimestamp(),
   })
   return docRef.id
@@ -516,10 +529,29 @@ export const updateCloudAccount = async (acc) => {
       color: acc.color || 'kbank',
       expiry: acc.expiry || '',
       cvv: acc.cvv || '',
+      ...(typeof acc.sortOrder === 'number' ? { sortOrder: acc.sortOrder } : {}),
       updated_at: serverTimestamp(),
     })
   } catch (err) {
     console.warn('updateDoc (account) error:', err)
+  }
+}
+
+export const updateCloudAccountOrder = async (accounts = []) => {
+  try {
+    await Promise.all(
+      accounts.map((acc, idx) => {
+        if (!acc?.id || String(acc.id).startsWith('local-') || acc.id === 'kbank-main') {
+          return Promise.resolve()
+        }
+        return updateDoc(doc(db, SAVINGS_ACCOUNTS_COLLECTION, acc.id), {
+          sortOrder: idx,
+          updated_at: serverTimestamp(),
+        }).catch(() => {})
+      })
+    )
+  } catch (err) {
+    console.warn('updateCloudAccountOrder error:', err)
   }
 }
 

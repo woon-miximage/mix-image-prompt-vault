@@ -19,6 +19,7 @@ import {
   saveCloudPrompt,
   saveCloudSavingsTxn,
   updateCloudAccount,
+  updateCloudAccountOrder,
   updateCloudPrompt,
   updateCloudPromptsOrder,
   writeLocalAccounts,
@@ -1067,13 +1068,15 @@ const PromptCard = memo(function PromptCard({
   useEffect(() => {
     if (!showMoveMenu) return
     const handleClickOutside = (e) => {
+      // หากกำลังพิมพ์ชื่อโฟลเดอร์ใหม่หรือค้นหาอยู่ ห้ามยุบหน้าต่างเองเมื่อเผลอคลิกข้างนอก
+      if (quickNewFolder.trim() || folderSearch.trim()) return
       if (moveMenuRef.current && !moveMenuRef.current.contains(e.target)) {
         setShowMoveMenu(false)
       }
     }
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
-  }, [showMoveMenu])
+  }, [showMoveMenu, quickNewFolder, folderSearch])
 
   const handleCopy = (e) => {
     e.stopPropagation()
@@ -1103,7 +1106,7 @@ const PromptCard = memo(function PromptCard({
   return (
     <article
       className={`prompt-card ${isDragging ? 'is-dragging' : ''} ${isDragOver ? 'is-drag-over' : ''} ${showMoveMenu ? 'popover-open' : ''}`}
-      draggable
+      draggable={!showMoveMenu}
       onDragStart={(e) => onDragStart?.(e, item)}
       onDragOver={(e) => onDragOver?.(e, item)}
       onDragLeave={(e) => onDragLeave?.(e, item)}
@@ -1449,11 +1452,31 @@ const PromptCard = memo(function PromptCard({
   )
 })
 
+const PROMPT_DRAFT_KEY = 'mix-image-prompt-vault.prompt-editor-draft.v1'
+
 function PromptEditor({ item, folders = [], defaultCategory = 'main', defaultFolder = '', onClose, onSave }) {
   const isEditing = Boolean(item?.id)
   const [form, setForm] = useState(() => {
     const initialCategory = item?.category || defaultCategory || 'main'
     const initialFolder = (item?.folder || defaultFolder || '').trim()
+    if (!isEditing) {
+      try {
+        const savedDraft = sessionStorage.getItem(PROMPT_DRAFT_KEY)
+        if (savedDraft) {
+          const parsed = JSON.parse(savedDraft)
+          if (parsed && typeof parsed === 'object') {
+            return {
+              ...emptyForm,
+              category: initialCategory,
+              folder: initialFolder,
+              ...parsed,
+            }
+          }
+        }
+      } catch {
+        // ignore draft parse errors
+      }
+    }
     return {
       ...emptyForm,
       category: initialCategory,
@@ -1463,10 +1486,51 @@ function PromptEditor({ item, folders = [], defaultCategory = 'main', defaultFol
     }
   })
   const [imageFile, setImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState(item?.imageUrls?.[0] || '')
+  const [imagePreview, setImagePreview] = useState(() => {
+    if (item?.imageUrls?.[0]) return item.imageUrls[0]
+    if (!isEditing) {
+      try {
+        const savedDraft = sessionStorage.getItem(PROMPT_DRAFT_KEY)
+        if (savedDraft) {
+          const parsed = JSON.parse(savedDraft)
+          if (parsed?.imagePreview) return parsed.imagePreview
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return ''
+  })
   const [isDragOver, setIsDragOver] = useState(false)
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef(null)
+
+  // บันทึกร่างอัตโนมัติ (Auto-save Draft) ขณะพิมพ์เพิ่มพรอมต์ใหม่ ป้องกันข้อมูลหายหากเผลอกดผิด
+  useEffect(() => {
+    if (isEditing) return
+    try {
+      sessionStorage.setItem(
+        PROMPT_DRAFT_KEY,
+        JSON.stringify({
+          ...form,
+          imagePreview: imagePreview && imagePreview.startsWith('data:') ? imagePreview : '',
+        })
+      )
+    } catch {
+      // ignore quota error
+    }
+  }, [form, imagePreview, isEditing])
+
+  const clearDraftAndClose = () => {
+    if (!isEditing) {
+      try {
+        sessionStorage.removeItem(PROMPT_DRAFT_KEY)
+      } catch {
+        // ignore
+      }
+    }
+    onClose()
+  }
 
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }))
   // โฟลเดอร์ที่เลือกได้ = เฉพาะของห้อง (หมวดหมู่) ที่เลือกอยู่ในฟอร์ม
@@ -1516,13 +1580,20 @@ function PromptEditor({ item, folders = [], defaultCategory = 'main', defaultFol
         imageFile,
         precompressedPreview: imageFile && imagePreview.startsWith('data:') ? imagePreview : '',
       })
+      if (!isEditing) {
+        try {
+          sessionStorage.removeItem(PROMPT_DRAFT_KEY)
+        } catch {
+          // ignore
+        }
+      }
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
+    <div className="modal-backdrop" role="presentation">
       <section
         className="editor-modal glass-panel"
         role="dialog"
@@ -1532,10 +1603,10 @@ function PromptEditor({ item, folders = [], defaultCategory = 'main', defaultFol
       >
         <div className="modal-header">
           <div>
-            <p className="eyebrow">PROMPT VAULT</p>
+            <p className="eyebrow">PROMPT VAULT • ล็อคหน้าต่างป้องกันข้อมูลหาย</p>
             <h2 id="editor-title">{isEditing ? 'แก้ไขข้อมูลพรอมต์' : 'เพิ่มพรอมต์ใหม่'}</h2>
           </div>
-          <button type="button" className="icon-button close-button" onClick={onClose} aria-label="ปิด">
+          <button type="button" className="icon-button close-button" onClick={clearDraftAndClose} aria-label="ยกเลิกและปิด" title="ยกเลิกและปิดหน้าต่าง">
             <Icon name="close" />
           </button>
         </div>
@@ -1723,7 +1794,7 @@ function PromptEditor({ item, folders = [], defaultCategory = 'main', defaultFol
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="secondary-button" onClick={onClose}>
+            <button type="button" className="secondary-button" onClick={clearDraftAndClose}>
               ยกเลิก
             </button>
             <button type="submit" className="primary-button" disabled={saving}>
@@ -1759,7 +1830,7 @@ function DetailModal({
   const categoryInfo = categories.find((c) => c.id === item.category) || { label: item.category, color: 'slate' }
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="presentation">
+    <div className="modal-backdrop" role="presentation">
       <section
         className="detail-modal glass-panel"
         role="dialog"
@@ -2048,28 +2119,65 @@ function getWeatherCondition(code) {
   return { label: 'อากาศทั่วไป', icon: 'sun', emoji: '🌤️' }
 }
 
+const KEEP_NOTE_DRAFT_KEY = 'mix-image-prompt-vault.keep-note-draft.v1'
+
 // 1. เครื่องมือเขียนโน๊ต กดแล้วขยายเหมือน Google Keep รองรับแนบรูปภาพพร้อมบีบอัดความเร็วสูง
 function QuickKeepNoteWidget({ onSaveNote }) {
   const [expanded, setExpanded] = useState(false)
-  const [title, setTitle] = useState('')
-  const [notes, setNotes] = useState('')
-  const [pinned, setPinned] = useState(false)
-  const [color, setColor] = useState(KEEP_COLORS[0])
+  const [title, setTitle] = useState(() => {
+    try {
+      const saved = localStorage.getItem(KEEP_NOTE_DRAFT_KEY)
+      return saved ? JSON.parse(saved)?.title || '' : ''
+    } catch {
+      return ''
+    }
+  })
+  const [notes, setNotes] = useState(() => {
+    try {
+      const saved = localStorage.getItem(KEEP_NOTE_DRAFT_KEY)
+      return saved ? JSON.parse(saved)?.notes || '' : ''
+    } catch {
+      return ''
+    }
+  })
+  const [pinned, setPinned] = useState(() => {
+    try {
+      const saved = localStorage.getItem(KEEP_NOTE_DRAFT_KEY)
+      return saved ? Boolean(JSON.parse(saved)?.pinned) : false
+    } catch {
+      return false
+    }
+  })
+  const [color, setColor] = useState(() => {
+    try {
+      const saved = localStorage.getItem(KEEP_NOTE_DRAFT_KEY)
+      const colorId = saved ? JSON.parse(saved)?.colorId : null
+      return KEEP_COLORS.find((c) => c.id === colorId) || KEEP_COLORS[0]
+    } catch {
+      return KEEP_COLORS[0]
+    }
+  })
   const [imagePreview, setImagePreview] = useState('')
   const [isCompressing, setIsCompressing] = useState(false)
   const [showPalette, setShowPalette] = useState(false)
   const fileInputRef = useRef(null)
 
+  // บันทึกร่างโน้ตอัตโนมัติ ป้องกันข้อความหาย
   useEffect(() => {
-    if (!expanded) return
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        handleClose()
-      }
+    try {
+      localStorage.setItem(
+        KEEP_NOTE_DRAFT_KEY,
+        JSON.stringify({
+          title,
+          notes,
+          pinned,
+          colorId: color.id,
+        })
+      )
+    } catch {
+      // ignore
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [expanded, title, notes, imagePreview, pinned, color])
+  }, [title, notes, pinned, color])
 
   const handleImageChange = async (e) => {
     const file = e.target.files?.[0]
@@ -2082,6 +2190,20 @@ function QuickKeepNoteWidget({ onSaveNote }) {
       console.warn('Image compression warning:', err)
     } finally {
       setIsCompressing(false)
+    }
+  }
+
+  const clearNoteForm = () => {
+    setTitle('')
+    setNotes('')
+    setImagePreview('')
+    setPinned(false)
+    setColor(KEEP_COLORS[0])
+    setShowPalette(false)
+    try {
+      localStorage.removeItem(KEEP_NOTE_DRAFT_KEY)
+    } catch {
+      // ignore
     }
   }
 
@@ -2107,21 +2229,13 @@ function QuickKeepNoteWidget({ onSaveNote }) {
       precompressedPreview: imagePreview || '',
       color: color.bg,
     })
-    setTitle('')
-    setNotes('')
-    setImagePreview('')
-    setPinned(false)
-    setColor(KEEP_COLORS[0])
-    setShowPalette(false)
+    clearNoteForm()
     setExpanded(false)
   }
 
-  const handleClose = () => {
-    if (title.trim() || notes.trim() || imagePreview) {
-      handleSave()
-    } else {
-      setExpanded(false)
-    }
+  const handleCancel = () => {
+    clearNoteForm()
+    setExpanded(false)
   }
 
   return (
@@ -2138,7 +2252,7 @@ function QuickKeepNoteWidget({ onSaveNote }) {
       </button>
 
       {expanded && (
-        <div className="keep-modal-backdrop" onClick={handleClose}>
+        <div className="keep-modal-backdrop">
           <div
             className="keep-card animate-scale-in"
             style={{ backgroundColor: color.bg, borderColor: color.border }}
@@ -2252,9 +2366,10 @@ function QuickKeepNoteWidget({ onSaveNote }) {
                 <button
                   type="button"
                   className="keep-btn-close"
-                  onClick={() => setExpanded(false)}
+                  onClick={handleCancel}
+                  title="ยกเลิกและปิดหน้าต่าง"
                 >
-                  ปิด
+                  ยกเลิก
                 </button>
                 <button
                   type="button"
@@ -2384,7 +2499,6 @@ function CalculatorWidget() {
       else if (event.key === '*') chooseOperation('×')
       else if (event.key === '/') chooseOperation('÷')
       else if (event.key === 'Enter' || event.key === '=') handleEquals()
-      else if (event.key === 'Escape') setIsOpen(false)
       else if (event.key === 'Backspace') setDisplay((current) => current.length > 1 ? current.slice(0, -1) : '0')
       else return
       event.preventDefault()
@@ -2406,7 +2520,7 @@ function CalculatorWidget() {
       </button>
 
       {isOpen && (
-        <div className="calculator-modal-backdrop" onClick={() => setIsOpen(false)}>
+        <div className="calculator-modal-backdrop">
           <div className="calculator-card animate-scale-in" onClick={(event) => event.stopPropagation()}>
             <div className="calculator-header">
               <div>
@@ -2560,7 +2674,7 @@ function CalendarLockWidget({ items = [], lockedDate, onLockDate, onClearLock })
       </div>
 
       {isOpen && (
-        <div className="calendar-modal-backdrop" onClick={() => setIsOpen(false)}>
+        <div className="calendar-modal-backdrop">
           <div className="calendar-card animate-scale-in" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="calendar-header">
@@ -2763,7 +2877,7 @@ function WeatherMekhaWidget() {
       </button>
 
       {isOpen && (
-        <div className="weather-modal-backdrop" onClick={() => setIsOpen(false)}>
+        <div className="weather-modal-backdrop">
           <div className="weather-card animate-scale-in" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="weather-header">
@@ -2942,7 +3056,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop">
       <div className="modal-card download-modal-card animate-scale-in" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="download-modal-header-brand">
@@ -3291,6 +3405,75 @@ function formatAccNumber(val, type) {
   return val
 }
 
+const ACCOUNT_TYPE_TABS = [
+  { id: 'all', label: 'ทั้งหมด', emoji: '✨', badge: 'ALL' },
+  { id: 'bank', label: 'สมุดบัญชี', emoji: '📖', badge: 'สมุดบัญชี' },
+  { id: 'card', label: 'การ์ด', emoji: '💳', badge: 'การ์ด' },
+  { id: 'promptpay', label: 'พร้อมเพย์', emoji: '⚡', badge: 'พร้อมเพย์' },
+]
+
+function CardDragToolbar({
+  account,
+  index = 0,
+  totalShown = 1,
+  onMoveStep,
+  isPreview = false,
+}) {
+  if (isPreview) return null
+  const typeLabel =
+    account.type === 'promptpay'
+      ? '⚡ พร้อมเพย์'
+      : account.type === 'card'
+      ? '💳 การ์ด'
+      : '📖 สมุดบัญชี'
+
+  return (
+    <div
+      className="vcard-drag-toolbar"
+      title="คลิกค้างที่การ์ดเพื่อลากย้ายตำแหน่ง หรือลากไปวางทับแท็กด้านบนเพื่อเปลี่ยนประเภท"
+    >
+      <div className="vcard-drag-left">
+        <span className="vcard-drag-grip">
+          <Icon name="grip" />
+          <span>ลากย้าย</span>
+        </span>
+        <span className={`vcard-cat-tag tag-${account.type || 'bank'}`}>
+          {typeLabel}
+        </span>
+      </div>
+
+      <div className="vcard-step-btns">
+        <button
+          type="button"
+          className="vcard-step-btn"
+          disabled={index <= 0}
+          onClick={(e) => {
+            e.stopPropagation()
+            onMoveStep?.(account, -1)
+          }}
+          title="ขยับไปก่อนหน้า"
+          aria-label="ขยับไปก่อนหน้า"
+        >
+          <Icon name="arrow-left" />
+        </button>
+        <button
+          type="button"
+          className="vcard-step-btn"
+          disabled={index >= totalShown - 1}
+          onClick={(e) => {
+            e.stopPropagation()
+            onMoveStep?.(account, 1)
+          }}
+          title="ขยับไปถัดไป"
+          aria-label="ขยับไปถัดไป"
+        >
+          <Icon name="arrow-right" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── 1. Bank Passbook Card (สมุดบัญชีเงินฝาก) ──
 const BankPassbookCard = memo(function BankPassbookCard({
   account,
@@ -3301,16 +3484,43 @@ const BankPassbookCard = memo(function BankPassbookCard({
   onCopyNumber,
   onCopyAll,
   onEdit,
-  onDelete
+  onDelete,
+  index,
+  totalShown,
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  onMoveStep,
+  isPreview,
 }) {
   return (
-    <div className={`virtual-card-glass passbook-style theme-${account.color || preset.color}`} style={{ background: preset.bg }}>
+    <div
+      className={`virtual-card-glass passbook-style theme-${account.color || preset.color} ${isDragging ? 'is-dragging' : ''} ${isDragOver ? 'is-drag-over' : ''}`}
+      style={{ background: preset.bg }}
+      draggable={!isPreview}
+      onDragStart={(e) => !isPreview && onDragStart?.(e, account)}
+      onDragOver={(e) => !isPreview && onDragOver?.(e, account)}
+      onDragLeave={(e) => !isPreview && onDragLeave?.(e, account)}
+      onDrop={(e) => !isPreview && onDrop?.(e, account)}
+      onDragEnd={!isPreview ? onDragEnd : undefined}
+    >
       <div className="passbook-spine">
         <div className="passbook-stitch-line" />
       </div>
       <div className="card-gloss-shimmer" />
 
       <div className="passbook-inner">
+        <CardDragToolbar
+          account={account}
+          index={index}
+          totalShown={totalShown}
+          onMoveStep={onMoveStep}
+          isPreview={isPreview}
+        />
         {/* Passbook Header */}
         <div className="passbook-header">
           <div className="passbook-bank-brand">
@@ -3415,13 +3625,41 @@ const CreditDebitCard = memo(function CreditDebitCard({
   expiryText,
   cvvText,
   showCvv,
-  setShowCvv
+  setShowCvv,
+  index,
+  totalShown,
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  onMoveStep,
+  isPreview,
 }) {
   return (
-    <div className={`virtual-card-glass card-style theme-${account.color || preset.color}`} style={{ background: preset.bg }}>
+    <div
+      className={`virtual-card-glass card-style theme-${account.color || preset.color} ${isDragging ? 'is-dragging' : ''} ${isDragOver ? 'is-drag-over' : ''}`}
+      style={{ background: preset.bg }}
+      draggable={!isPreview}
+      onDragStart={(e) => !isPreview && onDragStart?.(e, account)}
+      onDragOver={(e) => !isPreview && onDragOver?.(e, account)}
+      onDragLeave={(e) => !isPreview && onDragLeave?.(e, account)}
+      onDrop={(e) => !isPreview && onDrop?.(e, account)}
+      onDragEnd={!isPreview ? onDragEnd : undefined}
+    >
       <div className="card-gloss-shimmer" />
       <div className="card-glass-orb orb-a" />
       <div className="card-glass-orb orb-b" />
+
+      <CardDragToolbar
+        account={account}
+        index={index}
+        totalShown={totalShown}
+        onMoveStep={onMoveStep}
+        isPreview={isPreview}
+      />
 
       {/* Top row */}
       <div className="virtual-card-header">
@@ -3547,13 +3785,40 @@ const PromptPayCard = memo(function PromptPayCard({
   onCopyNumber,
   onCopyAll,
   onEdit,
-  onDelete
+  onDelete,
+  index,
+  totalShown,
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  onMoveStep,
+  isPreview,
 }) {
   const isNationalId = account.accNumber?.replace(/\D/g, '').length === 13
 
   return (
-    <div className="virtual-card-glass promptpay-style theme-promptpay">
+    <div
+      className={`virtual-card-glass promptpay-style theme-promptpay ${isDragging ? 'is-dragging' : ''} ${isDragOver ? 'is-drag-over' : ''}`}
+      draggable={!isPreview}
+      onDragStart={(e) => !isPreview && onDragStart?.(e, account)}
+      onDragOver={(e) => !isPreview && onDragOver?.(e, account)}
+      onDragLeave={(e) => !isPreview && onDragLeave?.(e, account)}
+      onDrop={(e) => !isPreview && onDrop?.(e, account)}
+      onDragEnd={!isPreview ? onDragEnd : undefined}
+    >
       <div className="card-gloss-shimmer" />
+
+      <CardDragToolbar
+        account={account}
+        index={index}
+        totalShown={totalShown}
+        onMoveStep={onMoveStep}
+        isPreview={isPreview}
+      />
 
       {/* PromptPay Header */}
       <div className="promptpay-header">
@@ -3656,7 +3921,18 @@ const VirtualCard = memo(function VirtualCard({
   onCopyAll,
   onEdit,
   onDelete,
-  copiedField
+  copiedField,
+  index = 0,
+  totalShown = 1,
+  isDragging = false,
+  isDragOver = false,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  onMoveStep,
+  isPreview = false,
 }) {
   const [showCvv, setShowCvv] = useState(false)
   const preset = BANK_PRESETS.find(b => b.id === account.bank) || BANK_PRESETS[0]
@@ -3677,6 +3953,17 @@ const VirtualCard = memo(function VirtualCard({
     onCopyAll,
     onEdit,
     onDelete,
+    index,
+    totalShown,
+    isDragging,
+    isDragOver,
+    onDragStart,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+    onDragEnd,
+    onMoveStep,
+    isPreview,
   }
 
   if (account.type === 'promptpay') {
@@ -3701,19 +3988,59 @@ const VirtualCard = memo(function VirtualCard({
   return <BankPassbookCard {...commonProps} />
 })
 
+const ACCOUNT_DRAFT_KEY = 'mix-image-prompt-vault.account-modal-draft.v1'
+const SAVINGS_TXN_DRAFT_KEY = 'mix-image-prompt-vault.savings-txn-draft.v1'
+
 function AccountModal({ account, onClose, onSave }) {
-  const [form, setForm] = useState(() => ({
-    type: account?.type || 'bank',
-    bank: account?.bank || 'kbank',
-    bankName: account?.bankName || 'ธนาคารกสิกรไทย',
-    bankCode: account?.bankCode || 'KBANK',
-    accNumber: account?.accNumber || '',
-    accName: account?.accName || 'NATTANONT VONGKASAI',
-    label: account?.label || '',
-    color: account?.color || 'kbank',
-    expiry: account?.expiry || '12/29',
-    cvv: account?.cvv || '888',
-  }))
+  const isEditing = Boolean(account?.id)
+  const [form, setForm] = useState(() => {
+    const base = {
+      type: account?.type || 'bank',
+      bank: account?.bank || 'kbank',
+      bankName: account?.bankName || 'ธนาคารกสิกรไทย',
+      bankCode: account?.bankCode || 'KBANK',
+      accNumber: account?.accNumber || '',
+      accName: account?.accName || 'NATTANONT VONGKASAI',
+      label: account?.label || '',
+      color: account?.color || 'kbank',
+      expiry: account?.expiry || '12/29',
+      cvv: account?.cvv || '888',
+    }
+    if (!isEditing) {
+      try {
+        const saved = sessionStorage.getItem(ACCOUNT_DRAFT_KEY)
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (parsed && typeof parsed === 'object') {
+            return { ...base, ...parsed }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return base
+  })
+
+  useEffect(() => {
+    if (isEditing) return
+    try {
+      sessionStorage.setItem(ACCOUNT_DRAFT_KEY, JSON.stringify(form))
+    } catch {
+      // ignore
+    }
+  }, [form, isEditing])
+
+  const clearDraftAndClose = () => {
+    if (!isEditing) {
+      try {
+        sessionStorage.removeItem(ACCOUNT_DRAFT_KEY)
+      } catch {
+        // ignore
+      }
+    }
+    onClose()
+  }
 
   const handleTypeChange = (newType) => {
     setForm(prev => {
@@ -3783,6 +4110,13 @@ function AccountModal({ account, onClose, onSave }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!form.accNumber.trim()) return
+    if (!isEditing) {
+      try {
+        sessionStorage.removeItem(ACCOUNT_DRAFT_KEY)
+      } catch {
+        // ignore
+      }
+    }
     onSave({
       ...account,
       ...form,
@@ -3797,14 +4131,14 @@ function AccountModal({ account, onClose, onSave }) {
   const preset = BANK_PRESETS.find(b => b.id === form.bank) || BANK_PRESETS[0]
 
   return (
-    <div className="account-modal-overlay" onClick={onClose}>
+    <div className="account-modal-overlay">
       <div className="account-modal-card glass-panel" onClick={e => e.stopPropagation()}>
         <div className="modal-header-row">
           <h3>
             <Icon name={form.type === 'bank' ? 'book' : form.type === 'promptpay' ? 'promptpay' : 'card'} />
             {account?.id ? 'แก้ไขข้อมูล' : 'เพิ่มบัญชี / บัตร / พร้อมเพย์'}
           </h3>
-          <button type="button" className="modal-close-btn" onClick={onClose}>
+          <button type="button" className="modal-close-btn" onClick={clearDraftAndClose} title="ยกเลิกและปิดหน้าต่าง">
             <Icon name="close" />
           </button>
         </div>
@@ -3820,6 +4154,7 @@ function AccountModal({ account, onClose, onSave }) {
               expiry: form.expiry || '12/29',
               cvv: form.cvv || '888'
             }}
+            isPreview={true}
             onCopyNumber={() => {}}
             onCopyCvv={() => {}}
             onCopyAll={() => {}}
@@ -3949,7 +4284,7 @@ function AccountModal({ account, onClose, onSave }) {
           </div>
 
           <div className="modal-actions-row">
-            <button type="button" className="btn-cancel" onClick={onClose}>
+            <button type="button" className="btn-cancel" onClick={clearDraftAndClose}>
               ยกเลิก
             </button>
             <button type="submit" className="primary-button btn-save" disabled={!form.accNumber.trim()}>
@@ -3965,7 +4300,19 @@ function AccountModal({ account, onClose, onSave }) {
 function SavingsPage({ flash }) {
   const [txns, setTxns] = useState([])
   const [accounts, setAccounts] = useState([])
-  const [form, setForm] = useState({ type: 'income', amount: '', label: '', date: new Date().toISOString().slice(0, 10) })
+  const [form, setForm] = useState(() => {
+    const base = { type: 'income', amount: '', label: '', date: new Date().toISOString().slice(0, 10) }
+    try {
+      const saved = sessionStorage.getItem(SAVINGS_TXN_DRAFT_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed && typeof parsed === 'object') return { ...base, ...parsed }
+      }
+    } catch {
+      // ignore
+    }
+    return base
+  })
   const [cloudSync, setCloudSync] = useState('loading')
   const [filterMonth, setFilterMonth] = useState(() => {
     const now = new Date()
@@ -3974,6 +4321,20 @@ function SavingsPage({ flash }) {
   const [editingAccount, setEditingAccount] = useState(null)
   const [showAccountModal, setShowAccountModal] = useState(false)
   const [copiedField, setCopiedField] = useState(null)
+  const [accountTypeFilter, setAccountTypeFilter] = useState('all') // 'all' | 'bank' | 'card' | 'promptpay'
+  const [draggedAccId, setDraggedAccId] = useState(null)
+  const [dragOverAccId, setDragOverAccId] = useState(null)
+  const [dragOverTypeTab, setDragOverTypeTab] = useState(null)
+  const hasLoadedRef = useRef(false)
+
+  // บันทึกร่างฟอร์มรายรับ/รายจ่ายอัตโนมัติ
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SAVINGS_TXN_DRAFT_KEY, JSON.stringify(form))
+    } catch {
+      // ignore
+    }
+  }, [form])
 
   // ── โหลดข้อมูลรายรับรายจ่าย & บัญชีธนาคาร ──
   useEffect(() => {
@@ -3989,12 +4350,14 @@ function SavingsPage({ flash }) {
           writeLocalSavings(cloudTxns || [])
           setAccounts(cloudAccs || [])
           writeLocalAccounts(cloudAccs || [])
+          hasLoadedRef.current = true
           setCloudSync('cloud')
         }
       } catch {
         if (!cancelled) {
           setTxns(readLocalSavings())
           setAccounts(readLocalAccounts())
+          hasLoadedRef.current = true
           setCloudSync('local')
         }
       }
@@ -4004,11 +4367,11 @@ function SavingsPage({ flash }) {
 
   // ── บันทึกลง local ทุกครั้งที่ txns หรือ accounts เปลี่ยน ──
   useEffect(() => {
-    if (txns.length > 0) writeLocalSavings(txns)
+    if (hasLoadedRef.current) writeLocalSavings(txns)
   }, [txns])
 
   useEffect(() => {
-    if (accounts.length > 0) writeLocalAccounts(accounts)
+    if (hasLoadedRef.current) writeLocalAccounts(accounts)
   }, [accounts])
 
   // ── ระบบตัดยอดอัตโนมัติเมื่อข้ามวัน (00:00) ──
@@ -4061,6 +4424,11 @@ function SavingsPage({ flash }) {
     }
     setTxns(prev => [...prev, newTxn])
     setForm({ type: 'income', amount: '', label: '', date: new Date().toISOString().slice(0, 10) })
+    try {
+      sessionStorage.removeItem(SAVINGS_TXN_DRAFT_KEY)
+    } catch {
+      // ignore
+    }
     flash('บันทึกสำเร็จ ✓')
 
     try {
@@ -4087,12 +4455,19 @@ function SavingsPage({ flash }) {
     setShowAccountModal(false)
     setEditingAccount(null)
 
-    if (accData.id && !String(accData.id).startsWith('local-') && accData.id !== 'kbank-main') {
-      // Edit existing
-      setAccounts(prev => prev.map(a => a.id === accData.id ? accData : a))
+    const isExisting = Boolean(accData.id && accounts.some((a) => a.id === accData.id))
+
+    if (isExisting) {
+      // Edit existing (รวมถึง kbank-main หรือ local-* ไม่ให้สร้างซ้ำ)
+      setAccounts(prev => prev.map(a => a.id === accData.id ? { ...a, ...accData } : a))
       flash('บันทึกการแก้ไขแล้ว ✓')
       try {
-        await updateCloudAccount(accData)
+        if (String(accData.id).startsWith('local-') || accData.id === 'kbank-main') {
+          const cloudId = await saveCloudAccount(accData)
+          setAccounts(prev => prev.map(a => a.id === accData.id ? { ...a, ...accData, id: cloudId } : a))
+        } else {
+          await updateCloudAccount(accData)
+        }
       } catch {
         // ignore
       }
@@ -4101,6 +4476,7 @@ function SavingsPage({ flash }) {
       const newAcc = {
         ...accData,
         id: `local-${Date.now()}`,
+        sortOrder: accounts.length,
         createdAt: new Date().toISOString(),
       }
       setAccounts(prev => [...prev, newAcc])
@@ -4120,6 +4496,113 @@ function SavingsPage({ flash }) {
     flash('ลบบัญชีแล้ว')
     try {
       await deleteCloudAccount(id)
+    } catch {
+      // ignore
+    }
+  }
+
+  // ── Drag & Drop ย้ายลำดับการ์ดสมุดบัญชี / การ์ด / พร้อมเพย์ ──
+  const reorderAccounts = (sourceId, targetId) => {
+    if (!sourceId || !targetId || sourceId === targetId) return
+    setAccounts((prev) => {
+      const fromIndex = prev.findIndex((a) => a.id === sourceId)
+      const toIndex = prev.findIndex((a) => a.id === targetId)
+      if (fromIndex === -1 || toIndex === -1) return prev
+      const next = [...prev]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      const withOrder = next.map((acc, idx) => ({ ...acc, sortOrder: idx }))
+      writeLocalAccounts(withOrder)
+      updateCloudAccountOrder(withOrder)
+      return withOrder
+    })
+  }
+
+  const handleAccDragStart = (e, acc) => {
+    setDraggedAccId(acc.id)
+    try {
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', acc.id)
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleAccDragOver = (e, acc) => {
+    e.preventDefault()
+    if (draggedAccId && draggedAccId !== acc.id && dragOverAccId !== acc.id) {
+      setDragOverAccId(acc.id)
+    }
+  }
+
+  const handleAccDragLeave = (e, acc) => {
+    if (dragOverAccId === acc.id) {
+      setDragOverAccId(null)
+    }
+  }
+
+  const handleAccDrop = (e, targetAcc) => {
+    e.preventDefault()
+    const sourceId = draggedAccId || e.dataTransfer?.getData('text/plain')
+    setDraggedAccId(null)
+    setDragOverAccId(null)
+    if (sourceId && targetAcc?.id && sourceId !== targetAcc.id) {
+      reorderAccounts(sourceId, targetAcc.id)
+      flash('ย้ายตำแหน่งการ์ดเรียบร้อย ✓')
+    }
+  }
+
+  const handleAccDragEnd = () => {
+    setDraggedAccId(null)
+    setDragOverAccId(null)
+    setDragOverTypeTab(null)
+  }
+
+  const moveAccStep = (acc, direction) => {
+    const visibleList =
+      accountTypeFilter === 'all'
+        ? accounts
+        : accounts.filter((a) => (a.type || 'bank') === accountTypeFilter)
+    const idx = visibleList.findIndex((a) => a.id === acc.id)
+    const target = visibleList[idx + direction]
+    if (!target) return
+    reorderAccounts(acc.id, target.id)
+  }
+
+  // ลากการ์ดไปวางทับแท็ก สมุดบัญชี / การ์ด / พร้อมเพย์ เพื่อเปลี่ยนประเภททันที
+  const handleTypeTabDrop = async (e, targetType) => {
+    e.preventDefault()
+    const sourceId = draggedAccId || e.dataTransfer?.getData('text/plain')
+    setDraggedAccId(null)
+    setDragOverAccId(null)
+    setDragOverTypeTab(null)
+    if (!sourceId || targetType === 'all') return
+    const targetAcc = accounts.find((a) => a.id === sourceId)
+    if (!targetAcc || targetAcc.type === targetType) return
+
+    let updated = { ...targetAcc, type: targetType }
+    if (targetType === 'promptpay') {
+      const p = BANK_PRESETS.find((b) => b.id === 'promptpay')
+      if (p) {
+        updated = { ...updated, bank: p.id, bankName: p.name, bankCode: p.code, color: p.color }
+      }
+    } else if (targetType === 'card' && targetAcc.bank === 'promptpay') {
+      const c = BANK_PRESETS.find((b) => b.id === 'card')
+      if (c) {
+        updated = { ...updated, bank: c.id, bankName: c.name, bankCode: c.code, color: c.color }
+      }
+    } else if (targetType === 'bank' && (targetAcc.bank === 'promptpay' || targetAcc.bank === 'card')) {
+      const k = BANK_PRESETS.find((b) => b.id === 'kbank')
+      if (k) {
+        updated = { ...updated, bank: k.id, bankName: k.name, bankCode: k.code, color: k.color }
+      }
+    }
+
+    setAccounts((prev) => prev.map((a) => (a.id === sourceId ? updated : a)))
+    const tabInfo = ACCOUNT_TYPE_TABS.find((t) => t.id === targetType)
+    flash(`ย้ายไปหมวด "${tabInfo?.label || targetType}" แล้ว ✓`)
+    try {
+      await updateCloudAccount(updated)
     } catch {
       // ignore
     }
@@ -4361,50 +4844,156 @@ function SavingsPage({ flash }) {
       <div className="savings-accounts-section glass-panel">
         <div className="accounts-section-header">
           <div>
-            <span className="eyebrow">VIRTUAL CARDS &amp; ACCOUNTS</span>
+            <span className="eyebrow">VIRTUAL CARDS &amp; ACCOUNTS • DRAG &amp; DROP REORDER</span>
             <h2>
-              <Icon name="card" /> บัญชีธนาคาร &amp; บัตรเสมือน
+              <Icon name="card" /> บัญชีธนาคาร / การ์ด / พร้อมเพย์
               <span className="count-tag">({accounts.length})</span>
             </h2>
-            <p className="section-subtext">การ์ดสไตล์กลาสมอร์ฟิซึมโปร่งแสง คลิกคัดลอกเลขบัญชีหรือกดส่งต่อข้อมูลโอนเงินได้ทันที</p>
+            <p className="section-subtext">
+              คลิกค้างเพื่อลากย้ายสลับตำแหน่งได้อิสระ • แยกแท็กสมุดบัญชี การ์ด และพร้อมเพย์ชัดเจน
+            </p>
           </div>
           <button
             type="button"
             className="primary-button add-account-btn"
             onClick={() => {
+              const initialType = accountTypeFilter === 'all' ? 'bank' : accountTypeFilter
+              const presetForType =
+                initialType === 'promptpay'
+                  ? BANK_PRESETS.find((b) => b.id === 'promptpay')
+                  : initialType === 'card'
+                  ? BANK_PRESETS.find((b) => b.id === 'kbank')
+                  : BANK_PRESETS.find((b) => b.id === 'kbank')
               setEditingAccount({
-                type: 'bank',
-                bank: 'kbank',
-                bankName: 'ธนาคารกสิกรไทย',
-                bankCode: 'KBANK',
+                type: initialType,
+                bank: presetForType?.id || 'kbank',
+                bankName: presetForType?.name || 'ธนาคารกสิกรไทย',
+                bankCode: presetForType?.code || 'KBANK',
                 accNumber: '',
                 accName: 'NATTANONT VONGKASAI',
                 label: '',
-                color: 'kbank',
+                color: presetForType?.color || 'kbank',
                 expiry: '12/29',
-                cvv: '888'
+                cvv: '888',
               })
               setShowAccountModal(true)
             }}
           >
-            <Icon name="add" /> เพิ่มบัญชี / บัตร
+            <Icon name="add" /> เพิ่มสมุด / การ์ด / พร้อมเพย์
           </button>
         </div>
 
-        <div className="virtual-cards-grid">
-          {accounts.map(acc => (
-            <VirtualCard
-              key={acc.id}
-              account={acc}
-              onCopyNumber={handleCopyNumber}
-              onCopyCvv={handleCopyCvv}
-              onCopyAll={handleCopyAll}
-              onEdit={(target) => { setEditingAccount(target); setShowAccountModal(true); }}
-              onDelete={handleDeleteAccount}
-              copiedField={copiedField}
-            />
-          ))}
+        {/* ── แถบแยกแท็ก: ทั้งหมด / สมุดบัญชี / การ์ด / พร้อมเพย์ ── */}
+        <div className="account-filter-tabs" role="tablist" aria-label="กรองตามประเภทบัญชีและการ์ด">
+          {ACCOUNT_TYPE_TABS.map((tab) => {
+            const count =
+              tab.id === 'all'
+                ? accounts.length
+                : accounts.filter((a) => (a.type || 'bank') === tab.id).length
+            const isActive = accountTypeFilter === tab.id
+            const isDropTarget = dragOverTypeTab === tab.id && tab.id !== 'all'
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className={`account-tab-pill tab-${tab.id} ${isActive ? 'active' : ''} ${isDropTarget ? 'drop-over' : ''}`}
+                onClick={() => setAccountTypeFilter(tab.id)}
+                onDragOver={(e) => {
+                  if (tab.id === 'all') return
+                  e.preventDefault()
+                  if (dragOverTypeTab !== tab.id) setDragOverTypeTab(tab.id)
+                }}
+                onDragLeave={() => {
+                  if (dragOverTypeTab === tab.id) setDragOverTypeTab(null)
+                }}
+                onDrop={(e) => handleTypeTabDrop(e, tab.id)}
+                title={
+                  tab.id === 'all'
+                    ? 'แสดงทั้งหมด'
+                    : `คลิกเพื่อดูเฉพาะ ${tab.label} หรือลากการ์ดมาวางทับเพื่อเปลี่ยนเป็น ${tab.label}`
+                }
+              >
+                <span className="account-tab-emoji">{tab.emoji}</span>
+                <span className="account-tab-label">{tab.label}</span>
+                <span className="account-tab-count">{count}</span>
+              </button>
+            )
+          })}
         </div>
+
+        {(() => {
+          const filteredAccounts =
+            accountTypeFilter === 'all'
+              ? accounts
+              : accounts.filter((a) => (a.type || 'bank') === accountTypeFilter)
+
+          if (filteredAccounts.length === 0) {
+            const currentTab = ACCOUNT_TYPE_TABS.find((t) => t.id === accountTypeFilter)
+            return (
+              <div className="accounts-empty-state">
+                <p>ยังไม่มีรายการในหมวด <strong>{currentTab?.emoji} {currentTab?.label}</strong></p>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    const initialType = accountTypeFilter === 'all' ? 'bank' : accountTypeFilter
+                    const presetForType =
+                      initialType === 'promptpay'
+                        ? BANK_PRESETS.find((b) => b.id === 'promptpay')
+                        : BANK_PRESETS.find((b) => b.id === 'kbank')
+                    setEditingAccount({
+                      type: initialType,
+                      bank: presetForType?.id || 'kbank',
+                      bankName: presetForType?.name || 'ธนาคารกสิกรไทย',
+                      bankCode: presetForType?.code || 'KBANK',
+                      accNumber: '',
+                      accName: 'NATTANONT VONGKASAI',
+                      label: '',
+                      color: presetForType?.color || 'kbank',
+                      expiry: '12/29',
+                      cvv: '888',
+                    })
+                    setShowAccountModal(true)
+                  }}
+                >
+                  <Icon name="add" /> เพิ่ม{currentTab?.label || 'รายการ'}ใหม่
+                </button>
+              </div>
+            )
+          }
+
+          return (
+            <div className="virtual-cards-grid">
+              {filteredAccounts.map((acc, index) => (
+                <VirtualCard
+                  key={acc.id}
+                  account={acc}
+                  index={index}
+                  totalShown={filteredAccounts.length}
+                  isDragging={draggedAccId === acc.id}
+                  isDragOver={dragOverAccId === acc.id}
+                  onDragStart={handleAccDragStart}
+                  onDragOver={handleAccDragOver}
+                  onDragLeave={handleAccDragLeave}
+                  onDrop={handleAccDrop}
+                  onDragEnd={handleAccDragEnd}
+                  onMoveStep={moveAccStep}
+                  onCopyNumber={handleCopyNumber}
+                  onCopyCvv={handleCopyCvv}
+                  onCopyAll={handleCopyAll}
+                  onEdit={(target) => {
+                    setEditingAccount(target)
+                    setShowAccountModal(true)
+                  }}
+                  onDelete={handleDeleteAccount}
+                  copiedField={copiedField}
+                />
+              ))}
+            </div>
+          )
+        })()}
       </div>
 
       {showAccountModal && (
