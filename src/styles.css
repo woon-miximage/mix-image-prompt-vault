@@ -10591,3 +10591,28 @@ a:hover > .three-d-icon,
   }
 }
 
+/* หมวดหมู่: แสดงไอคอน 3D เต็มกรอบ ไม่ใช้รูปตัวอย่าง */
+.cat-visual-thumb.cat-3d-full {
+  width: 4.6rem !important;
+  height: 4.6rem !important;
+  padding: 0 !important;
+  border-radius: 1.2rem !important;
+  background: radial-gradient(circle at 50% 40%, #FFFFFF 0%, #EEF5EE 70%) !important;
+  border: 1px solid #DCEADC !important;
+  overflow: visible !important;
+}
+
+.cat-visual-thumb.cat-3d-full .three-d-icon {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 4px 8px rgba(32, 91, 71, 0.16));
+}
+
+@media (max-width: 560px) {
+  .cat-visual-thumb.cat-3d-full {
+    width: 4rem !important;
+    height: 4rem !important;
+  }
+}
+

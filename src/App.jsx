@@ -100,11 +100,11 @@ async function safeCopyText(text) {
 
 const categories = [
   { id: 'all', label: 'ทั้งหมด', color: 'slate', icon: 'sparkles', icon3d: '37_workspace-collection' },
-  { id: 'main', label: 'ทั่วไป', color: 'orange', icon: 'prompt', icon3d: '16_category-design-ui' },
+  { id: 'main', label: 'ทั่วไป', color: 'orange', icon: 'prompt', icon3d: '02_prompt-library' },
   { id: 'note', label: 'โน้ตส่วนตัว', color: 'purple', icon: 'note', icon3d: '14_category-writing' },
   { id: 'portrait', label: 'ภาพบุคคล', color: 'pink', icon: 'user', icon3d: '11_category-image' },
   { id: 'product', label: 'สินค้า / โฆษณา', color: 'cyan', icon: 'sparkles', icon3d: '16_category-design-ui' },
-  { id: 'landscape', label: 'ฉาก / สถานที่', color: 'blue', icon: 'image', icon3d: '17_category-productivity' },
+  { id: 'landscape', label: 'ฉาก / สถานที่', color: 'blue', icon: 'image', icon3d: '33_workspace-gallery' },
   { id: 'sound', label: 'งานเสียง / เพลง', color: 'green', icon: 'music', icon3d: '13_category-music' },
 ]
 
@@ -6370,7 +6370,6 @@ function App() {
                           return false
                         })
                   const count = matchingItems.length
-                  const previewImg = matchingItems.find((it) => it.imageUrls?.[0])?.imageUrls?.[0]
 
                   return (
                     <button
@@ -6395,17 +6394,8 @@ function App() {
                       }}
                       onDrop={(e) => handleCategoryDrop(e, category.id)}
                     >
-                      <div className={`cat-visual-thumb tone-${category.color}`}>
-                        {previewImg ? (
-                          <>
-                            <img src={previewImg} alt={category.label} loading="lazy" decoding="async" />
-                            <span className="cat-3d-corner-badge">
-                              <ThreeDIcon name={category.icon3d || category.icon} size={24} fallback={category.icon} />
-                            </span>
-                          </>
-                        ) : (
-                          <ThreeDIcon name={category.icon3d || category.icon} size={56} fallback={category.icon} />
-                        )}
+                      <div className={`cat-visual-thumb cat-3d-full tone-${category.color}`}>
+                        <ThreeDIcon name={category.icon3d || category.icon} size={64} eager fallback={category.icon} alt={category.label} />
                       </div>
                       <strong className="cat-visual-title">{category.label}</strong>
                       <small className="cat-visual-count">{count} พรอมต์</small>
@@ -7062,8 +7052,8 @@ function App() {
                   const count = items.filter((it) => it.category === cat.id).length
                   return (
                     <div key={cat.id} className="category-visual-card" onClick={() => { setCategoryFilter(cat.id); setPage('prompts') }}>
-                      <div className={`cat-visual-thumb tone-${cat.color}`}>
-                        <ThreeDIcon name={cat.icon3d || cat.icon} size={56} fallback={cat.icon} />
+                      <div className={`cat-visual-thumb cat-3d-full tone-${cat.color}`}>
+                        <ThreeDIcon name={cat.icon3d || cat.icon} size={64} fallback={cat.icon} alt={cat.label} />
                       </div>
                       <strong className="cat-visual-title">{cat.label}</strong>
                       <small className="cat-visual-count">{count} พรอมต์ ({items.length ? Math.round((count / items.length) * 100) : 0}%)</small>
