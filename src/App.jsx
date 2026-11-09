@@ -893,7 +893,7 @@ function PinGate({ onUnlock }) {
         {/* Brand Card & New App Icon */}
         <div className="phone-brand-section">
           <div className="phone-logo-badge mascot-badge">
-            <img src="/brand/jongjang-mascot.png" alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" decoding="async" />
+            <img src="./brand/jongjang-mascot.png" alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" decoding="async" />
           </div>
 
           <h1 className="phone-brand-title">
@@ -1002,7 +1002,7 @@ const Sidebar = memo(function Sidebar({
     <aside className={`sidebar ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="brand-lockup-row">
         <div className="brand-lockup" onClick={() => onSelectMenu('home')} role="button" tabIndex={0}>
-          <img src="/brand/jongjang-mascot.png" alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" decoding="async" />
+          <img src="./brand/jongjang-mascot.png" alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" decoding="async" />
           {!collapsed && (
             <div>
               <strong>MIX Image</strong>
@@ -3211,7 +3211,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
       <div className="modal-card download-modal-card animate-scale-in" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="download-modal-header-brand">
-            <img src="/brand/jongjang-app-icon.png" alt="MIX Prompt" className="download-header-icon" />
+            <img src="./brand/jongjang-app-icon.png" alt="MIX Prompt" className="download-header-icon" />
             <div>
               <div className="badge-tag-wrap">
                 <span className="download-badge-version">v1.0.0 Online Live-Sync</span>
@@ -6069,7 +6069,7 @@ function App() {
                 onClick={() => handleSelectMenu('profile')}
                 title="โปรไฟล์และการตั้งค่า"
               >
-                <img src="/brand/jongjang-mascot.png" alt="MIX Profile" decoding="async" />
+                <img src="./brand/jongjang-mascot.png" alt="MIX Profile" decoding="async" />
                 <span>MIX</span>
                 <span className="profile-caret">▾</span>
               </button>
@@ -6194,7 +6194,7 @@ function App() {
                   </div>
                 </div>
                 <div className="hero-image-frame">
-                  <img src="/brand/jongjang-mascot.png" alt="จ๋องแจ๋งหุ่นยนต์ผู้ช่วยสร้างสรรค์" decoding="async" />
+                  <img src="./brand/jongjang-mascot.png" alt="จ๋องแจ๋งหุ่นยนต์ผู้ช่วยสร้างสรรค์" decoding="async" />
                 </div>
               </section>
             )}
@@ -6943,7 +6943,7 @@ function App() {
         {page === 'profile' && (
           <>
             <section className="profile-panel">
-              <img src="/brand/jongjang-mascot.png" alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" decoding="async" />
+              <img src="./brand/jongjang-mascot.png" alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" decoding="async" />
               <div>
                 <p className="eyebrow">OWNER PROFILE</p>
                 <h2>MIX NATTANON</h2>
