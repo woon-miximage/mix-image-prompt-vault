@@ -3172,8 +3172,8 @@ const AppDownloadModal = memo(function AppDownloadModal({
   const [exeUrlInput, setExeUrlInput] = useState(customLinks.exeUrl || '')
   const [apkUrlInput, setApkUrlInput] = useState(customLinks.apkUrl || '')
 
-  const defaultExeZipUrl = '/downloads/MIX-Prompt-Vault-Windows.zip'
-  const defaultExeUrl = '/downloads/MIX-Prompt-Vault.exe'
+  const defaultExeZipUrl = './downloads/MIX-Prompt-Vault-Windows.zip'
+  const defaultExeUrl = './downloads/MIX-Prompt-Vault.exe'
   const defaultApkBuilderUrl = 'https://www.pwabuilder.com/'
 
   const effectiveExeUrl = customLinks.exeUrl?.trim() || defaultExeZipUrl
@@ -3195,7 +3195,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
   }
 
   const handleCopyShareLink = () => {
-    const url = window.location.origin || 'https://miximageprompt.netlify.app'
+    const url = window.location.href.split('#')[0] || 'https://woon-miximage.github.io/mix-image-prompt-vault/'
     try {
       navigator.clipboard?.writeText(url)
     } catch {
@@ -3396,7 +3396,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
                       <div className="pwa-steps-guide">
                         <div className="pwa-step-item">
                           <span className="step-num">1</span>
-                          <span>เปิดเว็บ <code>miximageprompt.netlify.app</code> ใน Google Chrome</span>
+                          <span>เปิดเว็บ <code>woon-miximage.github.io/mix-image-prompt-vault</code> ใน Google Chrome</span>
                         </div>
                         <div className="pwa-step-item">
                           <span className="step-num">2</span>
@@ -3486,7 +3486,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
         <div className="download-modal-footer">
           <div className="share-web-box">
             <span className="share-label">แชร์ลิงก์เว็บแอป:</span>
-            <code className="share-url">https://miximageprompt.netlify.app</code>
+            <code className="share-url">https://woon-miximage.github.io/mix-image-prompt-vault/</code>
             <button
               type="button"
               className="copy-share-btn"

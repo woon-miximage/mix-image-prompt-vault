@@ -10,7 +10,7 @@ namespace MIXPromptVault
     public class MainForm : Form
     {
         private WebView2 webView = null!;
-        private const string AppUrl = "https://miximageprompt.netlify.app";
+        private const string AppUrl = "https://woon-miximage.github.io/mix-image-prompt-vault/";
         private bool isFullscreen = false;
         private FormWindowState prevWindowState;
         private FormBorderStyle prevBorderStyle;
