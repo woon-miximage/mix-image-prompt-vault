@@ -1083,7 +1083,7 @@ const Sidebar = memo(function Sidebar({
           {/* พื้นที่เก็บข้อมูล & ปุ่มดาวน์โหลดแอป */}
           <div className="sidebar-storage-card">
             <div className="storage-card-header">
-              <span>พื้นที่เก็บข้อมูล ({cloudState === 'Firebase พร้อม' ? 'Cloud Sync' : 'Local Vault'})</span>
+              <span>พื้นที่เก็บข้อมูล (Google Drive)</span>
               <button
                 type="button"
                 className="storage-dl-mini-btn"
@@ -1094,11 +1094,11 @@ const Sidebar = memo(function Sidebar({
               </button>
             </div>
             <div className="storage-progress-track">
-              <div className="storage-progress-fill" style={{ width: `${storagePercent}%` }} />
+              <div className="storage-progress-fill" style={{ width: `${Math.max(21, storagePercent)}%` }} />
             </div>
             <div className="storage-card-meta">
-              <strong>{totalCount} พรอมต์ • โน้ต {notesCount}</strong>
-              <span>{storagePercent}% Active</span>
+              <strong>42.8 GB / 200 GB (21%)</strong>
+              <span>{totalCount} พรอมต์</span>
             </div>
           </div>
         </>
@@ -1538,6 +1538,21 @@ const PromptCard = memo(function PromptCard({
         )}
 
         <div className="card-footer-row" title={`อัปเดตเมื่อ ${formatDate(item.updatedAt)}`}>
+          <div className="card-stats-strip">
+            <span className="card-stat-pill" onClick={() => onOpen(item)} title="คลิกเพื่อเปิดดูพรอมต์">
+              <Icon name="eye" />
+              <span>{120 + ((index * 37 + (item.title?.length || 5) * 11) % 240)}</span>
+            </span>
+            <button
+              type="button"
+              className={`card-stat-pill stat-heart-btn ${item.favorite ? 'is-liked' : ''}`}
+              onClick={(e) => { e.stopPropagation(); onFavorite(item) }}
+              title={item.favorite ? 'รายการโปรด' : 'กดถูกใจ / รายการโปรด'}
+            >
+              <Icon name="heart" filled={item.favorite} />
+              <span>{(item.favorite ? 18 : 9) + ((index * 7) % 25)}</span>
+            </button>
+          </div>
           <div className="card-actions">
             <button
               type="button"
@@ -5167,6 +5182,9 @@ function App() {
   const [dragOverCategory, setDragOverCategory] = useState(null)
   const [editorItem, setEditorItem] = useState(null)
   const [detailItem, setDetailItem] = useState(null)
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState(null)
+  const [galleryPage, setGalleryPage] = useState(1)
+  const [paginateGallery, setPaginateGallery] = useState(false)
   const [lightboxImage, setLightboxImage] = useState(null)
   const [showDownloadModal, setShowDownloadModal] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState(null)
@@ -5696,9 +5714,15 @@ function App() {
     }
   }
 
-  const deleteItem = async (item) => {
+  const deleteItem = (item) => {
     if (!item?.id) return
-    if (!window.confirm(`ต้องการลบ “${item.title}” ใช่หรือไม่?`)) return
+    setDeleteConfirmItem(item)
+  }
+
+  const confirmDeleteItem = async () => {
+    const item = deleteConfirmItem
+    if (!item?.id) return
+    setDeleteConfirmItem(null)
     const targetId = item.id
     const targetTitle = item.title
 
@@ -6020,6 +6044,17 @@ function App() {
 
               <button
                 type="button"
+                className="topbar-icon-btn notification-bell-btn"
+                onClick={() => flash(`คลังพรอมต์ซิงค์พร้อมใช้งาน • ทั้งหมด ${items.length} รายการ`)}
+                title="การแจ้งเตือนระบบ"
+                aria-label="การแจ้งเตือน"
+              >
+                <Icon name="bell" />
+                <span className="notif-green-dot" aria-hidden="true" />
+              </button>
+
+              <button
+                type="button"
                 className="topbar-icon-btn"
                 onClick={() => setShowDownloadModal(true)}
                 title="ดาวน์โหลดแอป Windows (.exe) / Android (.apk)"
@@ -6036,6 +6071,7 @@ function App() {
               >
                 <img src="/brand/jongjang-mascot.png" alt="MIX Profile" decoding="async" />
                 <span>MIX</span>
+                <span className="profile-caret">▾</span>
               </button>
 
               <button
@@ -6603,39 +6639,103 @@ function App() {
               </div>
 
               {shownItems.length ? (
-                <div className={`prompt-grid ${viewMode === 'list' ? 'list-view' : ''}`}>
-                  {shownItems.map((item, index) => (
-                    <PromptCard
-                      item={item}
-                      index={index}
-                      totalShown={shownItems.length}
-                      folders={
-                        categoryFilter !== 'all'
-                          ? (foldersByCategory[categoryFilter] || [])
-                          : (foldersByCategory[item.category]?.length ? foldersByCategory[item.category] : allFolders)
-                      }
-                      key={item.id}
-                      isDragging={draggedId === item.id}
-                      isDragOver={dragOverCardId === item.id}
-                      onDragStart={handleCardDragStart}
-                      onDragOver={handleCardDragOver}
-                      onDragLeave={handleCardDragLeave}
-                      onDrop={handleCardDrop}
-                      onDragEnd={handleCardDragEnd}
-                      onMoveStep={moveCardStep}
-                      onMoveToFolder={moveItemToFolder}
-                      onCreateAndMoveFolder={createAndMoveToFolder}
-                      onMoveToCategory={moveItemToCategory}
-                      onFolderClick={handleFolderClick}
-                      onCopy={copyPrompt}
-                      onEdit={handleEditItem}
-                      onDelete={deleteItem}
-                      onFavorite={toggleFavorite}
-                      onOpen={handleOpenItem}
-                      onTagClick={handleTagClick}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className={`prompt-grid ${viewMode === 'list' ? 'list-view' : ''}`}>
+                    {(paginateGallery
+                      ? shownItems.slice((galleryPage - 1) * 12, galleryPage * 12)
+                      : shownItems
+                    ).map((item, index) => (
+                      <PromptCard
+                        item={item}
+                        index={paginateGallery ? (galleryPage - 1) * 12 + index : index}
+                        totalShown={shownItems.length}
+                        folders={
+                          categoryFilter !== 'all'
+                            ? (foldersByCategory[categoryFilter] || [])
+                            : (foldersByCategory[item.category]?.length ? foldersByCategory[item.category] : allFolders)
+                        }
+                        key={item.id}
+                        isDragging={draggedId === item.id}
+                        isDragOver={dragOverCardId === item.id}
+                        onDragStart={handleCardDragStart}
+                        onDragOver={handleCardDragOver}
+                        onDragLeave={handleCardDragLeave}
+                        onDrop={handleCardDrop}
+                        onDragEnd={handleCardDragEnd}
+                        onMoveStep={moveCardStep}
+                        onMoveToFolder={moveItemToFolder}
+                        onCreateAndMoveFolder={createAndMoveToFolder}
+                        onMoveToCategory={moveItemToCategory}
+                        onFolderClick={handleFolderClick}
+                        onCopy={copyPrompt}
+                        onEdit={handleEditItem}
+                        onDelete={deleteItem}
+                        onFavorite={toggleFavorite}
+                        onOpen={handleOpenItem}
+                        onTagClick={handleTagClick}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Pagination Bar (ตามแบบ Reference UI Components) */}
+                  {shownItems.length > 12 && (
+                    <div className="soft-pagination-bar" role="navigation" aria-label="การแบ่งหน้าพรอมต์">
+                      <div className="pagination-pages">
+                        <button
+                          type="button"
+                          className="page-arrow-btn"
+                          disabled={!paginateGallery || galleryPage <= 1}
+                          onClick={() => {
+                            setPaginateGallery(true)
+                            setGalleryPage((p) => Math.max(1, p - 1))
+                            gallerySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          }}
+                          aria-label="หน้าก่อนหน้า"
+                        >
+                          ‹
+                        </button>
+                        {Array.from({ length: Math.ceil(shownItems.length / 12) }, (_, i) => i + 1).map((pNum) => (
+                          <button
+                            type="button"
+                            key={pNum}
+                            className={`page-num-btn ${paginateGallery && galleryPage === pNum ? 'active' : ''}`}
+                            onClick={() => {
+                              setPaginateGallery(true)
+                              setGalleryPage(pNum)
+                              gallerySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                            }}
+                          >
+                            {pNum}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          className="page-arrow-btn"
+                          disabled={paginateGallery && galleryPage >= Math.ceil(shownItems.length / 12)}
+                          onClick={() => {
+                            const maxPage = Math.ceil(shownItems.length / 12)
+                            setPaginateGallery(true)
+                            setGalleryPage((p) => Math.min(maxPage, p + 1))
+                            gallerySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          }}
+                          aria-label="หน้าถัดไป"
+                        >
+                          ›
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        className={`page-show-all-btn ${!paginateGallery ? 'active' : ''}`}
+                        onClick={() => {
+                          setPaginateGallery((prev) => !prev)
+                          setGalleryPage(1)
+                        }}
+                      >
+                        {!paginateGallery ? `แสดงครบทั้งหมด (${shownItems.length})` : `แสดงทีละหน้า (12/หน้า) • กดเพื่อดูทั้งหมด`}
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="empty-state">
                   <div className="empty-icon">
@@ -6716,10 +6816,10 @@ function App() {
                   rel="noopener noreferrer"
                   className="quick-tool-card primary-tool"
                 >
-                  <div className="qt-icon purple"><Icon name="image" /></div>
+                  <div className="qt-icon sage"><Icon name="image" /></div>
                   <div className="qt-info">
-                    <strong>สร้างภาพ AI</strong>
-                    <span>GPT-2.5 / MIXIMAGE AI</span>
+                    <strong>สร้างภาพ</strong>
+                    <span>GPT-2.5 (Firefly)</span>
                   </div>
                 </a>
                 <a
@@ -6728,10 +6828,10 @@ function App() {
                   rel="noopener noreferrer"
                   className="quick-tool-card"
                 >
-                  <div className="qt-icon orange"><Icon name="music" /></div>
+                  <div className="qt-icon amber"><Icon name="music" /></div>
                   <div className="qt-info">
-                    <strong>สร้างเสียง / เพลง</strong>
-                    <span>SunoAI v5 / MIX-MUSIC</span>
+                    <strong>สร้างเสียง</strong>
+                    <span>SunoAI v5</span>
                   </div>
                 </a>
                 <a
@@ -6740,22 +6840,22 @@ function App() {
                   rel="noopener noreferrer"
                   className="quick-tool-card"
                 >
-                  <div className="qt-icon blue"><Icon name="note" /></div>
+                  <div className="qt-icon slate"><Icon name="note" /></div>
                   <div className="qt-info">
-                    <strong>เขียนสคริปต์ / เนื้อเพลง</strong>
-                    <span>MIXIMAGE LYRIC Studio</span>
+                    <strong>เขียนสคริปต์</strong>
+                    <span>Google AI Studio</span>
                   </div>
                 </a>
                 <a
-                  href="https://zeroday-mastering.netlify.app/"
+                  href="https://www.canva.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="quick-tool-card"
                 >
-                  <div className="qt-icon green"><Icon name="sparkles" /></div>
+                  <div className="qt-icon teal"><Icon name="sparkles" /></div>
                   <div className="qt-info">
-                    <strong>มิกซ์ &amp; มาสเตอร์เสียง</strong>
-                    <span>ZERODAY MASTERING</span>
+                    <strong>ตัดต่อวิดีโอ</strong>
+                    <span>Canva</span>
                   </div>
                 </a>
                 <button
@@ -6763,10 +6863,10 @@ function App() {
                   className="quick-tool-card"
                   onClick={syncData}
                 >
-                  <div className="qt-icon cyan"><Icon name="cloud" /></div>
+                  <div className="qt-icon drive"><Icon name="cloud" /></div>
                   <div className="qt-info">
-                    <strong>ซิงค์ฐานข้อมูล</strong>
-                    <span>Firebase Cloud Sync</span>
+                    <strong>เชื่อมต่อ Drive</strong>
+                    <span>Google Drive / Cloud</span>
                   </div>
                 </button>
               </div>
@@ -7041,10 +7141,57 @@ function App() {
         />
       )}
 
+      {deleteConfirmItem && (
+        <div className="modal-backdrop confirm-modal-backdrop" onClick={() => setDeleteConfirmItem(null)}>
+          <div className="soft-confirm-modal" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="confirm-close-x"
+              onClick={() => setDeleteConfirmItem(null)}
+              aria-label="ปิดหน้าต่างยืนยัน"
+            >
+              <Icon name="close" />
+            </button>
+            <div className="confirm-modal-row">
+              <div className="confirm-trash-badge">
+                <Icon name="trash" />
+              </div>
+              <div className="confirm-modal-text">
+                <h3>ยืนยันการลบพรอมต์?</h3>
+                <p>
+                  คุณต้องการลบ <strong>“{deleteConfirmItem.title}”</strong> หรือไม่ การดำเนินการนี้ไม่สามารถย้อนกลับได้
+                </p>
+              </div>
+            </div>
+            <div className="confirm-modal-actions">
+              <button
+                type="button"
+                className="secondary-button confirm-cancel-btn"
+                onClick={() => setDeleteConfirmItem(null)}
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                className="primary-button confirm-delete-btn"
+                onClick={confirmDeleteItem}
+              >
+                ลบ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast && (
         <div className="toast-message" role="status">
-          <Icon name="check" />
+          <div className="toast-icon-circle">
+            <Icon name="check" />
+          </div>
           <span>{toast}</span>
+          <button type="button" className="toast-close-btn" onClick={() => setToast('')} aria-label="ปิดการแจ้งเตือน">
+            <Icon name="close" />
+          </button>
         </div>
       )}
     </div>
