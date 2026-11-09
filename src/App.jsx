@@ -1,4 +1,5 @@
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import { ICON_BY_ID, ICON_MANIFEST } from './lib/iconManifest'
 import {
   deleteCloudAccount,
   deleteCloudFolder,
@@ -98,13 +99,13 @@ async function safeCopyText(text) {
 }
 
 const categories = [
-  { id: 'all', label: 'ทั้งหมด', color: 'slate', icon: 'sparkles' },
-  { id: 'main', label: 'ทั่วไป', color: 'orange', icon: 'prompt' },
-  { id: 'note', label: 'โน้ตส่วนตัว', color: 'purple', icon: 'note' },
-  { id: 'portrait', label: 'ภาพบุคคล', color: 'pink', icon: 'user' },
-  { id: 'product', label: 'สินค้า / โฆษณา', color: 'cyan', icon: 'sparkles' },
-  { id: 'landscape', label: 'ฉาก / สถานที่', color: 'blue', icon: 'image' },
-  { id: 'sound', label: 'งานเสียง / เพลง', color: 'green', icon: 'music' },
+  { id: 'all', label: 'ทั้งหมด', color: 'slate', icon: 'sparkles', icon3d: '37_workspace-collection' },
+  { id: 'main', label: 'ทั่วไป', color: 'orange', icon: 'prompt', icon3d: '16_category-design-ui' },
+  { id: 'note', label: 'โน้ตส่วนตัว', color: 'purple', icon: 'note', icon3d: '14_category-writing' },
+  { id: 'portrait', label: 'ภาพบุคคล', color: 'pink', icon: 'user', icon3d: '11_category-image' },
+  { id: 'product', label: 'สินค้า / โฆษณา', color: 'cyan', icon: 'sparkles', icon3d: '16_category-design-ui' },
+  { id: 'landscape', label: 'ฉาก / สถานที่', color: 'blue', icon: 'image', icon3d: '17_category-productivity' },
+  { id: 'sound', label: 'งานเสียง / เพลง', color: 'green', icon: 'music', icon3d: '13_category-music' },
 ]
 
 const popularTools = [
@@ -118,16 +119,16 @@ const popularTools = [
 
 // รายการลิงก์เว็บในเครือ MIX-IMAGE เรียงลำดับจาก "ล่างขึ้นบน" ตามที่ผู้ใช้กำหนด (#1 ล่างสุด -> #10 บนสุด)
 const externalLinksBottomToTop = [
-  { id: 'shop', label: 'miximage.shop', sub: 'MIXIMAGE SHOP', url: 'https://miximage.shop/', color: 'orange' },
-  { id: 'one', label: 'miximage.one', sub: 'MIXIMAGE ONE', url: 'https://miximage.one/', color: 'cyan' },
-  { id: 'art', label: 'miximageart.netlify.app', sub: 'MIXIMAGE ART', url: 'https://miximageart.netlify.app/', color: 'purple' },
-  { id: 'card', label: 'miximagecard.netlify.app', sub: 'MIXIMAGE CARD', url: 'https://miximagecard.netlify.app/', color: 'blue' },
-  { id: 'id-house', label: 'id-house.netlify.app', sub: 'ID-HOUSE STUDIO', url: 'https://id-house.netlify.app/', color: 'green' },
-  { id: 'lyric', label: 'miximage-lyric.netlify.app', sub: 'MIXIMAGE LYRIC', url: 'https://miximage-lyric.netlify.app/', color: 'orange' },
-  { id: 'music', label: 'mix-music.netlify.app', sub: 'MIX-MUSIC AI', url: 'https://mix-music.netlify.app/', color: 'purple' },
-  { id: 'zeroday-gh', label: 'woon-miximage.github.io/zeroday-mastering', sub: 'ZERODAY (GITHUB)', url: 'https://woon-miximage.github.io/zeroday-mastering/', color: 'cyan' },
-  { id: 'zeroday-net', label: 'zeroday-mastering.netlify.app', sub: 'ZERODAY MASTERING', url: 'https://zeroday-mastering.netlify.app/', color: 'blue' },
-  { id: 'ai-online', label: 'miximageai.online', sub: 'MIXIMAGE AI ONLINE', url: 'https://miximageai.online/', color: 'green' },
+  { id: 'shop', label: 'miximage.shop', sub: 'MIXIMAGE SHOP', url: 'https://miximage.shop/', color: 'orange', icon3d: '16_category-design-ui' },
+  { id: 'one', label: 'miximage.one', sub: 'MIXIMAGE ONE', url: 'https://miximage.one/', color: 'cyan', icon3d: '53_ai-studio' },
+  { id: 'art', label: 'miximageart.netlify.app', sub: 'MIXIMAGE ART', url: 'https://miximageart.netlify.app/', color: 'purple', icon3d: '48_ai-image' },
+  { id: 'card', label: 'miximagecard.netlify.app', sub: 'MIXIMAGE CARD', url: 'https://miximagecard.netlify.app/', color: 'blue', icon3d: '38_finance-wallet' },
+  { id: 'id-house', label: 'id-house.netlify.app', sub: 'ID-HOUSE STUDIO', url: 'https://id-house.netlify.app/', color: 'green', icon3d: '11_category-image' },
+  { id: 'lyric', label: 'miximage-lyric.netlify.app', sub: 'MIXIMAGE LYRIC', url: 'https://miximage-lyric.netlify.app/', color: 'orange', icon3d: '52_ai-writing' },
+  { id: 'music', label: 'mix-music.netlify.app', sub: 'MIX-MUSIC AI', url: 'https://mix-music.netlify.app/', color: 'purple', icon3d: '49_ai-music' },
+  { id: 'zeroday-gh', label: 'woon-miximage.github.io/zeroday-mastering', sub: 'ZERODAY (GITHUB)', url: 'https://woon-miximage.github.io/zeroday-mastering/', color: 'cyan', icon3d: '56_ai-microphone' },
+  { id: 'zeroday-net', label: 'zeroday-mastering.netlify.app', sub: 'ZERODAY MASTERING', url: 'https://zeroday-mastering.netlify.app/', color: 'blue', icon3d: '13_category-music' },
+  { id: 'ai-online', label: 'miximageai.online', sub: 'MIXIMAGE AI ONLINE', url: 'https://miximageai.online/', color: 'green', icon3d: '57_ai-magic' },
 ]
 
 // แสดงผลจากบนลงล่าง โดยให้รายการสุดท้ายอยู่บนสุด และรายการแรกอยู่ล่างสุด (เรียงล่างขึ้นบน)
@@ -195,6 +196,7 @@ const TopbarClockPill = memo(function TopbarClockPill() {
   const { dateShort, timeString } = useRealtimeClock()
   return (
     <div className="realtime-clock-pill" title="วันที่และเวลาเรียลไทม์">
+      <ThreeDIcon name="07_history" size={20} eager />
       <span className="live-dot" />
       <span>{dateShort}</span>
       <span className="dot-divider">•</span>
@@ -811,6 +813,39 @@ function Icon({ name, className = '', filled = false }) {
   }
 }
 
+// MIX JONGJANG 3D ICON SYSTEM™ — Reusable 3D Clay Icon Component (85 Verified Assets + Lucide SVG Fallback)
+export const ThreeDIcon = memo(function ThreeDIcon({
+  name,
+  size,
+  className = '',
+  alt,
+  eager = false,
+  fallback,
+}) {
+  const [imgError, setImgError] = useState(false)
+  const entry = ICON_BY_ID[name]
+  const finalSize = size || entry?.displaySize || 32
+
+  if (!entry || imgError) {
+    return <Icon name={fallback || entry?.fallback || name} className={className} />
+  }
+
+  return (
+    <img
+      src={entry.path}
+      alt={alt ?? entry.description}
+      width={finalSize}
+      height={finalSize}
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
+      draggable={false}
+      onError={() => setImgError(true)}
+      className={`three-d-icon icon-3d-${entry.id} ${className}`.trim()}
+      style={{ width: `${finalSize}px`, height: `${finalSize}px` }}
+    />
+  )
+})
+
 function formatDate(value) {
   if (!value) return 'ยังไม่ระบุ'
   try {
@@ -893,7 +928,7 @@ function PinGate({ onUnlock }) {
         {/* Brand Card & New App Icon */}
         <div className="phone-brand-section">
           <div className="phone-logo-badge mascot-badge">
-            <img src="./brand/jongjang-mascot.png" alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" decoding="async" />
+            <ThreeDIcon name="80_mascot-idle" size={96} eager alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" />
           </div>
 
           <h1 className="phone-brand-title">
@@ -910,7 +945,10 @@ function PinGate({ onUnlock }) {
 
         {/* PIN Input & Numeric Keypad */}
         <div className="phone-keypad-card">
-          <p className="phone-pin-prompt">ใส่รหัส PIN 4 หลัก</p>
+          <p className="phone-pin-prompt">
+            <ThreeDIcon name="69_state-permission" size={22} eager />
+            <span>ใส่รหัส PIN 4 หลัก</span>
+          </p>
 
           <div className={`phone-dots-row ${error ? 'dots-shake' : ''}`}>
             {[0, 1, 2, 3].map((index) => (
@@ -957,7 +995,7 @@ function PinGate({ onUnlock }) {
               aria-label="ปลดล็อกเข้าสู่ระบบ"
               title="ปลดล็อกเข้าสู่ระบบ (1449)"
             >
-              <Icon name="unlock" />
+              <ThreeDIcon name="67_state-unlocked" size={28} eager />
             </button>
           </div>
         </div>
@@ -984,16 +1022,16 @@ const Sidebar = memo(function Sidebar({
   cloudState,
 }) {
   const nav = [
-    { id: 'home', label: 'หน้าหลัก', icon: 'home', count: null },
-    { id: 'prompts', label: 'คลังพรอมต์', icon: 'prompt', count: totalCount },
-    { id: 'categories', label: 'หมวดหมู่', icon: 'tag', count: categoriesCount },
-    { id: 'projects', label: 'โปรเจกต์', icon: 'folder', count: foldersCount },
-    { id: 'favorites', label: 'รายการโปรด', icon: 'heart', count: favoritesCount },
-    { id: 'notes', label: 'โน้ตส่วนตัว', icon: 'note', count: notesCount },
-    { id: 'savings', label: 'เงินออม / บัญชี', icon: 'wallet', count: null },
-    { id: 'ai-tools', label: 'เครื่องมือ AI', icon: 'wrench', count: null },
-    { id: 'reports', label: 'รายงาน', icon: 'chart', count: null },
-    { id: 'profile', label: 'ตั้งค่า', icon: 'settings', count: null },
+    { id: 'home', label: 'หน้าหลัก', icon: 'home', icon3d: '01_dashboard', count: null },
+    { id: 'prompts', label: 'คลังพรอมต์', icon: 'prompt', icon3d: '02_prompt-library', count: totalCount },
+    { id: 'categories', label: 'หมวดหมู่', icon: 'tag', icon3d: '06_tags', count: categoriesCount },
+    { id: 'projects', label: 'โปรเจกต์', icon: 'folder', icon3d: '04_collections', count: foldersCount },
+    { id: 'favorites', label: 'รายการโปรด', icon: 'heart', icon3d: '03_favorites', count: favoritesCount },
+    { id: 'notes', label: 'โน้ตส่วนตัว', icon: 'note', icon3d: '14_category-writing', count: notesCount },
+    { id: 'savings', label: 'เงินออม / บัญชี', icon: 'wallet', icon3d: '38_finance-wallet', count: null },
+    { id: 'ai-tools', label: 'เครื่องมือ AI', icon: 'wrench', icon3d: '53_ai-studio', count: null },
+    { id: 'reports', label: 'รายงาน', icon: 'chart', icon3d: '08_analytics', count: null },
+    { id: 'profile', label: 'ตั้งค่า', icon: 'settings', icon3d: '09_settings', count: null },
   ]
 
   const storagePercent = Math.min(100, Math.max(12, Math.round((totalCount / 200) * 100)))
@@ -1002,7 +1040,7 @@ const Sidebar = memo(function Sidebar({
     <aside className={`sidebar ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="brand-lockup-row">
         <div className="brand-lockup" onClick={() => onSelectMenu('home')} role="button" tabIndex={0}>
-          <img src="./brand/jongjang-mascot.png" alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" decoding="async" />
+          <ThreeDIcon name="80_mascot-idle" size={46} eager alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" />
           {!collapsed && (
             <div>
               <strong>MIX Image</strong>
@@ -1032,7 +1070,7 @@ const Sidebar = memo(function Sidebar({
               onClick={() => onSelectMenu(item.id)}
               title={item.label}
             >
-              <Icon name={item.icon} filled={isActive && item.icon === 'heart'} />
+              <ThreeDIcon name={item.icon3d} size={30} eager fallback={item.icon} />
               {!collapsed && <span className="nav-label">{item.label}</span>}
               {!collapsed && item.count !== null && item.count !== undefined && (
                 <span className="nav-count-badge">{item.count}</span>
@@ -1048,7 +1086,7 @@ const Sidebar = memo(function Sidebar({
         onClick={onAdd}
         title="เพิ่มพรอมต์ใหม่"
       >
-        <Icon name="add" />
+        <ThreeDIcon name="18_action-create-prompt" size={26} eager />
         {!collapsed && <span>เพิ่มพรอมต์</span>}
       </button>
 
@@ -1069,7 +1107,7 @@ const Sidebar = memo(function Sidebar({
                   className={`sidebar-link-btn accent-${link.color}`}
                   title={`เปิด ${link.url}`}
                 >
-                  <span className={`sidebar-link-dot dot-${link.color}`} />
+                  <ThreeDIcon name={link.icon3d || '53_ai-studio'} size={26} />
                   <div className="sidebar-link-text">
                     <strong>{link.sub}</strong>
                     <span>{link.label}</span>
@@ -1083,14 +1121,17 @@ const Sidebar = memo(function Sidebar({
           {/* พื้นที่เก็บข้อมูล & ปุ่มดาวน์โหลดแอป */}
           <div className="sidebar-storage-card">
             <div className="storage-card-header">
-              <span>พื้นที่เก็บข้อมูล (Google Drive)</span>
+              <span className="storage-title-inline">
+                <ThreeDIcon name="55_ai-google-drive" size={22} />
+                <span>พื้นที่เก็บข้อมูล (Google Drive)</span>
+              </span>
               <button
                 type="button"
                 className="storage-dl-mini-btn"
                 onClick={onOpenDownload}
                 title="ดาวน์โหลดแอป Windows & Android"
               >
-                <Icon name="download" /> แอป
+                <ThreeDIcon name="77_utility-download" size={16} /> แอป
               </button>
             </div>
             <div className="storage-progress-track">
@@ -1109,19 +1150,19 @@ const Sidebar = memo(function Sidebar({
 
 const MobileNav = memo(function MobileNav({ page, activeMenu, onSelectMenu, onAdd }) {
   const nav = [
-    ['home', 'หน้าหลัก', 'home'],
-    ['prompts', 'คลังพรอมต์', 'prompt'],
-    ['add', 'เพิ่ม', 'add'],
-    ['favorites', 'โปรด', 'heart'],
-    ['savings', 'เงินออม', 'wallet'],
-    ['profile', 'ตั้งค่า', 'settings'],
+    ['home', 'หน้าหลัก', '01_dashboard', 'home'],
+    ['prompts', 'คลังพรอมต์', '02_prompt-library', 'prompt'],
+    ['add', 'เพิ่ม', '18_action-create-prompt', 'add'],
+    ['favorites', 'โปรด', '03_favorites', 'heart'],
+    ['savings', 'เงินออม', '38_finance-wallet', 'wallet'],
+    ['profile', 'ตั้งค่า', '09_settings', 'settings'],
   ]
 
   const current = activeMenu || page
 
   return (
     <nav className="mobile-nav" aria-label="แถบนำทางมือถือ">
-      {nav.map(([id, label, icon]) => (
+      {nav.map(([id, label, icon3d, fallback]) => (
         <button
           type="button"
           key={id}
@@ -1129,7 +1170,7 @@ const MobileNav = memo(function MobileNav({ page, activeMenu, onSelectMenu, onAd
           onClick={() => id === 'add' ? onAdd() : onSelectMenu(id)}
         >
           <div className="mobile-nav-icon-wrap">
-            <Icon name={icon} filled={current === id && icon === 'heart'} />
+            <ThreeDIcon name={icon3d} size={28} eager fallback={fallback} />
           </div>
           <span>{label}</span>
         </button>
@@ -1140,6 +1181,7 @@ const MobileNav = memo(function MobileNav({ page, activeMenu, onSelectMenu, onAd
 
 const StatCard = memo(function StatCard({
   icon,
+  icon3d,
   label,
   value,
   tone,
@@ -1160,7 +1202,9 @@ const StatCard = memo(function StatCard({
       onDrop={onDrop}
       title={`คลิกเพื่อดู${label}`}
     >
-      <div className={`stat-icon ${tone}`}><Icon name={icon} /></div>
+      <div className={`stat-icon ${tone}`}>
+        <ThreeDIcon name={icon3d || icon} size={48} fallback={icon} />
+      </div>
       <span>{label}</span>
       <strong>{value}</strong>
     </button>
@@ -1309,7 +1353,7 @@ const PromptCard = memo(function PromptCard({
             </div>
           ) : (
             <div className="thumbnail-empty">
-              <Icon name="image" />
+              <ThreeDIcon name="36_workspace-image" size={56} />
               <span>ไม่มีภาพตัวอย่าง</span>
             </div>
           )}
@@ -1317,7 +1361,7 @@ const PromptCard = memo(function PromptCard({
 
         {item.imageUrls?.length > 1 && (
           <span className="image-count-badge">
-            <Icon name="image" /> {item.imageUrls.length} รูป
+            <ThreeDIcon name="36_workspace-image" size={16} /> {item.imageUrls.length} รูป
           </span>
         )}
 
@@ -1333,7 +1377,7 @@ const PromptCard = memo(function PromptCard({
           onClick={(e) => { e.stopPropagation(); onFavorite(item) }}
           aria-label={item.favorite ? 'ลบออกจากรายการโปรด' : 'เพิ่มเป็นรายการโปรด'}
         >
-          <Icon name="star" filled={item.favorite} />
+          <ThreeDIcon name="26_action-favorite" size={24} />
         </button>
       </div>
 
@@ -1352,6 +1396,7 @@ const PromptCard = memo(function PromptCard({
                 }}
                 title={`คลิกเพื่อย้ายหมวดหมู่ (ปัจจุบัน: ${categoryInfo.label})`}
               >
+                <ThreeDIcon name={categoryInfo.icon3d || '06_tags'} size={16} />
                 <span>{categoryInfo.label}</span>
                 <span className="category-arrow-down">▾</span>
               </button>
@@ -1366,7 +1411,7 @@ const PromptCard = memo(function PromptCard({
                 }}
                 title="คลิกเพื่อย้ายเข้าโฟลเดอร์ หรือจัดกลุ่ม"
               >
-                <Icon name="folder" filled={Boolean(item.folder)} />
+                <ThreeDIcon name="30_workspace-folder" size={16} />
                 <span>{item.folder || 'ใส่โฟลเดอร์'}</span>
               </button>
 
@@ -1374,7 +1419,7 @@ const PromptCard = memo(function PromptCard({
                 <div className="card-move-popover" onClick={(e) => e.stopPropagation()}>
                   <div className="popover-header">
                     <div className="popover-header-title">
-                      <Icon name={moveTab === 'folders' ? 'folder' : 'tag'} />
+                      <ThreeDIcon name={moveTab === 'folders' ? '30_workspace-folder' : '06_tags'} size={22} />
                       <strong>{moveTab === 'folders' ? 'ย้ายเข้าโฟลเดอร์' : 'เปลี่ยนหมวดหมู่'}</strong>
                     </div>
                     <button
@@ -1394,7 +1439,7 @@ const PromptCard = memo(function PromptCard({
                       className={`popover-tab-btn ${moveTab === 'folders' ? 'active' : ''}`}
                       onClick={() => setMoveTab('folders')}
                     >
-                      <Icon name="folder" />
+                      <ThreeDIcon name="30_workspace-folder" size={18} />
                       <span>โฟลเดอร์ ({folders.length})</span>
                     </button>
                     <button
@@ -1402,7 +1447,7 @@ const PromptCard = memo(function PromptCard({
                       className={`popover-tab-btn ${moveTab === 'categories' ? 'active' : ''}`}
                       onClick={() => setMoveTab('categories')}
                     >
-                      <Icon name="tag" />
+                      <ThreeDIcon name="06_tags" size={18} />
                       <span>หมวดหมู่</span>
                     </button>
                   </div>
@@ -1446,7 +1491,7 @@ const PromptCard = memo(function PromptCard({
                                 setShowMoveMenu(false)
                               }}
                             >
-                              <Icon name="folder" filled={item.folder === f.name} />
+                              <ThreeDIcon name="30_workspace-folder" size={18} />
                               <span className="popover-folder-name">{f.name}</span>
                               {item.folder === f.name && <Icon name="check" className="check-icon" />}
                             </button>
@@ -1467,7 +1512,7 @@ const PromptCard = memo(function PromptCard({
                             onClick={(e) => e.stopPropagation()}
                           />
                           <button type="submit" className="popover-create-btn" disabled={!quickNewFolder.trim()}>
-                            <Icon name="add" /> สร้าง
+                            <ThreeDIcon name="18_action-create-prompt" size={16} /> สร้าง
                           </button>
                         </div>
                       </form>
@@ -1485,8 +1530,7 @@ const PromptCard = memo(function PromptCard({
                               setShowMoveMenu(false)
                             }}
                           >
-                            <span className={`category-mini-dot ${cat.color}`} />
-                            <Icon name={cat.icon} />
+                            <ThreeDIcon name={cat.icon3d} size={20} />
                             <span className="popover-cat-label">{cat.label}</span>
                             {item.category === cat.id && <Icon name="check" className="check-icon" />}
                           </button>
@@ -1502,7 +1546,7 @@ const PromptCard = memo(function PromptCard({
         <div className="card-badges-right">
           {item.notes && (
             <span className="note-badge-indicator" title="มีบันทึกโน้ต/เทคนิคส่วนตัว">
-              <Icon name="note" /> โน้ต
+              <ThreeDIcon name="31_workspace-document" size={16} /> โน้ต
             </span>
           )}
           {item.negativePrompt && (
@@ -1549,7 +1593,7 @@ const PromptCard = memo(function PromptCard({
               onClick={(e) => { e.stopPropagation(); onFavorite(item) }}
               title={item.favorite ? 'รายการโปรด' : 'กดถูกใจ / รายการโปรด'}
             >
-              <Icon name="heart" filled={item.favorite} />
+              <ThreeDIcon name="03_favorites" size={16} />
               <span>{(item.favorite ? 18 : 9) + ((index * 7) % 25)}</span>
             </button>
           </div>
@@ -1561,7 +1605,7 @@ const PromptCard = memo(function PromptCard({
               aria-label="คัดลอกพรอมต์"
               title="คัดลอกพรอมต์"
             >
-              <Icon name={copied ? 'check' : 'copy'} />
+              <ThreeDIcon name={copied ? '58_state-success' : '22_action-copy'} size={18} />
               <span>{copied ? 'คัดลอกแล้ว' : 'คัดลอก'}</span>
             </button>
             <button
@@ -1575,7 +1619,7 @@ const PromptCard = memo(function PromptCard({
               aria-label="ย้ายโฟลเดอร์หรือหมวดหมู่"
               title="กดย้ายเพื่อเลือกโฟลเดอร์ทั้งหมด หรือเปลี่ยนหมวดหมู่"
             >
-              <Icon name="sync" />
+              <ThreeDIcon name="72_utility-more-options" size={18} />
               <span>ย้าย</span>
             </button>
             <button
@@ -1585,7 +1629,7 @@ const PromptCard = memo(function PromptCard({
               aria-label="แก้ไข"
               title="แก้ไข"
             >
-              <Icon name="edit" />
+              <ThreeDIcon name="19_action-edit-prompt" size={18} />
             </button>
             <button
               type="button"
@@ -1594,7 +1638,7 @@ const PromptCard = memo(function PromptCard({
               aria-label="ลบ"
               title="ลบ"
             >
-              <Icon name="trash" />
+              <ThreeDIcon name="21_action-delete" size={18} />
             </button>
           </div>
         </div>
@@ -1753,12 +1797,15 @@ function PromptEditor({ item, folders = [], defaultCategory = 'main', defaultFol
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
-          <div>
-            <p className="eyebrow">PROMPT VAULT • ล็อคหน้าต่างป้องกันข้อมูลหาย</p>
-            <h2 id="editor-title">{isEditing ? 'แก้ไขข้อมูลพรอมต์' : 'เพิ่มพรอมต์ใหม่'}</h2>
+          <div className="modal-header-brand-row">
+            <ThreeDIcon name="84_mascot-working" size={52} eager />
+            <div>
+              <p className="eyebrow">PROMPT VAULT • ล็อคหน้าต่างป้องกันข้อมูลหาย</p>
+              <h2 id="editor-title">{isEditing ? 'แก้ไขข้อมูลพรอมต์' : 'เพิ่มพรอมต์ใหม่'}</h2>
+            </div>
           </div>
           <button type="button" className="icon-button close-button" onClick={clearDraftAndClose} aria-label="ยกเลิกและปิด" title="ยกเลิกและปิดหน้าต่าง">
-            <Icon name="close" />
+            <ThreeDIcon name="70_utility-close" size={20} />
           </button>
         </div>
 
@@ -1919,8 +1966,8 @@ function PromptEditor({ item, folders = [], defaultCategory = 'main', defaultFol
                   </div>
                 ) : (
                   <div className="dropzone-empty">
-                    <div className="upload-plus">
-                      <Icon name="add" />
+                    <div className="upload-plus upload-3d-wrap">
+                      <ThreeDIcon name="76_utility-upload" size={96} />
                     </div>
                     <strong>ลากรูปภาพมาวางที่นี่</strong>
                     <span>หรือคลิกเพื่อเลือกไฟล์รูปตัวอย่าง</span>
@@ -1949,7 +1996,8 @@ function PromptEditor({ item, folders = [], defaultCategory = 'main', defaultFol
               ยกเลิก
             </button>
             <button type="submit" className="primary-button" disabled={saving}>
-              {saving ? 'กำลังบันทึก...' : 'บันทึกพรอมต์'}
+              <ThreeDIcon name="71_utility-confirm" size={20} />
+              <span>{saving ? 'กำลังบันทึก...' : 'บันทึกพรอมต์'}</span>
             </button>
           </div>
         </form>
@@ -1992,10 +2040,13 @@ function DetailModal({
         <div className="modal-header">
           <div>
             <div className="detail-badges">
-              <span className={`category-pill ${categoryInfo.color}`}>{categoryInfo.label}</span>
+              <span className={`category-pill ${categoryInfo.color}`}>
+                <ThreeDIcon name={categoryInfo.icon3d || '06_tags'} size={18} />
+                <span>{categoryInfo.label}</span>
+              </span>
               {item.folder && (
                 <span className="folder-chip-btn has-folder">
-                  <Icon name="folder" filled /> {item.folder}
+                  <ThreeDIcon name="30_workspace-folder" size={18} /> {item.folder}
                 </span>
               )}
               {item.tool && <span className="tool-pill">{item.tool}</span>}
@@ -2014,7 +2065,7 @@ function DetailModal({
                     onClick={() => onMoveToCategory?.(item, cat.id)}
                     title={`ย้ายไปหมวด ${cat.label}`}
                   >
-                    <Icon name={cat.icon} />
+                    <ThreeDIcon name={cat.icon3d} size={18} />
                     <span>{cat.label}</span>
                   </button>
                 ))}
@@ -2032,7 +2083,7 @@ function DetailModal({
                     onClick={() => onMoveToFolder?.(item, '')}
                     title="ไม่จัดโฟลเดอร์"
                   >
-                    <Icon name="folder" />
+                    <ThreeDIcon name="30_workspace-folder" size={18} />
                     <span>ไม่ระบุ</span>
                   </button>
                   {folders.map((f) => (
@@ -2043,7 +2094,7 @@ function DetailModal({
                       onClick={() => onMoveToFolder?.(item, f.name)}
                       title={`ย้ายเข้าโฟลเดอร์ ${f.name}`}
                     >
-                      <Icon name="folder" filled={item.folder === f.name} />
+                      <ThreeDIcon name="30_workspace-folder" size={18} />
                       <span>{f.name}</span>
                     </button>
                   ))}
@@ -2052,7 +2103,7 @@ function DetailModal({
             )}
           </div>
           <button type="button" className="icon-button close-button" onClick={onClose} aria-label="ปิด">
-            <Icon name="close" />
+            <ThreeDIcon name="70_utility-close" size={20} />
           </button>
         </div>
 
@@ -2157,7 +2208,7 @@ function DetailModal({
                 }}
                 title="ลบพรอมต์นี้"
               >
-                <Icon name="trash" /> ลบ
+                <ThreeDIcon name="21_action-delete" size={18} /> ลบ
               </button>
             )}
             <button
@@ -2165,14 +2216,14 @@ function DetailModal({
               className="secondary-button"
               onClick={() => { onClose(); onEdit(item) }}
             >
-              <Icon name="edit" /> แก้ไข
+              <ThreeDIcon name="19_action-edit-prompt" size={18} /> แก้ไข
             </button>
             <button
               type="button"
               className="primary-button"
               onClick={() => handleCopy(item.promptText, 'main')}
             >
-              <Icon name={copiedType === 'main' ? 'check' : 'copy'} />
+              <ThreeDIcon name={copiedType === 'main' ? '58_state-success' : '22_action-copy'} size={18} />
               {copiedType === 'main' ? 'คัดลอกแล้ว' : 'คัดลอกพรอมต์'}
             </button>
           </div>
@@ -2397,7 +2448,7 @@ function QuickKeepNoteWidget({ onSaveNote }) {
         onClick={() => setExpanded(true)}
         title="จดโน้ตด่วน ขยายแบบ Google Keep รองรับรูปภาพ"
       >
-        <Icon name="note" />
+        <ThreeDIcon name="14_category-writing" size={22} fallback="note" />
         <span>จดโน้ต (Keep)</span>
         <span className="keep-badge-dot">📝</span>
       </button>
@@ -2425,7 +2476,7 @@ function QuickKeepNoteWidget({ onSaveNote }) {
                 title={pinned ? 'ยกเลิกการปักหมุด' : 'ปักหมุดโน้ต'}
                 onClick={() => setPinned(!pinned)}
               >
-                <Icon name="pin" filled={pinned} />
+                <ThreeDIcon name="27_action-pin" size={22} fallback="pin" />
               </button>
             </div>
 
@@ -2498,7 +2549,7 @@ function QuickKeepNoteWidget({ onSaveNote }) {
                   title="เพิ่มรูปภาพ"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Icon name="image" />
+                  <ThreeDIcon name="36_workspace-image" size={20} fallback="image" />
                 </button>
                 <input
                   type="file"
@@ -2509,7 +2560,7 @@ function QuickKeepNoteWidget({ onSaveNote }) {
                 />
 
                 <span className="keep-category-badge">
-                  <Icon name="sparkles" /> โน้ตส่วนตัว
+                  <ThreeDIcon name="57_ai-magic" size={16} fallback="sparkles" /> โน้ตส่วนตัว
                 </span>
               </div>
 
@@ -2666,7 +2717,7 @@ function CalculatorWidget() {
         onClick={() => setIsOpen(true)}
         title="เปิดเครื่องคิดเลข"
       >
-        <Icon name="calculator" />
+        <ThreeDIcon name="44_finance-calculator" size={22} fallback="calculator" />
         <span>เครื่องคิดเลข</span>
       </button>
 
@@ -2674,12 +2725,15 @@ function CalculatorWidget() {
         <div className="calculator-modal-backdrop">
           <div className="calculator-card animate-scale-in" onClick={(event) => event.stopPropagation()}>
             <div className="calculator-header">
-              <div>
-                <span className="calculator-kicker">QUICK TOOL</span>
-                <h3>เครื่องคิดเลข</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <ThreeDIcon name="44_finance-calculator" size={32} fallback="calculator" />
+                <div>
+                  <span className="calculator-kicker">QUICK TOOL</span>
+                  <h3>เครื่องคิดเลข</h3>
+                </div>
               </div>
               <button type="button" className="calculator-close-btn" onClick={() => setIsOpen(false)} aria-label="ปิดเครื่องคิดเลข">
-                <Icon name="close" />
+                <ThreeDIcon name="70_utility-close" size={18} fallback="close" />
               </button>
             </div>
 
@@ -2805,7 +2859,7 @@ function CalendarLockWidget({ items = [], lockedDate, onLockDate, onClearLock })
           onClick={() => setIsOpen(true)}
           title="เปิดปฏิทินและเลือกล็อควัน"
         >
-          <Icon name={lockedDate ? 'lock' : 'calendar'} />
+          <ThreeDIcon name={lockedDate ? '66_state-locked' : '75_utility-calendar'} size={22} fallback={lockedDate ? 'lock' : 'calendar'} />
           <span>{lockedDate ? formatThaiDateShort(lockedDate) : 'ปฏิทิน'}</span>
           {lockedDate && <span className="locked-dot-pulse" />}
         </button>
@@ -2907,11 +2961,11 @@ function CalendarLockWidget({ items = [], lockedDate, onLockDate, onClearLock })
             <div className="calendar-footer-actions">
               {lockedDate && (
                 <button type="button" className="cal-action-unlock" onClick={handleRemoveLock}>
-                  <Icon name="unlock" /> ปลดล็อควันที่
+                  <ThreeDIcon name="67_state-unlocked" size={18} fallback="unlock" /> ปลดล็อควันที่
                 </button>
               )}
               <button type="button" className="cal-action-lock" onClick={handleApplyLock}>
-                <Icon name="lock" /> ล็อควันที่เลือก
+                <ThreeDIcon name="66_state-locked" size={18} fallback="lock" /> ล็อควันที่เลือก
               </button>
               <button type="button" className="cal-action-close" onClick={() => setIsOpen(false)}>
                 ปิด
@@ -3018,7 +3072,7 @@ function WeatherMekhaWidget() {
         onClick={() => setIsOpen(true)}
         title="สภาพอากาศพิกัด GPS เรียลไทม์ และเรดาร์เมฆฝน Mekha"
       >
-        <span className="weather-pill-emoji">{weatherCond.emoji}</span>
+        <ThreeDIcon name="54_ai-cloud" size={22} fallback="cloud" />
         <span className="weather-pill-temp">
           {weather ? `${Math.round(weather.temperature_2m)}°C` : '...'}
         </span>
@@ -3034,7 +3088,7 @@ function WeatherMekhaWidget() {
             <div className="weather-header">
               <div className="weather-title-wrap">
                 <div className="weather-header-icon">
-                  <Icon name="cloud-rain" />
+                  <ThreeDIcon name="54_ai-cloud" size={38} fallback="cloud-rain" />
                 </div>
                 <div>
                   <h3 className="weather-title">พยากรณ์อากาศ & เรดาร์ Mekha</h3>
@@ -3049,7 +3103,7 @@ function WeatherMekhaWidget() {
                 onClick={() => setIsOpen(false)}
                 title="ปิด"
               >
-                <Icon name="close" />
+                <ThreeDIcon name="70_utility-close" size={18} fallback="close" />
               </button>
             </div>
 
@@ -3135,7 +3189,7 @@ function WeatherMekhaWidget() {
                 onClick={requestGPS}
                 disabled={loading}
               >
-                <Icon name="gps" className={loading ? 'spin-icon' : ''} />
+                <ThreeDIcon name="78_utility-refresh" size={18} className={loading ? 'spin-icon' : ''} fallback="gps" />
                 <span>{loading ? 'กำลังดึงพิกัด GPS...' : 'รีเฟรช GPS เรียลไทม์'}</span>
               </button>
               <button
@@ -3211,7 +3265,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
       <div className="modal-card download-modal-card animate-scale-in" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="download-modal-header-brand">
-            <img src="./brand/jongjang-app-icon.png" alt="MIX Prompt" className="download-header-icon" />
+            <ThreeDIcon name="83_mascot-success" size={56} eager className="download-header-icon" />
             <div>
               <div className="badge-tag-wrap">
                 <span className="download-badge-version">v1.0.0 Online Live-Sync</span>
@@ -3222,7 +3276,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
             </div>
           </div>
           <button type="button" className="round-button" onClick={onClose} aria-label="ปิด">
-            <Icon name="close" />
+            <ThreeDIcon name="70_utility-close" size={20} fallback="close" />
           </button>
         </div>
 
@@ -3232,7 +3286,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
             className={`download-tab-btn ${tab === 'windows' ? 'active' : ''}`}
             onClick={() => setTab('windows')}
           >
-            <Icon name="windows" />
+            <ThreeDIcon name="77_utility-download" size={20} fallback="windows" />
             <span>Windows (.exe)</span>
           </button>
           <button
@@ -3240,7 +3294,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
             className={`download-tab-btn ${tab === 'android' ? 'active' : ''}`}
             onClick={() => setTab('android')}
           >
-            <Icon name="android" />
+            <ThreeDIcon name="79_utility-modal" size={20} fallback="android" />
             <span>Android (.apk / PWA)</span>
           </button>
           <button
@@ -3248,7 +3302,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
             className={`download-tab-btn ${tab === 'settings' ? 'active' : ''}`}
             onClick={() => setTab('settings')}
           >
-            <Icon name="settings" />
+            <ThreeDIcon name="09_settings" size={20} fallback="settings" />
             <span>ตั้งค่าลิงก์</span>
           </button>
         </div>
@@ -3295,7 +3349,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
                     target={customLinks.exeUrl ? '_blank' : '_self'}
                     rel="noopener noreferrer"
                   >
-                    <Icon name="download" />
+                    <ThreeDIcon name="77_utility-download" size={28} fallback="download" />
                     <div className="download-btn-text">
                       <strong>ดาวน์โหลดโปรแกรม Windows (.zip / .exe)</strong>
                       <span>ขนาด 635 KB แตกไฟล์แล้วดับเบิลคลิก MIX-Prompt-Vault.exe เปิดได้ทันที</span>
@@ -3312,7 +3366,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
                 </div>
 
                 <div className="download-install-tip">
-                  <Icon name="info" />
+                  <ThreeDIcon name="10_help-center" size={24} fallback="info" />
                   <div>
                     <strong>คำแนะนำการติดตั้ง:</strong>
                     <ol>
@@ -3493,7 +3547,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
               onClick={handleCopyShareLink}
               title="คัดลอกลิงก์"
             >
-              <Icon name={copiedLink ? 'check' : 'copy'} />
+              <ThreeDIcon name={copiedLink ? '58_state-success' : '23_action-share'} size={18} fallback={copiedLink ? 'check' : 'copy'} />
               <span>{copiedLink ? 'คัดลอกแล้ว!' : 'คัดลอก'}</span>
             </button>
           </div>
@@ -4286,11 +4340,11 @@ function AccountModal({ account, onClose, onSave }) {
       <div className="account-modal-card glass-panel" onClick={e => e.stopPropagation()}>
         <div className="modal-header-row">
           <h3>
-            <Icon name={form.type === 'bank' ? 'book' : form.type === 'promptpay' ? 'promptpay' : 'card'} />
+            <ThreeDIcon name={form.type === 'bank' ? '39_finance-bank' : form.type === 'promptpay' ? '45_finance-payment' : '38_finance-wallet'} size={28} fallback={form.type === 'bank' ? 'book' : form.type === 'promptpay' ? 'promptpay' : 'card'} />
             {account?.id ? 'แก้ไขข้อมูล' : 'เพิ่มบัญชี / บัตร / พร้อมเพย์'}
           </h3>
           <button type="button" className="modal-close-btn" onClick={clearDraftAndClose} title="ยกเลิกและปิดหน้าต่าง">
-            <Icon name="close" />
+            <ThreeDIcon name="70_utility-close" size={18} fallback="close" />
           </button>
         </div>
 
@@ -4439,7 +4493,7 @@ function AccountModal({ account, onClose, onSave }) {
               ยกเลิก
             </button>
             <button type="submit" className="primary-button btn-save" disabled={!form.accNumber.trim()}>
-              <Icon name="check" /> บันทึกบัญชีเสมือน
+              <ThreeDIcon name="71_utility-confirm" size={20} fallback="check" /> บันทึกบัญชีเสมือน
             </button>
           </div>
         </form>
@@ -4826,14 +4880,14 @@ function SavingsPage({ flash }) {
           <div className="savings-hero glass-panel">
             <div className="savings-hero-top">
               <div className="savings-hero-icon-box">
-                <Icon name="wallet" />
+                <ThreeDIcon name="42_finance-savings" size={52} fallback="wallet" />
               </div>
               <div className="savings-hero-label">
                 <span className="eyebrow">SAVINGS ACCOUNT</span>
                 <h2>เงินออมรวม</h2>
               </div>
               <span className={`savings-sync-badge ${cloudSync}`}>
-                <Icon name="cloud" /> {cloudSync === 'cloud' ? 'Cloud Sync' : cloudSync === 'loading' ? 'กำลังโหลด...' : 'ข้อมูลในเครื่อง'}
+                <ThreeDIcon name="54_ai-cloud" size={18} fallback="cloud" /> {cloudSync === 'cloud' ? 'Cloud Sync' : cloudSync === 'loading' ? 'กำลังโหลด...' : 'ข้อมูลในเครื่อง'}
               </span>
             </div>
             <div className={`savings-hero-amount ${totalSavings < 0 ? 'negative' : ''}`}>
@@ -4841,14 +4895,14 @@ function SavingsPage({ flash }) {
             </div>
             <div className="savings-hero-stats">
               <div className="savings-stat income">
-                <Icon name="trending-up" />
+                <ThreeDIcon name="40_finance-income" size={34} fallback="trending-up" />
                 <div>
                   <span>รายรับรวม</span>
                   <strong>฿{fmt(totalIncome)}</strong>
                 </div>
               </div>
               <div className="savings-stat expense">
-                <Icon name="trending-down" />
+                <ThreeDIcon name="41_finance-expense" size={34} fallback="trending-down" />
                 <div>
                   <span>รายจ่ายรวม</span>
                   <strong>฿{fmt(totalExpense)}</strong>
@@ -4859,21 +4913,21 @@ function SavingsPage({ flash }) {
 
           {/* 2. ฟอร์มเพิ่มรายการ */}
           <div className="savings-form-card glass-panel">
-            <h3><Icon name="add" /> เพิ่มรายการ</h3>
+            <h3><ThreeDIcon name="43_finance-transaction" size={26} fallback="add" /> เพิ่มรายการ</h3>
             <div className="savings-type-toggle">
               <button
                 type="button"
                 className={`type-btn income ${form.type === 'income' ? 'active' : ''}`}
                 onClick={() => setForm(f => ({ ...f, type: 'income' }))}
               >
-                <Icon name="plus-circle" /> รายรับ
+                <ThreeDIcon name="40_finance-income" size={22} fallback="plus-circle" /> รายรับ
               </button>
               <button
                 type="button"
                 className={`type-btn expense ${form.type === 'expense' ? 'active' : ''}`}
                 onClick={() => setForm(f => ({ ...f, type: 'expense' }))}
               >
-                <Icon name="minus-circle" /> รายจ่าย
+                <ThreeDIcon name="41_finance-expense" size={22} fallback="minus-circle" /> รายจ่าย
               </button>
             </div>
             <div className="savings-form-fields">
@@ -4916,7 +4970,7 @@ function SavingsPage({ flash }) {
               onClick={addTxn}
               disabled={!form.amount || parseFloat(form.amount) <= 0}
             >
-              <Icon name="check" /> บันทึก{form.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
+              <ThreeDIcon name="71_utility-confirm" size={20} fallback="check" /> บันทึก{form.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
             </button>
           </div>
         </div>
@@ -4925,7 +4979,7 @@ function SavingsPage({ flash }) {
         <div className="savings-right-col">
           <div className="savings-history-card glass-panel">
             <div className="savings-history-header">
-              <h3><Icon name="calendar" /> ประวัติการเงิน</h3>
+              <h3><ThreeDIcon name="47_finance-statistics" size={26} fallback="calendar" /> ประวัติการเงิน</h3>
               <select
                 value={filterMonth}
                 onChange={e => setFilterMonth(e.target.value)}
@@ -4965,7 +5019,7 @@ function SavingsPage({ flash }) {
               {monthTxns.map(txn => (
                 <div key={txn.id} className={`savings-txn-row ${txn.type} ${txn.isCutoff ? 'cutoff' : ''}`}>
                   <div className="txn-icon-box">
-                    <Icon name={txn.type === 'income' ? 'plus-circle' : 'minus-circle'} />
+                    <ThreeDIcon name={txn.type === 'income' ? '40_finance-income' : '41_finance-expense'} size={28} fallback={txn.type === 'income' ? 'plus-circle' : 'minus-circle'} />
                   </div>
                   <div className="txn-info">
                     <strong>{txn.label || (txn.type === 'income' ? 'รายรับ' : 'รายจ่าย')}</strong>
@@ -4981,7 +5035,7 @@ function SavingsPage({ flash }) {
                       onClick={() => deleteTxn(txn.id)}
                       title="ลบรายการนี้"
                     >
-                      <Icon name="trash" />
+                      <ThreeDIcon name="21_action-delete" size={18} fallback="trash" />
                     </button>
                   )}
                 </div>
@@ -4997,7 +5051,7 @@ function SavingsPage({ flash }) {
           <div>
             <span className="eyebrow">VIRTUAL CARDS &amp; ACCOUNTS • DRAG &amp; DROP REORDER</span>
             <h2>
-              <Icon name="card" /> บัญชีธนาคาร / การ์ด / พร้อมเพย์
+              <ThreeDIcon name="38_finance-wallet" size={32} fallback="card" /> บัญชีธนาคาร / การ์ด / พร้อมเพย์
               <span className="count-tag">({accounts.length})</span>
             </h2>
             <p className="section-subtext">
@@ -5030,7 +5084,7 @@ function SavingsPage({ flash }) {
               setShowAccountModal(true)
             }}
           >
-            <Icon name="add" /> เพิ่มสมุด / การ์ด / พร้อมเพย์
+            <ThreeDIcon name="18_action-create-prompt" size={20} fallback="add" /> เพิ่มสมุด / การ์ด / พร้อมเพย์
           </button>
         </div>
 
@@ -5084,6 +5138,7 @@ function SavingsPage({ flash }) {
             const currentTab = ACCOUNT_TYPE_TABS.find((t) => t.id === accountTypeFilter)
             return (
               <div className="accounts-empty-state">
+                <ThreeDIcon name="62_state-empty" size={110} />
                 <p>ยังไม่มีรายการในหมวด <strong>{currentTab?.emoji} {currentTab?.label}</strong></p>
                 <button
                   type="button"
@@ -5109,7 +5164,7 @@ function SavingsPage({ flash }) {
                     setShowAccountModal(true)
                   }}
                 >
-                  <Icon name="add" /> เพิ่ม{currentTab?.label || 'รายการ'}ใหม่
+                  <ThreeDIcon name="18_action-create-prompt" size={18} fallback="add" /> เพิ่ม{currentTab?.label || 'รายการ'}ใหม่
                 </button>
               </div>
             )
@@ -6002,7 +6057,7 @@ function App() {
           <div className="topbar-right-cluster">
             {/* Global Search Bar with Ctrl+K */}
             <label className="topbar-global-search">
-              <Icon name="search" />
+              <ThreeDIcon name="05_search" size={22} eager fallback="search" />
               <input
                 ref={searchInputRef}
                 value={query}
@@ -6038,7 +6093,13 @@ function App() {
                 onClick={syncData}
                 title="คลิกเพื่อซิงค์ข้อมูลกับ Firebase Cloud"
               >
-                <Icon name="cloud" />
+                <ThreeDIcon
+                  name={isSyncing ? '65_state-syncing' : cloudState === 'โหมดในเครื่อง' ? '64_state-offline' : '54_ai-cloud'}
+                  size={22}
+                  eager
+                  className={isSyncing ? 'spin-icon' : ''}
+                  fallback="cloud"
+                />
                 <span>{isSyncing ? 'กำลังซิงค์...' : cloudState}</span>
               </button>
 
@@ -6049,7 +6110,7 @@ function App() {
                 title="การแจ้งเตือนระบบ"
                 aria-label="การแจ้งเตือน"
               >
-                <Icon name="bell" />
+                <ThreeDIcon name="68_state-notification" size={24} eager fallback="bell" />
                 <span className="notif-green-dot" aria-hidden="true" />
               </button>
 
@@ -6060,7 +6121,7 @@ function App() {
                 title="ดาวน์โหลดแอป Windows (.exe) / Android (.apk)"
                 aria-label="ดาวน์โหลดแอป"
               >
-                <Icon name="download" />
+                <ThreeDIcon name="77_utility-download" size={24} eager fallback="download" />
               </button>
 
               <button
@@ -6069,7 +6130,7 @@ function App() {
                 onClick={() => handleSelectMenu('profile')}
                 title="โปรไฟล์และการตั้งค่า"
               >
-                <img src="./brand/jongjang-mascot.png" alt="MIX Profile" decoding="async" />
+                <ThreeDIcon name="80_mascot-idle" size={28} eager />
                 <span>MIX</span>
                 <span className="profile-caret">▾</span>
               </button>
@@ -6084,7 +6145,7 @@ function App() {
                   setUnlocked(false)
                 }}
               >
-                <Icon name="logout" />
+                <ThreeDIcon name="66_state-locked" size={22} eager fallback="logout" />
               </button>
             </div>
           </div>
@@ -6107,28 +6168,28 @@ function App() {
                     setActiveMenu('home')
                   }}
                 >
-                  ทั้งหมด ({items.length})
+                  <ThreeDIcon name="57_ai-magic" size={18} /> ทั้งหมด ({items.length})
                 </button>
                 <button
                   type="button"
                   className={`quick-pill ${quickFilter === 'favorite' ? 'active' : ''}`}
                   onClick={() => setQuickFilter(quickFilter === 'favorite' ? 'all' : 'favorite')}
                 >
-                  <Icon name="star" filled={quickFilter === 'favorite'} /> รายการโปรด ({favoritesCount})
+                  <ThreeDIcon name="26_action-favorite" size={18} fallback="star" /> รายการโปรด ({favoritesCount})
                 </button>
                 <button
                   type="button"
                   className={`quick-pill ${quickFilter === 'hasNote' ? 'active' : ''}`}
                   onClick={() => setQuickFilter(quickFilter === 'hasNote' ? 'all' : 'hasNote')}
                 >
-                  <Icon name="note" /> มีโน้ต ({notesCount})
+                  <ThreeDIcon name="14_category-writing" size={18} fallback="note" /> มีโน้ต ({notesCount})
                 </button>
                 <button
                   type="button"
                   className={`quick-pill ${quickFilter === 'hasImage' ? 'active' : ''}`}
                   onClick={() => setQuickFilter(quickFilter === 'hasImage' ? 'all' : 'hasImage')}
                 >
-                  <Icon name="image" /> มีรูปตัวอย่าง ({imagesCount})
+                  <ThreeDIcon name="36_workspace-image" size={18} fallback="image" /> มีรูปตัวอย่าง ({imagesCount})
                 </button>
               </div>
 
@@ -6149,7 +6210,7 @@ function App() {
             {lockedDate && (
               <div className="date-locked-banner">
                 <div className="date-locked-info">
-                  <Icon name="lock" />
+                  <ThreeDIcon name="66_state-locked" size={20} fallback="lock" />
                   <span>
                     กำลังล็อคแสดงข้อมูลเฉพาะวันที่: <strong>{formatThaiDateFull(lockedDate)}</strong> (พบ {filteredItems.length} รายการ)
                   </span>
@@ -6160,7 +6221,7 @@ function App() {
                   onClick={() => setLockedDate(null)}
                   title="ปลดล็อคเพื่อดูทั้งหมด"
                 >
-                  <Icon name="unlock" /> ปลดล็อควันที่
+                  <ThreeDIcon name="67_state-unlocked" size={18} fallback="unlock" /> ปลดล็อควันที่
                 </button>
               </div>
             )}
@@ -6187,14 +6248,20 @@ function App() {
                         setPage('add')
                       }}
                     >
-                      <Icon name="rocket" />
+                      <ThreeDIcon name="57_ai-magic" size={24} eager fallback="rocket" />
                       <span>เริ่มใช้งานทันที →</span>
                     </button>
                     <HeroClockBadge />
                   </div>
                 </div>
                 <div className="hero-image-frame">
-                  <img src="./brand/jongjang-mascot.png" alt="จ๋องแจ๋งหุ่นยนต์ผู้ช่วยสร้างสรรค์" decoding="async" />
+                  <ThreeDIcon
+                    name="81_mascot-greeting"
+                    size={200}
+                    eager
+                    className="hero-mascot-3d"
+                    alt="จ๋องแจ๋งหุ่นยนต์ผู้ช่วยสร้างสรรค์"
+                  />
                 </div>
               </section>
             )}
@@ -6203,6 +6270,7 @@ function App() {
             <section className="stat-grid stat-grid-5">
               <StatCard
                 icon="prompt"
+                icon3d="02_prompt-library"
                 label="พรอมต์ทั้งหมด"
                 value={items.length}
                 tone="purple"
@@ -6211,6 +6279,7 @@ function App() {
               />
               <StatCard
                 icon="tag"
+                icon3d="06_tags"
                 label="หมวดหมู่"
                 value={categories.length - 1}
                 tone="blue"
@@ -6219,6 +6288,7 @@ function App() {
               />
               <StatCard
                 icon="folder"
+                icon3d="04_collections"
                 label="โปรเจกต์"
                 value={allFolders.length}
                 tone="green"
@@ -6227,6 +6297,7 @@ function App() {
               />
               <StatCard
                 icon="heart"
+                icon3d="03_favorites"
                 label="รายการโปรด"
                 value={favoritesCount}
                 tone="orange"
@@ -6235,6 +6306,7 @@ function App() {
               />
               <StatCard
                 icon="trending-up"
+                icon3d="08_analytics"
                 label="มีโน้ต / เทคนิค"
                 value={`${notesCount} รายการ`}
                 tone="cyan"
@@ -6256,7 +6328,7 @@ function App() {
             <section className="section-block" ref={categorySectionRef}>
               <div className="section-heading">
                 <h2>
-                  <Icon name="prompt" />
+                  <ThreeDIcon name="37_workspace-collection" size={30} fallback="prompt" />
                   <span>หมวดหมู่ยอดนิยม</span>
                 </h2>
                 <div className="heading-actions">
@@ -6325,9 +6397,14 @@ function App() {
                     >
                       <div className={`cat-visual-thumb tone-${category.color}`}>
                         {previewImg ? (
-                          <img src={previewImg} alt={category.label} loading="lazy" decoding="async" />
+                          <>
+                            <img src={previewImg} alt={category.label} loading="lazy" decoding="async" />
+                            <span className="cat-3d-corner-badge">
+                              <ThreeDIcon name={category.icon3d || category.icon} size={24} fallback={category.icon} />
+                            </span>
+                          </>
                         ) : (
-                          <Icon name={category.icon} />
+                          <ThreeDIcon name={category.icon3d || category.icon} size={56} fallback={category.icon} />
                         )}
                       </div>
                       <strong className="cat-visual-title">{category.label}</strong>
@@ -6342,7 +6419,7 @@ function App() {
             <section className="section-block tags-section-block">
               <div className="section-heading">
                 <h2>
-                  <Icon name="tag" />
+                  <ThreeDIcon name="32_workspace-tags" size={30} fallback="tag" />
                   <span>แท็กยอดนิยม</span>
                 </h2>
                 {query && (
@@ -6373,7 +6450,7 @@ function App() {
               <div className="section-heading folder-section-heading">
                 <div>
                   <h2>
-                    <Icon name="folder" filled />
+                    <ThreeDIcon name="30_workspace-folder" size={30} fallback="folder" />
                     <span>
                       โปรเจกต์ / โฟลเดอร์จัดกลุ่ม
                       {categoryFilter !== 'all'
@@ -6402,7 +6479,7 @@ function App() {
                     className="create-folder-btn"
                     onClick={() => setIsCreatingFolder((prev) => !prev)}
                   >
-                    <Icon name={isCreatingFolder ? 'close' : 'folder-plus'} />
+                    <ThreeDIcon name={isCreatingFolder ? '70_utility-close' : '18_action-create-prompt'} size={20} fallback={isCreatingFolder ? 'close' : 'folder-plus'} />
                     <span>{isCreatingFolder ? 'ปิดฟอร์ม' : 'สร้างโฟลเดอร์ใหม่'}</span>
                   </button>
                 </div>
@@ -6418,7 +6495,7 @@ function App() {
                 >
                   <div className="create-folder-input-row">
                     <div className="create-folder-input-wrap">
-                      <Icon name="folder-plus" />
+                      <ThreeDIcon name="30_workspace-folder" size={20} fallback="folder-plus" />
                       <input
                         value={newFolderName}
                         onChange={(e) => setNewFolderName(e.target.value)}
@@ -6474,7 +6551,7 @@ function App() {
                   className={`folder-tile ${folderFilter === 'all' ? 'selected' : ''}`}
                   onClick={() => setFolderFilter('all')}
                 >
-                  <Icon name="sparkles" />
+                  <ThreeDIcon name="37_workspace-collection" size={22} fallback="sparkles" />
                   <span>ทั้งหมดในหมวดนี้</span>
                   <span className="folder-count-badge">{categoryFilteredItems.length}</span>
                 </button>
@@ -6509,7 +6586,7 @@ function App() {
                       }}
                       title={`คลิกเพื่อเปิดโฟลเดอร์ "${folderObj.name}" หรือลากการ์ดมาวางที่นี่`}
                     >
-                      <Icon name="folder" filled={isSelected || isDropOver} />
+                      <ThreeDIcon name="30_workspace-folder" size={22} fallback="folder" />
                       <span className="folder-tile-name">{folderObj.name}</span>
                       <span className="folder-count-badge">{countInFolder}</span>
                       <button
@@ -6540,7 +6617,7 @@ function App() {
                     onDrop={(e) => handleFolderDrop(e, '__unfiled__')}
                     title="แสดงรายการที่ยังไม่ได้จัดเข้าโฟลเดอร์ (ลากการ์ดมาวางที่นี่เพื่อเอาออกจากโฟลเดอร์)"
                   >
-                    <Icon name="prompt" />
+                    <ThreeDIcon name="28_action-archive" size={22} fallback="prompt" />
                     <span>ยังไม่จัดโฟลเดอร์</span>
                     <span className="folder-count-badge">{unfiledCount}</span>
                   </button>
@@ -6553,7 +6630,7 @@ function App() {
               <div className="section-heading gallery-toolbar-heading">
                 <div>
                   <h2>
-                    <Icon name="desktop" />
+                    <ThreeDIcon name="33_workspace-gallery" size={32} fallback="desktop" />
                     <span>
                       {folderFilter !== 'all' && folderFilter !== '__unfiled__'
                         ? `โฟลเดอร์: ${folderFilter}`
@@ -6589,7 +6666,7 @@ function App() {
                       title="มุมมองการ์ด (Grid View)"
                       aria-label="Grid View"
                     >
-                      <Icon name="grid" />
+                      <ThreeDIcon name="34_workspace-grid" size={20} fallback="grid" />
                     </button>
                     <button
                       type="button"
@@ -6598,13 +6675,13 @@ function App() {
                       title="มุมมองรายการ (List View)"
                       aria-label="List View"
                     >
-                      <Icon name="list" />
+                      <ThreeDIcon name="35_workspace-list" size={20} fallback="list" />
                     </button>
                   </div>
 
                   {/* Sort Select */}
                   <div className="gallery-sort-wrap">
-                    <Icon name="sort" />
+                    <ThreeDIcon name="74_utility-sort" size={20} fallback="sort" />
                     <select
                       className="gallery-sort-select"
                       value={sortBy}
@@ -6630,7 +6707,7 @@ function App() {
                       setPage('add')
                     }}
                   >
-                    <Icon name="add" />
+                    <ThreeDIcon name="18_action-create-prompt" size={20} fallback="add" />
                     <span>
                       {activeFolderDefault ? `เพิ่มใน “${activeFolderDefault}”` : 'เพิ่มพรอมต์'}
                     </span>
@@ -6738,8 +6815,18 @@ function App() {
                 </>
               ) : (
                 <div className="empty-state">
-                  <div className="empty-icon">
-                    <Icon name={page === 'home' && !hasActiveFilter ? 'star' : folderFilter !== 'all' ? 'folder' : 'prompt'} filled={page === 'home' && !hasActiveFilter} />
+                  <div className="empty-icon empty-3d-illustration">
+                    <ThreeDIcon
+                      name={
+                        query || categoryFilter !== 'all' || quickFilter !== 'all'
+                          ? '63_state-no-results'
+                          : folderFilter !== 'all'
+                          ? '62_state-empty'
+                          : '82_mascot-thinking'
+                      }
+                      size={150}
+                      fallback={page === 'home' && !hasActiveFilter ? 'star' : folderFilter !== 'all' ? 'folder' : 'prompt'}
+                    />
                   </div>
                   <h2>
                     {page === 'home' && !hasActiveFilter
@@ -6766,7 +6853,7 @@ function App() {
                         className="secondary-button"
                         onClick={() => { setPage('prompts'); setActiveMenu('prompts') }}
                       >
-                        <Icon name="prompt" /> ไปที่คลังพรอมต์ทั้งหมด ({items.length})
+                        <ThreeDIcon name="02_prompt-library" size={20} fallback="prompt" /> ไปที่คลังพรอมต์ทั้งหมด ({items.length})
                       </button>
                     )}
                     {(query || categoryFilter !== 'all' || quickFilter !== 'all' || folderFilter !== 'all') && (
@@ -6794,7 +6881,7 @@ function App() {
                         setPage('add')
                       }}
                     >
-                      <Icon name="add" /> เพิ่มพรอมต์ใหม่
+                      <ThreeDIcon name="18_action-create-prompt" size={20} fallback="add" /> เพิ่มพรอมต์ใหม่
                     </button>
                   </div>
                 </div>
@@ -6805,7 +6892,7 @@ function App() {
             <section className="section-block quick-tools-section">
               <div className="section-heading">
                 <h2>
-                  <Icon name="wrench" />
+                  <ThreeDIcon name="53_ai-studio" size={30} fallback="wrench" />
                   <span>เครื่องมือด่วน</span>
                 </h2>
               </div>
@@ -6816,7 +6903,7 @@ function App() {
                   rel="noopener noreferrer"
                   className="quick-tool-card primary-tool"
                 >
-                  <div className="qt-icon sage"><Icon name="image" /></div>
+                  <div className="qt-icon sage"><ThreeDIcon name="48_ai-image" size={42} fallback="image" /></div>
                   <div className="qt-info">
                     <strong>สร้างภาพ</strong>
                     <span>GPT-2.5 (Firefly)</span>
@@ -6828,7 +6915,7 @@ function App() {
                   rel="noopener noreferrer"
                   className="quick-tool-card"
                 >
-                  <div className="qt-icon amber"><Icon name="music" /></div>
+                  <div className="qt-icon amber"><ThreeDIcon name="49_ai-music" size={42} fallback="music" /></div>
                   <div className="qt-info">
                     <strong>สร้างเสียง</strong>
                     <span>SunoAI v5</span>
@@ -6840,7 +6927,7 @@ function App() {
                   rel="noopener noreferrer"
                   className="quick-tool-card"
                 >
-                  <div className="qt-icon slate"><Icon name="note" /></div>
+                  <div className="qt-icon slate"><ThreeDIcon name="52_ai-writing" size={42} fallback="note" /></div>
                   <div className="qt-info">
                     <strong>เขียนสคริปต์</strong>
                     <span>Google AI Studio</span>
@@ -6852,7 +6939,7 @@ function App() {
                   rel="noopener noreferrer"
                   className="quick-tool-card"
                 >
-                  <div className="qt-icon teal"><Icon name="sparkles" /></div>
+                  <div className="qt-icon teal"><ThreeDIcon name="50_ai-video" size={42} fallback="sparkles" /></div>
                   <div className="qt-info">
                     <strong>ตัดต่อวิดีโอ</strong>
                     <span>Canva</span>
@@ -6863,7 +6950,7 @@ function App() {
                   className="quick-tool-card"
                   onClick={syncData}
                 >
-                  <div className="qt-icon drive"><Icon name="cloud" /></div>
+                  <div className="qt-icon drive"><ThreeDIcon name="55_ai-google-drive" size={42} fallback="cloud" /></div>
                   <div className="qt-info">
                     <strong>เชื่อมต่อ Drive</strong>
                     <span>Google Drive / Cloud</span>
@@ -6875,65 +6962,137 @@ function App() {
         )}
 
         {page === 'ai-tools' && (
-          <section className="section-block">
-            <div className="section-heading">
-              <h2>
-                <Icon name="wrench" />
-                <span>เครื่องมือ AI และระบบในเครือ MIX-IMAGE</span>
-                <span className="count-tag">({externalLinksTopToBottom.length})</span>
-              </h2>
-            </div>
-            <div className="profile-links-grid">
-              {externalLinksTopToBottom.map((link) => (
-                <a
-                  key={link.id}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`sidebar-link-btn accent-${link.color}`}
-                >
-                  <span className={`sidebar-link-dot dot-${link.color}`} />
-                  <div className="sidebar-link-text">
-                    <strong>{link.sub}</strong>
-                    <span>{link.label}</span>
-                  </div>
-                  <Icon name="external" className="sidebar-link-arrow" />
-                </a>
-              ))}
-            </div>
-          </section>
+          <>
+            <section className="section-block">
+              <div className="ai-suite-banner">
+                <div className="ai-suite-banner-text">
+                  <span className="eyebrow">MIX-IMAGE AI CREATIVE SUITE</span>
+                  <h2>ศูนย์รวมเครื่องมือ AI สร้างสรรค์งานภาพ เสียง วิดีโอ และโค้ด</h2>
+                  <p>เชื่อมต่อตรงสู่ระบบสร้างภาพ เสียงดนตรี SunoAI v5, เขียนสคริปต์ Google AI Studio และคลังข้อมูล Cloud</p>
+                </div>
+                <ThreeDIcon name="84_mascot-working" size={120} eager />
+              </div>
+
+              <div className="ai-suite-grid">
+                {[
+                  { id: '48_ai-image', title: 'AI สร้างภาพ (Image Gen)', sub: 'GPT Image 2.5 / Adobe Firefly', url: 'https://miximageai.online/' },
+                  { id: '49_ai-music', title: 'AI สร้างเพลง (Music Gen)', sub: 'SunoAI v5 / แต่งทำนองและเนื้อร้อง', url: 'https://mix-music.netlify.app/' },
+                  { id: '50_ai-video', title: 'AI วิดีโอ (Video Studio)', sub: 'Flow / Omi / ตัดต่อคลิปอัตโนมัติ', url: 'https://www.canva.com/' },
+                  { id: '51_ai-voice', title: 'AI เสียงพากย์ (Voice Synth)', sub: 'สังเคราะห์เสียงพูดและแคปชัน', url: 'https://mix-captions.netlify.app/' },
+                  { id: '52_ai-writing', title: 'AI เขียนสคริปต์ (Copywriting)', sub: 'ร่างเนื้อเพลง บทความ และสคริปต์', url: 'https://miximage-lyric.netlify.app/' },
+                  { id: '53_ai-studio', title: 'AI Creative Studio', sub: 'ศูนย์กลางระบบสร้างสรรค์ MIX-IMAGE', url: 'https://miximageai.online/' },
+                  { id: '54_ai-cloud', title: 'Firebase Cloud Sync', sub: 'ซิงค์คลังพรอมต์แบบเรียลไทม์', url: 'https://woon-miximage.github.io/mix-image-prompt-vault/' },
+                  { id: '55_ai-google-drive', title: 'Google Drive Storage', sub: 'พื้นที่จัดเก็บไฟล์งานและเรฟเฟอเรนซ์', url: 'https://drive.google.com/' },
+                  { id: '56_ai-code', title: 'AI Prompt Engineering', sub: 'โครงสร้างพารามิเตอร์และคำสั่งขั้นสูง', url: 'https://mix-promt.netlify.app/' },
+                  { id: '57_ai-magic', title: 'AI Magic Enhance', sub: 'ปรับแต่งแสง สี และรีทัชภาพติดบัตร', url: 'https://miximage-photo.netlify.app/' },
+                ].map((tool) => (
+                  <a
+                    key={tool.id}
+                    href={tool.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ai-suite-card"
+                  >
+                    <div className="ai-suite-icon-wrap">
+                      <ThreeDIcon name={tool.id} size={48} />
+                    </div>
+                    <div className="ai-suite-info">
+                      <strong>{tool.title}</strong>
+                      <span>{tool.sub}</span>
+                    </div>
+                    <ThreeDIcon name="73_utility-external-link" size={20} />
+                  </a>
+                ))}
+              </div>
+            </section>
+
+            <section className="section-block">
+              <div className="section-heading">
+                <h2>
+                  <ThreeDIcon name="53_ai-studio" size={30} fallback="wrench" />
+                  <span>เครื่องมือ AI และระบบในเครือ MIX-IMAGE ทั้งหมด</span>
+                  <span className="count-tag">({externalLinksTopToBottom.length})</span>
+                </h2>
+              </div>
+              <div className="profile-links-grid">
+                {externalLinksTopToBottom.map((link) => (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`sidebar-link-btn accent-${link.color}`}
+                  >
+                    <span className="sidebar-link-3d-icon">
+                      <ThreeDIcon name={link.icon3d} size={28} />
+                    </span>
+                    <div className="sidebar-link-text">
+                      <strong>{link.sub}</strong>
+                      <span>{link.label}</span>
+                    </div>
+                    <ThreeDIcon name="73_utility-external-link" size={18} className="sidebar-link-arrow" fallback="external" />
+                  </a>
+                ))}
+              </div>
+            </section>
+          </>
         )}
 
         {page === 'reports' && (
-          <section className="section-block">
-            <div className="section-heading">
-              <h2>
-                <Icon name="chart" />
-                <span>สรุปรายงานคลังพรอมต์ (Workspace Analytics)</span>
-              </h2>
-            </div>
-            <div className="stat-grid stat-grid-5">
-              <StatCard icon="prompt" label="พรอมต์ทั้งหมด" value={items.length} tone="purple" onClick={() => handleSelectMenu('prompts')} />
-              <StatCard icon="tag" label="หมวดหมู่" value={categories.length - 1} tone="blue" onClick={() => handleSelectMenu('categories')} />
-              <StatCard icon="folder" label="โปรเจกต์ / โฟลเดอร์" value={allFolders.length} tone="green" onClick={() => handleSelectMenu('projects')} />
-              <StatCard icon="heart" label="รายการโปรด" value={favoritesCount} tone="orange" onClick={() => handleSelectMenu('favorites')} />
-              <StatCard icon="image" label="มีภาพตัวอย่าง" value={imagesCount} tone="cyan" onClick={() => { setPage('prompts'); setQuickFilter('hasImage') }} />
-            </div>
-            <div className="category-visual-grid" style={{ marginTop: '1.25rem' }}>
-              {categories.filter((c) => c.id !== 'all').map((cat) => {
-                const count = items.filter((it) => it.category === cat.id).length
-                return (
-                  <div key={cat.id} className="category-visual-card" onClick={() => { setCategoryFilter(cat.id); setPage('prompts') }}>
-                    <div className={`cat-visual-thumb tone-${cat.color}`}>
-                      <Icon name={cat.icon} />
+          <>
+            <section className="section-block">
+              <div className="ai-suite-banner">
+                <div className="ai-suite-banner-text">
+                  <span className="eyebrow">WORKSPACE ANALYTICS &amp; 3D ASSET REPORT</span>
+                  <h2>สรุปรายงานคลังพรอมต์และระบบไอคอน 3D จ๋องแจ๋ง</h2>
+                  <p>ภาพรวมสถิติพรอมต์ในคลัง หมวดหมู่ยอดนิยม และคลังไอคอน 3D ทั้ง 85 รายการในระบบ</p>
+                </div>
+                <ThreeDIcon name="85_mascot-encouraging" size={120} eager />
+              </div>
+
+              <div className="stat-grid stat-grid-5">
+                <StatCard icon="prompt" icon3d="02_prompt-library" label="พรอมต์ทั้งหมด" value={items.length} tone="purple" onClick={() => handleSelectMenu('prompts')} />
+                <StatCard icon="tag" icon3d="06_tags" label="หมวดหมู่" value={categories.length - 1} tone="blue" onClick={() => handleSelectMenu('categories')} />
+                <StatCard icon="folder" icon3d="04_collections" label="โปรเจกต์ / โฟลเดอร์" value={allFolders.length} tone="green" onClick={() => handleSelectMenu('projects')} />
+                <StatCard icon="heart" icon3d="03_favorites" label="รายการโปรด" value={favoritesCount} tone="orange" onClick={() => handleSelectMenu('favorites')} />
+                <StatCard icon="image" icon3d="36_workspace-image" label="มีภาพตัวอย่าง" value={imagesCount} tone="cyan" onClick={() => { setPage('prompts'); setQuickFilter('hasImage') }} />
+              </div>
+              <div className="category-visual-grid" style={{ marginTop: '1.25rem' }}>
+                {categories.filter((c) => c.id !== 'all').map((cat) => {
+                  const count = items.filter((it) => it.category === cat.id).length
+                  return (
+                    <div key={cat.id} className="category-visual-card" onClick={() => { setCategoryFilter(cat.id); setPage('prompts') }}>
+                      <div className={`cat-visual-thumb tone-${cat.color}`}>
+                        <ThreeDIcon name={cat.icon3d || cat.icon} size={56} fallback={cat.icon} />
+                      </div>
+                      <strong className="cat-visual-title">{cat.label}</strong>
+                      <small className="cat-visual-count">{count} พรอมต์ ({items.length ? Math.round((count / items.length) * 100) : 0}%)</small>
                     </div>
-                    <strong className="cat-visual-title">{cat.label}</strong>
-                    <small className="cat-visual-count">{count} พรอมต์ ({items.length ? Math.round((count / items.length) * 100) : 0}%)</small>
+                  )
+                })}
+              </div>
+            </section>
+
+            <section className="section-block">
+              <div className="section-heading">
+                <h2>
+                  <ThreeDIcon name="80_mascot-idle" size={32} />
+                  <span>MIX JONGJANG 3D ICON SYSTEM™ (ครบทั้ง {ICON_MANIFEST.length} ไฟล์)</span>
+                </h2>
+              </div>
+              <div className="icon-catalog-grid">
+                {ICON_MANIFEST.map((entry) => (
+                  <div key={entry.id} className="icon-catalog-card" title={`${entry.filename} • ${entry.uiLocation}`}>
+                    <ThreeDIcon name={entry.id} size={44} />
+                    <div className="icon-catalog-meta">
+                      <strong>#{entry.num} {entry.description}</strong>
+                      <span>{entry.category}/{entry.filename}</span>
+                    </div>
                   </div>
-                )
-              })}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          </>
         )}
 
         {page === 'savings' && (
@@ -6943,7 +7102,7 @@ function App() {
         {page === 'profile' && (
           <>
             <section className="profile-panel">
-              <img src="./brand/jongjang-mascot.png" alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" decoding="async" />
+              <ThreeDIcon name="81_mascot-greeting" size={140} eager alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" />
               <div>
                 <p className="eyebrow">OWNER PROFILE</p>
                 <h2>MIX NATTANON</h2>
@@ -6965,7 +7124,7 @@ function App() {
                   </div>
                   <div className="profile-stat-item">
                     <span>สถานะคลาวด์</span>
-                    <strong className="cloud-note"><Icon name="cloud" /> {cloudState}</strong>
+                    <strong className="cloud-note"><ThreeDIcon name="54_ai-cloud" size={20} fallback="cloud" /> {cloudState}</strong>
                   </div>
                 </div>
                 <div className="profile-actions">
@@ -6975,7 +7134,7 @@ function App() {
                     onClick={syncData}
                     disabled={isSyncing}
                   >
-                    <Icon name="sync" /> ซิงค์ข้อมูลกับ Firebase
+                    <ThreeDIcon name="78_utility-refresh" size={20} fallback="sync" /> ซิงค์ข้อมูลกับ Firebase
                   </button>
                   <button
                     type="button"
@@ -6985,7 +7144,7 @@ function App() {
                       setUnlocked(false)
                     }}
                   >
-                    <Icon name="logout" /> ออกจากระบบ
+                    <ThreeDIcon name="66_state-locked" size={20} fallback="logout" /> ออกจากระบบ
                   </button>
                 </div>
               </div>
@@ -6996,7 +7155,7 @@ function App() {
               <div className="profile-downloads-header">
                 <div className="profile-downloads-title-box">
                   <div className="downloads-icon-bubble">
-                    <Icon name="download" />
+                    <ThreeDIcon name="77_utility-download" size={36} fallback="download" />
                   </div>
                   <div>
                     <h2>แอปพลิเคชันสำหรับติดตั้งลงเครื่อง (Desktop &amp; Mobile)</h2>
@@ -7008,7 +7167,7 @@ function App() {
                   className="profile-open-downloads-btn"
                   onClick={() => setShowDownloadModal(true)}
                 >
-                  <Icon name="download" />
+                  <ThreeDIcon name="77_utility-download" size={20} fallback="download" />
                   <span>เปิดหน้าต่างดาวน์โหลด</span>
                 </button>
               </div>
@@ -7016,7 +7175,7 @@ function App() {
               <div className="profile-downloads-grid">
                 <div className="profile-dl-item win" onClick={() => setShowDownloadModal(true)}>
                   <div className="dl-item-top">
-                    <span className="dl-os-icon win"><Icon name="windows" /></span>
+                    <span className="dl-os-icon win"><ThreeDIcon name="77_utility-download" size={28} fallback="windows" /></span>
                     <span className="dl-os-badge">Windows .exe</span>
                   </div>
                   <h3>Windows Desktop App</h3>
@@ -7028,7 +7187,7 @@ function App() {
 
                 <div className="profile-dl-item android" onClick={() => setShowDownloadModal(true)}>
                   <div className="dl-item-top">
-                    <span className="dl-os-icon android"><Icon name="android" /></span>
+                    <span className="dl-os-icon android"><ThreeDIcon name="79_utility-modal" size={28} fallback="android" /></span>
                     <span className="dl-os-badge">Android .apk / PWA</span>
                   </div>
                   <h3>Android Mobile App</h3>
@@ -7043,7 +7202,7 @@ function App() {
             <section className="section-block">
               <div className="section-heading">
                 <h2>
-                  <Icon name="globe" /> เว็บและเครื่องมือในเครือ MIX-IMAGE
+                  <ThreeDIcon name="53_ai-studio" size={28} fallback="globe" /> เว็บและเครื่องมือในเครือ MIX-IMAGE
                   <span className="count-tag">({externalLinksTopToBottom.length})</span>
                 </h2>
               </div>
@@ -7056,12 +7215,14 @@ function App() {
                     rel="noopener noreferrer"
                     className={`sidebar-link-btn accent-${link.color}`}
                   >
-                    <span className={`sidebar-link-dot dot-${link.color}`} />
+                    <span className="sidebar-link-3d-icon">
+                      <ThreeDIcon name={link.icon3d} size={28} />
+                    </span>
                     <div className="sidebar-link-text">
                       <strong>{link.sub}</strong>
                       <span>{link.label}</span>
                     </div>
-                    <Icon name="external" className="sidebar-link-arrow" />
+                    <ThreeDIcon name="73_utility-external-link" size={18} className="sidebar-link-arrow" fallback="external" />
                   </a>
                 ))}
               </div>
@@ -7071,6 +7232,7 @@ function App() {
 
         {page === 'add' && !editorItem && (
           <div className="empty-state">
+            <ThreeDIcon name="84_mascot-working" size={140} />
             <h2>พร้อมเพิ่มพรอมต์</h2>
             <button
               type="button"
@@ -7083,7 +7245,7 @@ function App() {
                 })
               }
             >
-              <Icon name="add" /> เปิดฟอร์มเพิ่มพรอมต์
+              <ThreeDIcon name="18_action-create-prompt" size={22} fallback="add" /> เปิดฟอร์มเพิ่มพรอมต์
             </button>
           </div>
         )}
@@ -7150,11 +7312,11 @@ function App() {
               onClick={() => setDeleteConfirmItem(null)}
               aria-label="ปิดหน้าต่างยืนยัน"
             >
-              <Icon name="close" />
+              <ThreeDIcon name="70_utility-close" size={18} fallback="close" />
             </button>
             <div className="confirm-modal-row">
               <div className="confirm-trash-badge">
-                <Icon name="trash" />
+                <ThreeDIcon name="21_action-delete" size={76} eager fallback="trash" />
               </div>
               <div className="confirm-modal-text">
                 <h3>ยืนยันการลบพรอมต์?</h3>
@@ -7186,7 +7348,7 @@ function App() {
       {toast && (
         <div className="toast-message" role="status">
           <div className="toast-icon-circle">
-            <Icon name="check" />
+            <ThreeDIcon name="58_state-success" size={26} eager fallback="check" />
           </div>
           <span>{toast}</span>
           <button type="button" className="toast-close-btn" onClick={() => setToast('')} aria-label="ปิดการแจ้งเตือน">

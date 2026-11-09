@@ -10273,3 +10273,321 @@ body {
     flex: initial !important;
   }
 }
+
+/* =====================================================================
+   MIX JONGJANG 3D ICON SYSTEM™ — COMPLETE ASSET & UI/UX INTEGRATION
+   Premium Sage Green & Ivory Design System (Soft Claymorphism + Glass)
+   ===================================================================== */
+:root {
+  --sage-green: #2E7D62;
+  --sage-deep: #205B47;
+  --moss-green: #A7B8A7;
+  --ivory: #F4EFE8;
+  --mist: #D9E1D9;
+  --white: #FFFFFF;
+  --emerald: #36C98A;
+  --sky-blue: #40BDEB;
+  --violet: #9158F5;
+  --warm-orange: #FFAA32;
+  --coral-red: #F17B82;
+  --soft-pink: #F4A6C2;
+}
+
+.three-d-icon {
+  display: inline-block;
+  object-fit: contain;
+  vertical-align: middle;
+  flex-shrink: 0;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+button:hover > .three-d-icon,
+a:hover > .three-d-icon,
+.stat-card:hover .three-d-icon,
+.category-visual-card:hover .three-d-icon,
+.quick-tool-card:hover .three-d-icon,
+.ai-suite-card:hover .three-d-icon {
+  transform: scale(1.08) translateY(-1px);
+}
+
+/* Sidebar 3D Icons & Links */
+.sidebar-nav-btn .sidebar-nav-icon {
+  width: 32px !important;
+  height: 32px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-link-3d-icon {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: #F4F7F2;
+  border: 1px solid #E3EDE3;
+}
+
+/* Dashboard Stat Cards with 48px 3D Icons */
+.stat-card .stat-icon {
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 16px !important;
+  background: linear-gradient(145deg, #F6FAF5 0%, #EBF3EA 100%) !important;
+  border: 1px solid #DDE9DD !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 4px 10px rgba(46, 125, 98, 0.06) !important;
+}
+
+/* Category Visual Cards with 56px 3D Icon or Corner 3D Badge */
+.cat-visual-thumb {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cat-3d-corner-badge {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(217, 233, 217, 0.95);
+  box-shadow: 0 4px 10px rgba(28, 45, 36, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+/* Hero Banner 3D Mascot */
+.hero-image-frame .hero-mascot-3d {
+  width: 190px !important;
+  height: 190px !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 12px 24px rgba(32, 91, 71, 0.18));
+}
+
+/* Quick Tools Strip 3D Icons */
+.quick-tool-card .qt-icon {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 15px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid #DCE8DC !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.quick-tool-card.primary-tool .qt-icon {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.32) !important;
+}
+
+/* PromptCard Favorite 3D Button & Action Buttons */
+.fav-star-corner {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border: 1px solid rgba(217, 233, 217, 0.9) !important;
+}
+
+.fav-star-corner.active {
+  background: #FFFDF5 !important;
+  border-color: #FCD34D !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25) !important;
+}
+
+/* Upload Dropzone 3D Icon */
+.upload-plus.upload-3d-wrap {
+  width: auto !important;
+  height: auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 0.35rem;
+}
+
+/* Empty State 3D Illustration */
+.empty-icon.empty-3d-illustration {
+  width: auto !important;
+  height: auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 0.5rem;
+}
+
+/* Confirm Delete Modal 3D Badge */
+.confirm-trash-badge {
+  width: 84px !important;
+  height: 84px !important;
+  border-radius: 22px !important;
+  background: #FFF5F5 !important;
+  border: 1.5px solid #FED7D7 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0;
+}
+
+/* Toast 3D Icon Circle */
+.toast-icon-circle {
+  width: 32px !important;
+  height: 32px !important;
+  background: transparent !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* AI Creative Suite & Reports Banner */
+.ai-suite-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.5rem 1.85rem;
+  margin-bottom: 1.35rem;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #E3F0E3 0%, #F4F7F2 60%, #FFFFFF 100%);
+  border: 1.5px solid #D2E5D2;
+  box-shadow: var(--shadow-soft);
+}
+
+.ai-suite-banner-text h2 {
+  margin: 0.25rem 0 0.4rem;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #1C2D24;
+}
+
+.ai-suite-banner-text p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #4A5E52;
+}
+
+.ai-suite-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+  gap: 0.9rem;
+}
+
+.ai-suite-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
+  background: #FFFFFF;
+  border: 1.5px solid #D9E9D9;
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  color: #1C2D24;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.ai-suite-card:hover {
+  transform: translateY(-2px);
+  border-color: #2E7D62;
+  box-shadow: var(--shadow-md);
+}
+
+.ai-suite-icon-wrap {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: #F4F7F2;
+  border: 1px solid #DFECDF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ai-suite-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.ai-suite-info strong {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1C2D24;
+}
+
+.ai-suite-info span {
+  font-size: 0.78rem;
+  color: #5C7064;
+}
+
+/* 85 3D Icons System Catalog Grid in Reports Page */
+.icon-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 0.75rem;
+}
+
+.icon-catalog-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 16px;
+  background: #FFFFFF;
+  border: 1px solid #DCE8DC;
+  box-shadow: var(--shadow-sm);
+}
+
+.icon-catalog-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.icon-catalog-meta strong {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1C2D24;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.icon-catalog-meta span {
+  font-size: 0.68rem;
+  color: #6B7F73;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 680px) {
+  .ai-suite-banner {
+    flex-direction: column-reverse;
+    text-align: center;
+    padding: 1.25rem;
+  }
+}
+
