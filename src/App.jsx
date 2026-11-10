@@ -1,4 +1,5 @@
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ICON_BY_ID, ICON_MANIFEST } from './lib/iconManifest'
 import {
   deleteCloudAccount,
@@ -808,6 +809,21 @@ function Icon({ name, className = '', filled = false }) {
           <circle cx="19" cy="12" r="2" />
         </svg>
       )
+    case 'menu':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      )
+    case 'sidebar-right':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <line x1="15" y1="3" x2="15" y2="21" />
+        </svg>
+      )
     default:
       return <span className="icon-fallback">•</span>
   }
@@ -1011,6 +1027,8 @@ const Sidebar = memo(function Sidebar({
   activeMenu,
   collapsed,
   onToggleCollapse,
+  isMobileOpen = false,
+  onCloseMobile,
   onSelectMenu,
   onAdd,
   onOpenDownload,
@@ -1035,13 +1053,25 @@ const Sidebar = memo(function Sidebar({
   ]
 
   const storagePercent = Math.min(100, Math.max(12, Math.round((totalCount / 200) * 100)))
+  const isCollapsed = collapsed && !isMobileOpen
 
   return (
-    <aside className={`sidebar ${collapsed ? 'is-collapsed' : ''}`}>
+    <aside
+      className={`sidebar ${isCollapsed ? 'is-collapsed' : ''} ${isMobileOpen ? 'mobile-drawer-open' : ''}`}
+      aria-label="แถบเมนูหลัก"
+    >
       <div className="brand-lockup-row">
-        <div className="brand-lockup" onClick={() => onSelectMenu('home')} role="button" tabIndex={0}>
-          <ThreeDIcon name="80_mascot-idle" size={46} eager alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" />
-          {!collapsed && (
+        <div
+          className="brand-lockup"
+          onClick={() => {
+            onSelectMenu('home')
+            onCloseMobile?.()
+          }}
+          role="button"
+          tabIndex={0}
+        >
+          <ThreeDIcon name="80_mascot-idle" size={44} eager alt="จ๋องแจ๋ง ผู้ช่วย MIX-IMAGE" />
+          {!isCollapsed && (
             <div>
               <strong>MIX Image</strong>
               <span>Prompt Archive</span>
@@ -1050,13 +1080,23 @@ const Sidebar = memo(function Sidebar({
         </div>
         <button
           type="button"
-          className="sidebar-collapse-btn"
+          className="sidebar-collapse-btn desktop-only-collapse"
           onClick={onToggleCollapse}
-          title={collapsed ? 'ขยายแถบเมนูด้านซ้าย' : 'ย่อแถบเมนูด้านซ้าย'}
+          title={isCollapsed ? 'ขยายแถบเมนูด้านซ้าย' : 'ย่อแถบเมนูด้านซ้าย'}
           aria-label="สลับขนาดแถบเมนู"
         >
           <Icon name="sidebar" />
         </button>
+        {isMobileOpen && (
+          <button
+            type="button"
+            className="drawer-close-btn mobile-only-close"
+            onClick={onCloseMobile}
+            aria-label="ปิดเมนู"
+          >
+            <Icon name="close" />
+          </button>
+        )}
       </div>
 
       <nav className="side-nav" aria-label="เมนูหลัก">
@@ -1067,12 +1107,15 @@ const Sidebar = memo(function Sidebar({
               type="button"
               key={item.id}
               className={`nav-button ${isActive ? 'active' : ''}`}
-              onClick={() => onSelectMenu(item.id)}
+              onClick={() => {
+                onSelectMenu(item.id)
+                onCloseMobile?.()
+              }}
               title={item.label}
             >
-              <ThreeDIcon name={item.icon3d} size={30} eager fallback={item.icon} />
-              {!collapsed && <span className="nav-label">{item.label}</span>}
-              {!collapsed && item.count !== null && item.count !== undefined && (
+              <ThreeDIcon name={item.icon3d} size={28} eager fallback={item.icon} />
+              {!isCollapsed && <span className="nav-label">{item.label}</span>}
+              {!isCollapsed && item.count !== null && item.count !== undefined && (
                 <span className="nav-count-badge">{item.count}</span>
               )}
             </button>
@@ -1083,14 +1126,17 @@ const Sidebar = memo(function Sidebar({
       <button
         type="button"
         className="sidebar-primary-add-btn"
-        onClick={onAdd}
+        onClick={() => {
+          onAdd()
+          onCloseMobile?.()
+        }}
         title="เพิ่มพรอมต์ใหม่"
       >
-        <ThreeDIcon name="18_action-create-prompt" size={26} eager />
-        {!collapsed && <span>เพิ่มพรอมต์</span>}
+        <ThreeDIcon name="18_action-create-prompt" size={24} eager />
+        {!isCollapsed && <span>เพิ่มพรอมต์</span>}
       </button>
 
-      {!collapsed && (
+      {!isCollapsed && (
         <>
           {/* ปุ่มลิงก์แอปและเว็บในเครือ MIX-IMAGE */}
           <div className="sidebar-links-section" aria-label="ลิงก์ที่เกี่ยวข้อง">
@@ -1107,7 +1153,7 @@ const Sidebar = memo(function Sidebar({
                   className={`sidebar-link-btn accent-${link.color}`}
                   title={`เปิด ${link.url}`}
                 >
-                  <ThreeDIcon name={link.icon3d || '53_ai-studio'} size={26} />
+                  <ThreeDIcon name={link.icon3d || '53_ai-studio'} size={24} />
                   <div className="sidebar-link-text">
                     <strong>{link.sub}</strong>
                     <span>{link.label}</span>
@@ -1118,7 +1164,7 @@ const Sidebar = memo(function Sidebar({
             </div>
           </div>
 
-          {/* พื้นที่เก็บข้อมูล & ปุ่มดาวน์โหลดแอป */}
+          {/* พื้นที่เก็บข้อมูล Google Drive (มองเห็นชัดเจนทั้ง Desktop และในเมนู Hamburger มือถือ) */}
           <div className="sidebar-storage-card">
             <div className="storage-card-header">
               <span className="storage-title-inline">
@@ -1128,7 +1174,10 @@ const Sidebar = memo(function Sidebar({
               <button
                 type="button"
                 className="storage-dl-mini-btn"
-                onClick={onOpenDownload}
+                onClick={() => {
+                  onOpenDownload()
+                  onCloseMobile?.()
+                }}
                 title="ดาวน์โหลดแอป Windows & Android"
               >
                 <ThreeDIcon name="77_utility-download" size={16} /> แอป
@@ -1139,10 +1188,243 @@ const Sidebar = memo(function Sidebar({
             </div>
             <div className="storage-card-meta">
               <strong>42.8 GB / 200 GB (21%)</strong>
-              <span>{totalCount} พรอมต์</span>
+              <span>{totalCount} พรอมต์ • {cloudState === 'Firebase พร้อม' ? 'Synced' : 'Local'}</span>
             </div>
           </div>
         </>
+      )}
+    </aside>
+  )
+})
+
+const RightSidebar = memo(function RightSidebar({
+  collapsed,
+  onToggleCollapse,
+  isDrawerOpen = false,
+  onCloseDrawer,
+  items,
+  favoritesCount,
+  notesCount,
+  imagesCount,
+  cloudState,
+  isSyncing,
+  onSync,
+  lockedDate,
+  onLockDate,
+  onClearLock,
+  onSaveNote,
+  onOpenDownload,
+  onOpenReports,
+  onLockScreen,
+}) {
+  const isCollapsed = collapsed && !isDrawerOpen
+  const imageRatio = items.length ? Math.round((imagesCount / items.length) * 100) : 0
+
+  return (
+    <aside
+      className={`right-sidebar ${isCollapsed ? 'is-collapsed' : ''} ${isDrawerOpen ? 'drawer-open' : ''}`}
+      aria-label="แผงเครื่องมือและภาพรวม"
+    >
+      <div className="right-sidebar-header">
+        {!isCollapsed && (
+          <div className="right-sidebar-title">
+            <ThreeDIcon name="53_ai-studio" size={28} eager />
+            <div>
+              <strong>แผงเครื่องมือ MIX</strong>
+              <span>Tools &amp; Live Overview</span>
+            </div>
+          </div>
+        )}
+        <button
+          type="button"
+          className="sidebar-collapse-btn desktop-only-collapse"
+          onClick={onToggleCollapse}
+          title={isCollapsed ? 'ขยายแผงเครื่องมือขวา' : 'ย่อแผงเครื่องมือขวา'}
+          aria-label="ย่อหรือขยายแผงเครื่องมือขวา"
+        >
+          <Icon name="sidebar-right" />
+        </button>
+        {isDrawerOpen && (
+          <button
+            type="button"
+            className="drawer-close-btn tablet-mobile-only-close"
+            onClick={onCloseDrawer}
+            aria-label="ปิดแผงเครื่องมือ"
+          >
+            <Icon name="close" />
+          </button>
+        )}
+      </div>
+
+      {isCollapsed ? (
+        <div className="right-rail-icons">
+          <button
+            type="button"
+            className={`right-rail-btn ${isSyncing ? 'is-syncing' : ''}`}
+            onClick={onSync}
+            title={`ซิงค์ Firebase Cloud (${cloudState})`}
+            aria-label="ซิงค์ข้อมูล"
+          >
+            <ThreeDIcon name={isSyncing ? '65_state-syncing' : '54_ai-cloud'} size={24} />
+          </button>
+          <button
+            type="button"
+            className="right-rail-btn"
+            onClick={onToggleCollapse}
+            title="เปิดแผงวิดเจ็ต (Keep, ปฏิทิน, เครื่องคิดเลข, Mekha)"
+            aria-label="ขยายแผงเครื่องมือ"
+          >
+            <ThreeDIcon name="75_utility-calendar" size={24} />
+          </button>
+          <button
+            type="button"
+            className="right-rail-btn"
+            onClick={onToggleCollapse}
+            title="จดโน้ต Keep / เครื่องคิดเลข"
+            aria-label="จดโน้ต Keep"
+          >
+            <ThreeDIcon name="44_finance-calculator" size={24} />
+          </button>
+          <button
+            type="button"
+            className="right-rail-btn"
+            onClick={onOpenDownload}
+            title="ดาวน์โหลดแอป Windows / Android"
+            aria-label="ดาวน์โหลดแอป"
+          >
+            <ThreeDIcon name="77_utility-download" size={24} />
+          </button>
+        </div>
+      ) : (
+        <div className="right-sidebar-scroll">
+          {/* 1. ภาพรวมสถานะคลาวด์และเวลา */}
+          <div className="right-panel-card">
+            <div className="right-card-heading">
+              <span>ภาพรวม &amp; การซิงค์</span>
+              <span className="right-live-dot" title="ระบบพร้อมใช้งาน" />
+            </div>
+            <TopbarClockPill />
+            <button
+              type="button"
+              className={`right-cloud-sync-btn ${isSyncing ? 'is-syncing' : ''}`}
+              onClick={onSync}
+            >
+              <ThreeDIcon
+                name={isSyncing ? '65_state-syncing' : cloudState === 'ใช้ข้อมูลในเครื่อง' ? '64_state-offline' : '54_ai-cloud'}
+                size={22}
+                eager
+                className={isSyncing ? 'spin-icon' : ''}
+                fallback="cloud"
+              />
+              <span>{isSyncing ? 'กำลังซิงค์ข้อมูล...' : cloudState}</span>
+              <small>อัปเดต</small>
+            </button>
+
+            <div className="right-overview-metrics">
+              <div className="right-metric-pill">
+                <span>มีภาพตัวอย่าง</span>
+                <strong>{imagesCount}/{items.length}</strong>
+              </div>
+              <div className="right-metric-pill">
+                <span>โน้ต / โปรด</span>
+                <strong>{notesCount} / {favoritesCount}</strong>
+              </div>
+            </div>
+
+            <div className="right-progress-wrap">
+              <div className="right-progress-labels">
+                <span>ความสมบูรณ์คลังภาพ</span>
+                <strong>{imageRatio}%</strong>
+              </div>
+              <div className="storage-progress-track">
+                <div className="storage-progress-fill" style={{ width: `${imageRatio}%` }} />
+              </div>
+            </div>
+          </div>
+
+          {/* 2. เครื่องมือช่วยงานด่วน (Keep Note, Calendar Lock, Calculator, Mekha Weather) */}
+          <div className="right-panel-card">
+            <div className="right-card-heading">
+              <span>เครื่องมือช่วยงานด่วน</span>
+              {lockedDate && <span className="right-locked-chip">ล็อควันอยู่</span>}
+            </div>
+            <div className="right-widgets-stack">
+              <QuickKeepNoteWidget onSaveNote={onSaveNote} />
+              <CalendarLockWidget
+                items={items}
+                lockedDate={lockedDate}
+                onLockDate={onLockDate}
+                onClearLock={onClearLock}
+              />
+              <CalculatorWidget />
+              <WeatherMekhaWidget />
+            </div>
+          </div>
+
+          {/* 3. ทางลัด AI Studio */}
+          <div className="right-panel-card">
+            <div className="right-card-heading">
+              <span>ทางลัด AI Creative</span>
+            </div>
+            <div className="right-ai-shortcuts">
+              <a href="https://miximageai.online/" target="_blank" rel="noopener noreferrer" className="right-ai-tile">
+                <ThreeDIcon name="48_ai-image" size={26} />
+                <span>สร้างภาพ AI</span>
+              </a>
+              <a href="https://mix-music.netlify.app/" target="_blank" rel="noopener noreferrer" className="right-ai-tile">
+                <ThreeDIcon name="49_ai-music" size={26} />
+                <span>SunoAI v5</span>
+              </a>
+              <a href="https://miximage-lyric.netlify.app/" target="_blank" rel="noopener noreferrer" className="right-ai-tile">
+                <ThreeDIcon name="52_ai-writing" size={26} />
+                <span>เขียนสคริปต์</span>
+              </a>
+              <a href="https://www.canva.com/" target="_blank" rel="noopener noreferrer" className="right-ai-tile">
+                <ThreeDIcon name="50_ai-video" size={26} />
+                <span>Canva Studio</span>
+              </a>
+            </div>
+          </div>
+
+          {/* 4. ปุ่มจัดการแอปและรายงาน */}
+          <div className="right-footer-actions">
+            <button
+              type="button"
+              className="right-action-btn primary"
+              onClick={() => {
+                onOpenDownload()
+                onCloseDrawer?.()
+              }}
+            >
+              <ThreeDIcon name="77_utility-download" size={20} />
+              <span>ติดตั้งแอป .exe / .apk</span>
+            </button>
+            <div className="right-action-pair">
+              <button
+                type="button"
+                className="right-action-btn"
+                onClick={() => {
+                  onOpenReports()
+                  onCloseDrawer?.()
+                }}
+              >
+                <ThreeDIcon name="08_analytics" size={18} />
+                <span>รายงาน</span>
+              </button>
+              <button
+                type="button"
+                className="right-action-btn"
+                onClick={() => {
+                  onCloseDrawer?.()
+                  onLockScreen()
+                }}
+              >
+                <ThreeDIcon name="66_state-locked" size={18} />
+                <span>ล็อคจอ</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </aside>
   )
@@ -2381,6 +2663,15 @@ function QuickKeepNoteWidget({ onSaveNote }) {
     }
   }, [title, notes, pinned, color])
 
+  useEffect(() => {
+    if (!expanded) return
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setExpanded(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [expanded])
+
   const handleImageChange = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -2453,8 +2744,8 @@ function QuickKeepNoteWidget({ onSaveNote }) {
         <span className="keep-badge-dot">📝</span>
       </button>
 
-      {expanded && (
-        <div className="keep-modal-backdrop">
+      {expanded && typeof document !== 'undefined' && createPortal(
+        <div className="keep-modal-backdrop" onClick={handleCancel}>
           <div
             className="keep-card animate-scale-in"
             style={{ backgroundColor: color.bg, borderColor: color.border }}
@@ -2584,7 +2875,8 @@ function QuickKeepNoteWidget({ onSaveNote }) {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
@@ -2701,6 +2993,7 @@ function CalculatorWidget() {
       else if (event.key === '*') chooseOperation('×')
       else if (event.key === '/') chooseOperation('÷')
       else if (event.key === 'Enter' || event.key === '=') handleEquals()
+      else if (event.key === 'Escape') setIsOpen(false)
       else if (event.key === 'Backspace') setDisplay((current) => current.length > 1 ? current.slice(0, -1) : '0')
       else return
       event.preventDefault()
@@ -2721,8 +3014,8 @@ function CalculatorWidget() {
         <span>เครื่องคิดเลข</span>
       </button>
 
-      {isOpen && (
-        <div className="calculator-modal-backdrop">
+      {isOpen && typeof document !== 'undefined' && createPortal(
+        <div className="calculator-modal-backdrop" onClick={() => setIsOpen(false)}>
           <div className="calculator-card animate-scale-in" onClick={(event) => event.stopPropagation()}>
             <div className="calculator-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2759,7 +3052,8 @@ function CalculatorWidget() {
             </div>
             <p className="calculator-hint">กดแป้นพิมพ์ตัวเลขและ Enter ได้ด้วย</p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
@@ -2878,8 +3172,8 @@ function CalendarLockWidget({ items = [], lockedDate, onLockDate, onClearLock })
         )}
       </div>
 
-      {isOpen && (
-        <div className="calendar-modal-backdrop">
+      {isOpen && typeof document !== 'undefined' && createPortal(
+        <div className="calendar-modal-backdrop" onClick={() => setIsOpen(false)}>
           <div className="calendar-card animate-scale-in" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="calendar-header">
@@ -2972,7 +3266,8 @@ function CalendarLockWidget({ items = [], lockedDate, onLockDate, onClearLock })
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
@@ -3081,8 +3376,8 @@ function WeatherMekhaWidget() {
         {coords.isLiveGPS && <span className="gps-live-badge" title="GPS ดาวเทียมสด" />}
       </button>
 
-      {isOpen && (
-        <div className="weather-modal-backdrop">
+      {isOpen && typeof document !== 'undefined' && createPortal(
+        <div className="weather-modal-backdrop" onClick={() => setIsOpen(false)}>
           <div className="weather-card animate-scale-in" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="weather-header">
@@ -3201,7 +3496,8 @@ function WeatherMekhaWidget() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
@@ -5220,6 +5516,9 @@ function App() {
   const [page, setPage] = useState('home')
   const [activeMenu, setActiveMenu] = useState('home')
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isRightCollapsed, setIsRightCollapsed] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isRightDrawerOpen, setIsRightDrawerOpen] = useState(false)
   const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
   const [sortBy, setSortBy] = useState('custom') // 'custom' | 'latest' | 'az' | 'favorite'
   const [query, setQuery] = useState('')
@@ -5247,6 +5546,7 @@ function App() {
   const [cloudState, setCloudState] = useState('กำลังเชื่อมต่อ Firebase')
   const [isSyncing, setIsSyncing] = useState(false)
   const searchInputRef = useRef(null)
+  const mainContentRef = useRef(null)
   const gallerySectionRef = useRef(null)
   const categorySectionRef = useRef(null)
   const folderSectionRef = useRef(null)
@@ -5294,10 +5594,17 @@ function App() {
     }
   }
 
-  // ล็อคการเลื่อนหน้าจอพื้นหลังเมื่อเปิด Modal บนมือถือ ป้องกันหน้าจอไหลซ้อนกัน
+  // ล็อคการเลื่อนหน้าจอพื้นหลังเมื่อเปิด Modal หรือ Slide-Out Drawer บน Tablet/Mobile
   useEffect(() => {
-    const hasModal = Boolean(editorItem || detailItem || lightboxImage || showDownloadModal)
-    if (hasModal) {
+    const hasOverlay = Boolean(
+      editorItem ||
+      detailItem ||
+      lightboxImage ||
+      showDownloadModal ||
+      isMobileMenuOpen ||
+      isRightDrawerOpen
+    )
+    if (hasOverlay) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
@@ -5305,7 +5612,34 @@ function App() {
     return () => {
       document.body.style.overflow = ''
     }
-  }, [editorItem, detailItem, lightboxImage, showDownloadModal])
+  }, [editorItem, detailItem, lightboxImage, showDownloadModal, isMobileMenuOpen, isRightDrawerOpen])
+
+  // ปิด Drawer ด้วยปุ่ม Escape (เมื่อไม่มี Modal ซ้อนอยู่) และปรับอัตโนมัติเมื่อขยายขนาดหน้าจอ
+  useEffect(() => {
+    if (!isMobileMenuOpen && !isRightDrawerOpen) return
+    const handleKeyDown = (e) => {
+      if (e.key !== 'Escape') return
+      const activeModal = document.querySelector(
+        '.keep-modal-backdrop, .calendar-modal-backdrop, .calculator-modal-backdrop, .weather-modal-backdrop, .modal-backdrop, .lightbox-backdrop'
+      )
+      if (!activeModal) {
+        setIsMobileMenuOpen(false)
+        setIsRightDrawerOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isMobileMenuOpen, isRightDrawerOpen])
+
+  useEffect(() => {
+    const handleResize = () => {
+      const w = window.innerWidth
+      if (w >= 768) setIsMobileMenuOpen(false)
+      if (w >= 1024) setIsRightDrawerOpen(false)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const syncData = async () => {
     setIsSyncing(true)
@@ -5862,12 +6196,17 @@ function App() {
 
   const handleSelectMenu = useCallback((menuId) => {
     setActiveMenu(menuId)
+    setIsMobileMenuOpen(false)
+    setIsRightDrawerOpen(false)
+    if (menuId !== 'categories' && menuId !== 'projects') {
+      mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
     if (menuId === 'home') {
       setPage('home')
       setCategoryFilter('all')
       setFolderFilter('all')
       setQuickFilter('all')
-      window.scrollTo({ top: 0 })
     } else if (menuId === 'prompts') {
       setPage('prompts')
       setCategoryFilter('all')
@@ -6008,58 +6347,110 @@ function App() {
   if (!unlocked) return <PinGate onUnlock={() => setUnlocked(true)} />
 
   return (
-    <div className={`app-shell ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      <Sidebar
-        page={page}
-        activeMenu={activeMenu}
-        collapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
-        onSelectMenu={handleSelectMenu}
-        onAdd={() => {
-          setEditorItem({
-            ...emptyForm,
-            category: categoryFilter === 'all' ? 'main' : categoryFilter,
-            folder: activeFolderDefault,
-          })
-          setPage('add')
-        }}
-        onOpenDownload={() => setShowDownloadModal(true)}
-        totalCount={items.length}
-        categoriesCount={categories.length - 1}
-        foldersCount={allFolders.length}
-        favoritesCount={favoritesCount}
-        notesCount={notesCount}
-        cloudState={cloudState}
-      />
+    <>
+      {(isMobileMenuOpen || isRightDrawerOpen) && (
+        <div
+          className="drawer-backdrop-overlay"
+          onClick={() => {
+            setIsMobileMenuOpen(false)
+            setIsRightDrawerOpen(false)
+          }}
+          aria-hidden="true"
+        />
+      )}
 
-      <main className="main-content">
-        <header className="topbar">
-          <div className="topbar-title-block">
-            <p className="eyebrow">MIX-IMAGE ART &amp; AUDIO</p>
-            <h1>
-              {page === 'home'
-                ? 'Prompt Archive'
-                : page === 'notes'
-                ? 'โน้ตและเทคนิคส่วนตัว'
-                : page === 'savings'
-                ? 'เงินออม & บัญชีเสมือน'
-                : page === 'ai-tools'
-                ? 'เครื่องมือ AI สร้างสรรค์'
-                : page === 'reports'
-                ? 'รายงานและสถิติคลังพรอมต์'
-                : page === 'profile'
-                ? 'ตั้งค่าและโปรไฟล์'
-                : 'คลังพรอมต์ทั้งหมด'}
-            </h1>
-            <p className="topbar-subtitle">คลังพรอมต์สร้างสรรค์ • ภาพ • เสียง • วิดีโอ • คอนเทนต์</p>
+      <div
+        className={`app-shell ${isSidebarCollapsed ? 'sidebar-collapsed' : ''} ${isRightCollapsed ? 'right-collapsed' : ''}`}
+      >
+        <Sidebar
+          page={page}
+          activeMenu={activeMenu}
+          collapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+          isMobileOpen={isMobileMenuOpen}
+          onCloseMobile={() => setIsMobileMenuOpen(false)}
+          onSelectMenu={handleSelectMenu}
+          onAdd={() => {
+            setIsMobileMenuOpen(false)
+            setEditorItem({
+              ...emptyForm,
+              category: categoryFilter === 'all' ? 'main' : categoryFilter,
+              folder: activeFolderDefault,
+            })
+            setPage('add')
+          }}
+          onOpenDownload={() => {
+            setIsMobileMenuOpen(false)
+            setShowDownloadModal(true)
+          }}
+          totalCount={items.length}
+          categoriesCount={categories.length - 1}
+          foldersCount={allFolders.length}
+          favoritesCount={favoritesCount}
+          notesCount={notesCount}
+          cloudState={cloudState}
+        />
+
+        {/* Minimal Mobile Top Bar (< 768px): Logo + Hamburger Menu + Tools Drawer + Full-Width Search */}
+        <header className="mobile-topbar" aria-label="แถบด้านบนมือถือ">
+          <div className="mobile-topbar-row">
+            <button
+              type="button"
+              className="mobile-icon-btn mobile-hamburger-btn"
+              onClick={() => {
+                setIsRightDrawerOpen(false)
+                setIsMobileMenuOpen(true)
+              }}
+              aria-label="เปิดเมนูนำทางและพื้นที่จัดเก็บ"
+            >
+              <Icon name="menu" />
+            </button>
+
+            <button
+              type="button"
+              className="mobile-brand-btn"
+              onClick={() => handleSelectMenu('home')}
+            >
+              <ThreeDIcon name="80_mascot-idle" size={34} eager alt="MIX Image Logo" />
+              <span className="mobile-brand-text">
+                <strong>MIX Image</strong>
+                <small>Prompt Archive</small>
+              </span>
+            </button>
+
+            <div className="mobile-topbar-actions">
+              <button
+                type="button"
+                className={`mobile-icon-btn mobile-tools-btn ${lockedDate || isSyncing ? 'has-badge' : ''}`}
+                onClick={() => {
+                  setIsMobileMenuOpen(false)
+                  setIsRightDrawerOpen(true)
+                }}
+                aria-label="เปิดแผงเครื่องมือด้านขวา"
+                title="เปิดแผงเครื่องมือ (Keep, ปฏิทิน, เครื่องคิดเลข, Mekha)"
+              >
+                <ThreeDIcon name="53_ai-studio" size={24} eager />
+                {(lockedDate || isSyncing) && <span className="notif-green-dot" aria-hidden="true" />}
+              </button>
+              <button
+                type="button"
+                className="mobile-icon-btn"
+                onClick={() => {
+                  clearUnlock()
+                  setUnlocked(false)
+                }}
+                aria-label="ล็อคหน้าจอ (PIN)"
+                title="ล็อคหน้าจอ (PIN)"
+              >
+                <ThreeDIcon name="66_state-locked" size={22} eager fallback="logout" />
+              </button>
+            </div>
           </div>
 
-          <div className="topbar-right-cluster">
-            {/* Global Search Bar with Ctrl+K */}
-            <label className="topbar-global-search">
-              <ThreeDIcon name="05_search" size={22} eager fallback="search" />
+          <div className="mobile-search-wrap">
+            <label className="mobile-global-search">
+              <ThreeDIcon name="05_search" size={20} eager fallback="search" />
               <input
-                ref={searchInputRef}
                 value={query}
                 onChange={(event) => {
                   setQuery(event.target.value)
@@ -6070,7 +6461,7 @@ function App() {
                 }}
                 placeholder="ค้นหาพรอมต์, หมวดหมู่, แท็ก..."
               />
-              {query ? (
+              {query && (
                 <button
                   type="button"
                   className="clear-search-btn"
@@ -6079,132 +6470,157 @@ function App() {
                 >
                   <Icon name="close" />
                 </button>
-              ) : (
-                <kbd className="search-shortcut-kbd" title="กด Ctrl + K เพื่อค้นหาด่วน">Ctrl K</kbd>
               )}
             </label>
-
-            <div className="topbar-actions">
-              <TopbarClockPill />
-
-              <button
-                type="button"
-                className={`cloud-status-btn ${isSyncing ? 'is-syncing' : ''}`}
-                onClick={syncData}
-                title="คลิกเพื่อซิงค์ข้อมูลกับ Firebase Cloud"
-              >
-                <ThreeDIcon
-                  name={isSyncing ? '65_state-syncing' : cloudState === 'โหมดในเครื่อง' ? '64_state-offline' : '54_ai-cloud'}
-                  size={22}
-                  eager
-                  className={isSyncing ? 'spin-icon' : ''}
-                  fallback="cloud"
-                />
-                <span>{isSyncing ? 'กำลังซิงค์...' : cloudState}</span>
-              </button>
-
-              <button
-                type="button"
-                className="topbar-icon-btn notification-bell-btn"
-                onClick={() => flash(`คลังพรอมต์ซิงค์พร้อมใช้งาน • ทั้งหมด ${items.length} รายการ`)}
-                title="การแจ้งเตือนระบบ"
-                aria-label="การแจ้งเตือน"
-              >
-                <ThreeDIcon name="68_state-notification" size={24} eager fallback="bell" />
-                <span className="notif-green-dot" aria-hidden="true" />
-              </button>
-
-              <button
-                type="button"
-                className="topbar-icon-btn"
-                onClick={() => setShowDownloadModal(true)}
-                title="ดาวน์โหลดแอป Windows (.exe) / Android (.apk)"
-                aria-label="ดาวน์โหลดแอป"
-              >
-                <ThreeDIcon name="77_utility-download" size={24} eager fallback="download" />
-              </button>
-
-              <button
-                type="button"
-                className="topbar-profile-pill"
-                onClick={() => handleSelectMenu('profile')}
-                title="โปรไฟล์และการตั้งค่า"
-              >
-                <ThreeDIcon name="80_mascot-idle" size={28} eager />
-                <span>MIX</span>
-                <span className="profile-caret">▾</span>
-              </button>
-
-              <button
-                className="round-button"
-                type="button"
-                aria-label="ล็อคหน้าจอ (PIN)"
-                title="ล็อคหน้าจอ (PIN)"
-                onClick={() => {
-                  clearUnlock()
-                  setUnlocked(false)
-                }}
-              >
-                <ThreeDIcon name="66_state-locked" size={22} eager fallback="logout" />
-              </button>
-            </div>
           </div>
         </header>
 
-        {showLibrary && (
-          <>
-            {/* Quick Filter Pills + 4 Top Widgets (Keep Note, Calendar with Lock, Calculator, Weather Mekha GPS) */}
-            <div className="filter-and-widgets-row">
-              <div className="quick-filter-bar">
+        <main className="main-content" ref={mainContentRef}>
+          <header className="topbar">
+            <div className="topbar-title-block">
+              <p className="eyebrow">MIX-IMAGE ART &amp; AUDIO</p>
+              <h1>
+                {page === 'home'
+                  ? 'Prompt Archive'
+                  : page === 'notes'
+                  ? 'โน้ตและเทคนิคส่วนตัว'
+                  : page === 'savings'
+                  ? 'เงินออม & บัญชีเสมือน'
+                  : page === 'ai-tools'
+                  ? 'เครื่องมือ AI สร้างสรรค์'
+                  : page === 'reports'
+                  ? 'รายงานและสถิติคลังพรอมต์'
+                  : page === 'profile'
+                  ? 'ตั้งค่าและโปรไฟล์'
+                  : 'คลังพรอมต์ทั้งหมด'}
+              </h1>
+              <p className="topbar-subtitle">คลังพรอมต์สร้างสรรค์ • ภาพ • เสียง • วิดีโอ • คอนเทนต์</p>
+            </div>
+
+            <div className="topbar-right-cluster">
+              {/* Global Search Bar with Ctrl+K */}
+              <label className="topbar-global-search">
+                <ThreeDIcon name="05_search" size={22} eager fallback="search" />
+                <input
+                  ref={searchInputRef}
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value)
+                    if (page !== 'home' && page !== 'prompts' && page !== 'notes') {
+                      setPage('prompts')
+                      setActiveMenu('prompts')
+                    }
+                  }}
+                  placeholder="ค้นหาพรอมต์, หมวดหมู่, แท็ก..."
+                />
+                {query ? (
+                  <button
+                    type="button"
+                    className="clear-search-btn"
+                    onClick={() => setQuery('')}
+                    aria-label="ล้างคำค้นหา"
+                  >
+                    <Icon name="close" />
+                  </button>
+                ) : (
+                  <kbd className="search-shortcut-kbd" title="กด Ctrl + K เพื่อค้นหาด่วน">Ctrl K</kbd>
+                )}
+              </label>
+
+              <div className="topbar-actions">
                 <button
                   type="button"
-                  className={`quick-pill ${quickFilter === 'all' && !lockedDate ? 'active' : ''}`}
+                  className="topbar-icon-btn notification-bell-btn"
+                  onClick={() => flash(`คลังพรอมต์ซิงค์พร้อมใช้งาน • ทั้งหมด ${items.length} รายการ`)}
+                  title="การแจ้งเตือนระบบ"
+                  aria-label="การแจ้งเตือน"
+                >
+                  <ThreeDIcon name="68_state-notification" size={24} eager fallback="bell" />
+                  <span className="notif-green-dot" aria-hidden="true" />
+                </button>
+
+                {/* ปุ่มเปิดแผงเครื่องมือด้านขวาสำหรับ Tablet (768px - 1023px) */}
+                <button
+                  type="button"
+                  className={`tablet-tools-toggle-btn ${isRightDrawerOpen ? 'active' : ''}`}
+                  onClick={() => setIsRightDrawerOpen((prev) => !prev)}
+                  title="เปิดแผงเครื่องมือขวา (Keep Note, ปฏิทิน, เครื่องคิดเลข, Mekha)"
+                  aria-label="เปิดแผงเครื่องมือขวา"
+                >
+                  <Icon name="sidebar-right" />
+                  <span>เครื่องมือ</span>
+                  {(lockedDate || isSyncing) && <span className="tablet-tools-dot" aria-hidden="true" />}
+                </button>
+
+                <button
+                  type="button"
+                  className="topbar-profile-pill"
+                  onClick={() => handleSelectMenu('profile')}
+                  title="โปรไฟล์และการตั้งค่า"
+                >
+                  <ThreeDIcon name="80_mascot-idle" size={28} eager />
+                  <span>MIX</span>
+                  <span className="profile-caret">▾</span>
+                </button>
+
+                <button
+                  className="round-button"
+                  type="button"
+                  aria-label="ล็อคหน้าจอ (PIN)"
+                  title="ล็อคหน้าจอ (PIN)"
                   onClick={() => {
-                    setQuickFilter('all')
-                    setLockedDate(null)
-                    setCategoryFilter('all')
-                    setFolderFilter('all')
-                    setPage('home')
-                    setActiveMenu('home')
+                    clearUnlock()
+                    setUnlocked(false)
                   }}
                 >
-                  <ThreeDIcon name="57_ai-magic" size={18} /> ทั้งหมด ({items.length})
+                  <ThreeDIcon name="66_state-locked" size={22} eager fallback="logout" />
                 </button>
-                <button
-                  type="button"
-                  className={`quick-pill ${quickFilter === 'favorite' ? 'active' : ''}`}
-                  onClick={() => setQuickFilter(quickFilter === 'favorite' ? 'all' : 'favorite')}
-                >
-                  <ThreeDIcon name="26_action-favorite" size={18} fallback="star" /> รายการโปรด ({favoritesCount})
-                </button>
-                <button
-                  type="button"
-                  className={`quick-pill ${quickFilter === 'hasNote' ? 'active' : ''}`}
-                  onClick={() => setQuickFilter(quickFilter === 'hasNote' ? 'all' : 'hasNote')}
-                >
-                  <ThreeDIcon name="14_category-writing" size={18} fallback="note" /> มีโน้ต ({notesCount})
-                </button>
-                <button
-                  type="button"
-                  className={`quick-pill ${quickFilter === 'hasImage' ? 'active' : ''}`}
-                  onClick={() => setQuickFilter(quickFilter === 'hasImage' ? 'all' : 'hasImage')}
-                >
-                  <ThreeDIcon name="36_workspace-image" size={18} fallback="image" /> มีรูปตัวอย่าง ({imagesCount})
-                </button>
-              </div>
-
-              <div className="top-widget-strip">
-                <QuickKeepNoteWidget onSaveNote={saveItem} />
-                <CalendarLockWidget
-                  items={items}
-                  lockedDate={lockedDate}
-                  onLockDate={(d) => setLockedDate(d)}
-                  onClearLock={() => setLockedDate(null)}
-                />
-                <CalculatorWidget />
-                <WeatherMekhaWidget />
               </div>
             </div>
+          </header>
+
+          {showLibrary && (
+            <>
+              {/* Quick Filter Pills (All, Favorites, Notes, Images) — Horizontal Scroll on Mobile */}
+              <div className="filter-and-widgets-row">
+                <div className="quick-filter-bar" role="tablist" aria-label="ตัวกรองด่วน">
+                  <button
+                    type="button"
+                    className={`quick-pill ${quickFilter === 'all' && !lockedDate ? 'active' : ''}`}
+                    onClick={() => {
+                      setQuickFilter('all')
+                      setLockedDate(null)
+                      setCategoryFilter('all')
+                      setFolderFilter('all')
+                      setPage('home')
+                      setActiveMenu('home')
+                    }}
+                  >
+                    <ThreeDIcon name="57_ai-magic" size={18} /> ทั้งหมด ({items.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`quick-pill ${quickFilter === 'favorite' ? 'active' : ''}`}
+                    onClick={() => setQuickFilter(quickFilter === 'favorite' ? 'all' : 'favorite')}
+                  >
+                    <ThreeDIcon name="26_action-favorite" size={18} fallback="star" /> รายการโปรด ({favoritesCount})
+                  </button>
+                  <button
+                    type="button"
+                    className={`quick-pill ${quickFilter === 'hasNote' ? 'active' : ''}`}
+                    onClick={() => setQuickFilter(quickFilter === 'hasNote' ? 'all' : 'hasNote')}
+                  >
+                    <ThreeDIcon name="14_category-writing" size={18} fallback="note" /> มีโน้ต ({notesCount})
+                  </button>
+                  <button
+                    type="button"
+                    className={`quick-pill ${quickFilter === 'hasImage' ? 'active' : ''}`}
+                    onClick={() => setQuickFilter(quickFilter === 'hasImage' ? 'all' : 'hasImage')}
+                  >
+                    <ThreeDIcon name="36_workspace-image" size={18} fallback="image" /> มีรูปตัวอย่าง ({imagesCount})
+                  </button>
+                </div>
+              </div>
 
             {/* แถบแจ้งเตือนเมื่อมีการล็อควัน */}
             {lockedDate && (
@@ -7241,112 +7657,139 @@ function App() {
         )}
       </main>
 
-      <MobileNav
-        page={page}
-        activeMenu={activeMenu}
-        onSelectMenu={handleSelectMenu}
-        onAdd={() => {
-          setEditorItem({
-            ...emptyForm,
-            category: categoryFilter === 'all' ? 'main' : categoryFilter,
-            folder: activeFolderDefault,
-          })
-          setPage('add')
+      <RightSidebar
+        collapsed={isRightCollapsed}
+        onToggleCollapse={() => setIsRightCollapsed((prev) => !prev)}
+        isDrawerOpen={isRightDrawerOpen}
+        onCloseDrawer={() => setIsRightDrawerOpen(false)}
+        items={items}
+        favoritesCount={favoritesCount}
+        notesCount={notesCount}
+        imagesCount={imagesCount}
+        cloudState={cloudState}
+        isSyncing={isSyncing}
+        onSync={syncData}
+        lockedDate={lockedDate}
+        onLockDate={(d) => setLockedDate(d)}
+        onClearLock={() => setLockedDate(null)}
+        onSaveNote={saveItem}
+        onOpenDownload={() => setShowDownloadModal(true)}
+        onOpenReports={() => handleSelectMenu('reports')}
+        onLockScreen={() => {
+          clearUnlock()
+          setUnlocked(false)
         }}
       />
+    </div>
 
-      {editorItem && (
-        <PromptEditor
-          item={editorItem}
-          folders={allFolders}
-          defaultCategory={editorItem?.category || (categoryFilter === 'all' ? 'main' : categoryFilter)}
-          defaultFolder={editorItem?.folder || activeFolderDefault}
-          onClose={() => { setEditorItem(null); setPage('home') }}
-          onSave={saveItem}
-        />
-      )}
+    <MobileNav
+      page={page}
+      activeMenu={activeMenu}
+      onSelectMenu={handleSelectMenu}
+      onAdd={() => {
+        setIsMobileMenuOpen(false)
+        setIsRightDrawerOpen(false)
+        setEditorItem({
+          ...emptyForm,
+          category: categoryFilter === 'all' ? 'main' : categoryFilter,
+          folder: activeFolderDefault,
+        })
+        setPage('add')
+      }}
+    />
 
-      {detailItem && (
-        <DetailModal
-          item={detailItem}
-          folders={foldersByCategory[detailItem.category] || []}
-          onClose={() => setDetailItem(null)}
-          onCopy={copyPromptText}
-          onEdit={(current) => { setDetailItem(null); setEditorItem(current); setPage('add') }}
-          onDelete={deleteItem}
-          onLightbox={(url) => setLightboxImage(url)}
-          onMoveToCategory={moveItemToCategory}
-          onMoveToFolder={moveItemToFolder}
-        />
-      )}
+    {editorItem && (
+      <PromptEditor
+        item={editorItem}
+        folders={allFolders}
+        defaultCategory={editorItem?.category || (categoryFilter === 'all' ? 'main' : categoryFilter)}
+        defaultFolder={editorItem?.folder || activeFolderDefault}
+        onClose={() => { setEditorItem(null); setPage('home') }}
+        onSave={saveItem}
+      />
+    )}
 
-      {lightboxImage && (
-        <Lightbox imageUrl={lightboxImage} onClose={() => setLightboxImage(null)} />
-      )}
+    {detailItem && (
+      <DetailModal
+        item={detailItem}
+        folders={foldersByCategory[detailItem.category] || []}
+        onClose={() => setDetailItem(null)}
+        onCopy={copyPromptText}
+        onEdit={(current) => { setDetailItem(null); setEditorItem(current); setPage('add') }}
+        onDelete={deleteItem}
+        onLightbox={(url) => setLightboxImage(url)}
+        onMoveToCategory={moveItemToCategory}
+        onMoveToFolder={moveItemToFolder}
+      />
+    )}
 
-      {showDownloadModal && (
-        <AppDownloadModal
-          onClose={() => setShowDownloadModal(false)}
-          deferredPrompt={deferredPrompt}
-          onInstallPwa={handleInstallPwa}
-          flash={flash}
-        />
-      )}
+    {lightboxImage && (
+      <Lightbox imageUrl={lightboxImage} onClose={() => setLightboxImage(null)} />
+    )}
 
-      {deleteConfirmItem && (
-        <div className="modal-backdrop confirm-modal-backdrop" onClick={() => setDeleteConfirmItem(null)}>
-          <div className="soft-confirm-modal" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+    {showDownloadModal && (
+      <AppDownloadModal
+        onClose={() => setShowDownloadModal(false)}
+        deferredPrompt={deferredPrompt}
+        onInstallPwa={handleInstallPwa}
+        flash={flash}
+      />
+    )}
+
+    {deleteConfirmItem && (
+      <div className="modal-backdrop confirm-modal-backdrop" onClick={() => setDeleteConfirmItem(null)}>
+        <div className="soft-confirm-modal" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            className="confirm-close-x"
+            onClick={() => setDeleteConfirmItem(null)}
+            aria-label="ปิดหน้าต่างยืนยัน"
+          >
+            <ThreeDIcon name="70_utility-close" size={18} fallback="close" />
+          </button>
+          <div className="confirm-modal-row">
+            <div className="confirm-trash-badge">
+              <ThreeDIcon name="21_action-delete" size={76} eager fallback="trash" />
+            </div>
+            <div className="confirm-modal-text">
+              <h3>ยืนยันการลบพรอมต์?</h3>
+              <p>
+                คุณต้องการลบ <strong>“{deleteConfirmItem.title}”</strong> หรือไม่ การดำเนินการนี้ไม่สามารถย้อนกลับได้
+              </p>
+            </div>
+          </div>
+          <div className="confirm-modal-actions">
             <button
               type="button"
-              className="confirm-close-x"
+              className="secondary-button confirm-cancel-btn"
               onClick={() => setDeleteConfirmItem(null)}
-              aria-label="ปิดหน้าต่างยืนยัน"
             >
-              <ThreeDIcon name="70_utility-close" size={18} fallback="close" />
+              ยกเลิก
             </button>
-            <div className="confirm-modal-row">
-              <div className="confirm-trash-badge">
-                <ThreeDIcon name="21_action-delete" size={76} eager fallback="trash" />
-              </div>
-              <div className="confirm-modal-text">
-                <h3>ยืนยันการลบพรอมต์?</h3>
-                <p>
-                  คุณต้องการลบ <strong>“{deleteConfirmItem.title}”</strong> หรือไม่ การดำเนินการนี้ไม่สามารถย้อนกลับได้
-                </p>
-              </div>
-            </div>
-            <div className="confirm-modal-actions">
-              <button
-                type="button"
-                className="secondary-button confirm-cancel-btn"
-                onClick={() => setDeleteConfirmItem(null)}
-              >
-                ยกเลิก
-              </button>
-              <button
-                type="button"
-                className="primary-button confirm-delete-btn"
-                onClick={confirmDeleteItem}
-              >
-                ลบ
-              </button>
-            </div>
+            <button
+              type="button"
+              className="primary-button confirm-delete-btn"
+              onClick={confirmDeleteItem}
+            >
+              ลบ
+            </button>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
-      {toast && (
-        <div className="toast-message" role="status">
-          <div className="toast-icon-circle">
-            <ThreeDIcon name="58_state-success" size={26} eager fallback="check" />
-          </div>
-          <span>{toast}</span>
-          <button type="button" className="toast-close-btn" onClick={() => setToast('')} aria-label="ปิดการแจ้งเตือน">
-            <Icon name="close" />
-          </button>
+    {toast && (
+      <div className="toast-message" role="status">
+        <div className="toast-icon-circle">
+          <ThreeDIcon name="58_state-success" size={26} eager fallback="check" />
         </div>
-      )}
-    </div>
+        <span>{toast}</span>
+        <button type="button" className="toast-close-btn" onClick={() => setToast('')} aria-label="ปิดการแจ้งเตือน">
+          <Icon name="close" />
+        </button>
+      </div>
+    )}
+    </>
   )
 }
 

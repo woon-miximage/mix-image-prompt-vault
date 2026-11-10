@@ -10221,48 +10221,14 @@ body {
   color: #2E7D62 !important;
 }
 
-/* Responsive Grid Adjustments */
-@media (max-width: 1280px) {
-  .category-visual-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .stat-grid.stat-grid-5,
-  .quick-tools-strip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
+/* Responsive Grid Adjustments (Superseded & Extended by Responsive 3-Column System at bottom) */
 @media (max-width: 900px) {
-  .app-shell {
-    padding: 0.65rem 0.65rem 5.5rem !important;
-  }
-  .sidebar {
-    display: none !important;
-  }
-  .main-content {
-    padding: 0.95rem 0.9rem 2.5rem !important;
-  }
   .topbar-global-search {
     width: 100%;
-  }
-  .stat-grid.stat-grid-5 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .category-visual-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .quick-tools-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 560px) {
-  .category-visual-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .quick-tools-strip {
-    grid-template-columns: 1fr;
-  }
   .prompt-grid.list-view .prompt-card {
     flex-direction: column !important;
     align-items: stretch;
@@ -10613,6 +10579,1692 @@ a:hover > .three-d-icon,
   .cat-visual-thumb.cat-3d-full {
     width: 4rem !important;
     height: 4rem !important;
+  }
+}
+
+/* =====================================================================
+   RESPONSIVE 3-COLUMN ARCHITECTURE & TABLET/MOBILE DRAWER SYSTEM
+   Desktop (>= 1024px): 3 Columns (Fixed Sidebars + Independent Center Scroll)
+   Tablet  (768px-1023px): 2 Columns (Fixed Left + Scroll Center + Right Drawer)
+   Mobile  (< 768px): 1 Column Unified Scroll (Sticky Minimal Topbar + Drawers)
+   ===================================================================== */
+
+/* Bump Z-Index layering so Portaled Widget Modals & Toasts stay above Drawers */
+.keep-modal-backdrop,
+.calendar-modal-backdrop,
+.calculator-modal-backdrop,
+.weather-modal-backdrop {
+  z-index: 1200 !important;
+}
+
+.modal-backdrop {
+  z-index: 1210 !important;
+}
+
+.confirm-modal-backdrop {
+  z-index: 1240 !important;
+}
+
+.lightbox-backdrop {
+  z-index: 1280 !important;
+}
+
+.toast-message {
+  z-index: 1350 !important;
+}
+
+/* Shared Smooth Transitions & Drawer Backdrop */
+.app-shell,
+.sidebar,
+.right-sidebar,
+.main-content,
+.quick-pill,
+.stat-card,
+.category-visual-card,
+.nav-button {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.drawer-backdrop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  background: rgba(20, 34, 26, 0.42);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: fadeIn 0.22s ease-out;
+}
+
+.drawer-close-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  border: 1px solid #D9E9D9;
+  color: #4A5E52;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.drawer-close-btn:hover {
+  background: #FFEBE8;
+  border-color: #F5B7B1;
+  color: #D94E5A;
+}
+
+.mobile-only-close,
+.tablet-mobile-only-close {
+  display: none;
+}
+
+/* Mobile Topbar — hidden on Desktop & Tablet */
+.mobile-topbar {
+  display: none;
+}
+
+/* Tablet Tools Drawer Toggle Button — hidden by default on Desktop */
+.tablet-tools-toggle-btn {
+  display: none;
+  position: relative;
+  align-items: center;
+  gap: 0.42rem;
+  height: 2.5rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  background: #FFFFFF;
+  border: 1.5px solid #D9E9D9;
+  color: #205B47;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 3px 10px rgba(46, 125, 98, 0.06);
+  transition: all 0.2s ease;
+}
+
+.tablet-tools-toggle-btn:hover,
+.tablet-tools-toggle-btn.active {
+  background: #2E7D62;
+  border-color: #2E7D62;
+  color: #FFFFFF;
+}
+
+.tablet-tools-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #36C98A;
+  box-shadow: 0 0 0 2px rgba(54, 201, 138, 0.28);
+}
+
+/* Borderless Floating 3D Mascot Stage — No Sticker Box or Clipped Feet */
+.hero-image-frame {
+  position: relative;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 0 !important;
+  background: radial-gradient(circle at 50% 56%, rgba(255, 255, 255, 0.72) 0%, rgba(217, 233, 217, 0.34) 48%, transparent 72%) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0.25rem !important;
+  overflow: visible !important;
+  flex-shrink: 0 !important;
+}
+
+.hero-image-frame .hero-mascot-3d {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 176px;
+  max-height: 176px;
+  object-fit: contain !important;
+  object-position: center center !important;
+  filter: drop-shadow(0 12px 22px rgba(32, 91, 71, 0.22));
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-strip:hover .hero-image-frame .hero-mascot-3d {
+  transform: translateY(-4px) scale(1.03);
+}
+
+/* Google Drive Storage Card Clarity */
+.storage-title-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #1C2D24;
+}
+
+.storage-title-inline span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── RIGHT TOOLS & OVERVIEW SIDEBAR ── */
+.right-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100%;
+  max-height: 100%;
+  flex: 0 0 288px;
+  width: 288px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 0.85rem;
+  border-radius: 1.45rem;
+  background: #F4F7F2;
+  border: 1.5px solid #D9E9D9;
+  box-shadow: 0 12px 32px rgba(46, 125, 98, 0.07), inset 0 1px 0 #FFFFFF;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.right-sidebar.is-collapsed {
+  flex: 0 0 68px;
+  width: 68px;
+  padding: 0.95rem 0.45rem;
+  align-items: center;
+}
+
+.right-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid #DFECDF;
+  flex-shrink: 0;
+}
+
+.right-sidebar.is-collapsed .right-sidebar-header {
+  justify-content: center;
+  border-bottom: 0;
+  padding-bottom: 0.2rem;
+}
+
+.right-sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.right-sidebar-title strong {
+  display: block;
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: #1C2D24;
+  line-height: 1.2;
+}
+
+.right-sidebar-title span {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #5C7064;
+}
+
+.right-sidebar-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+  padding-right: 0.12rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--moss-green) transparent;
+}
+
+.right-rail-icons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.right-rail-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 0.9rem;
+  background: #FFFFFF;
+  border: 1.5px solid #D9E9D9;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 3px 10px rgba(46, 125, 98, 0.05);
+  transition: all 0.2s ease;
+}
+
+.right-rail-btn:hover {
+  border-color: #2E7D62;
+  background: #EBF4EB;
+  transform: translateY(-1px);
+}
+
+.right-panel-card {
+  background: #FFFFFF;
+  border: 1.5px solid #D9E9D9;
+  border-radius: 1.1rem;
+  padding: 0.8rem;
+  box-shadow: 0 4px 12px rgba(46, 125, 98, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.right-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #1C2D24;
+}
+
+.right-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2E7D62;
+  box-shadow: 0 0 0 3px rgba(46, 125, 98, 0.16);
+  animation: pulseGreen 1.8s infinite;
+}
+
+.right-locked-chip {
+  padding: 0.14rem 0.5rem;
+  border-radius: 999px;
+  background: #E0F2FE;
+  color: #0369A1;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.right-sidebar .realtime-clock-pill {
+  width: 100%;
+  justify-content: center;
+  height: auto;
+  padding: 0.42rem 0.6rem !important;
+  font-size: 0.72rem !important;
+  background: #F4F7F2 !important;
+  border: 1px solid #DFECDF !important;
+  box-shadow: none !important;
+}
+
+.right-cloud-sync-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.48rem;
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.85rem;
+  background: #EBF4EB;
+  border: 1px solid #CFE3CF;
+  color: #205B47;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.right-cloud-sync-btn:hover {
+  background: #DFF0DF;
+  border-color: #2E7D62;
+}
+
+.right-cloud-sync-btn small {
+  margin-left: auto;
+  padding: 0.14rem 0.45rem;
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: #2E7D62;
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+
+.right-overview-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.right-metric-pill {
+  background: #F4F7F2;
+  border: 1px solid #E3EDE3;
+  border-radius: 0.75rem;
+  padding: 0.42rem 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+}
+
+.right-metric-pill span {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #5C7064;
+}
+
+.right-metric-pill strong {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #1C2D24;
+}
+
+.right-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.right-progress-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: #5C7064;
+  font-weight: 600;
+}
+
+.right-progress-labels strong {
+  color: #2E7D62;
+  font-weight: 800;
+}
+
+/* Interactive MIX Widgets inside Right Sidebar */
+.right-widgets-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.right-widgets-stack .top-widget-btn {
+  width: 100%;
+  min-height: 44px;
+  justify-content: flex-start;
+  border-radius: 0.9rem;
+  padding: 0.48rem 0.72rem;
+  font-size: 0.78rem;
+  box-shadow: 0 2px 8px rgba(46, 125, 98, 0.05);
+}
+
+.right-widgets-stack .calendar-lock-pill {
+  padding: 0;
+}
+
+.right-widgets-stack .calendar-pill-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  justify-content: flex-start;
+  padding: 0.48rem 0.72rem;
+}
+
+.right-widgets-stack .keep-badge-dot,
+.right-widgets-stack .weather-pill-radar-tag {
+  margin-left: auto;
+}
+
+.right-widgets-stack .weather-pill-loc {
+  max-width: none;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.right-widgets-stack .weather-pill-radar-tag {
+  flex-shrink: 0;
+  padding: 0.16rem 0.48rem !important;
+  font-size: 0.65rem !important;
+}
+
+/* AI Shortcuts Tile Grid inside Right Sidebar */
+.right-ai-shortcuts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.right-ai-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.6rem 0.4rem;
+  border-radius: 0.85rem;
+  background: #F4F7F2;
+  border: 1px solid #DFECDF;
+  color: #1C2D24;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.right-ai-tile:hover {
+  background: #EBF4EB;
+  border-color: #2E7D62;
+  color: #205B47;
+  transform: translateY(-1px);
+}
+
+.right-footer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: auto;
+  padding-bottom: 0.15rem;
+}
+
+.right-action-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.right-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  min-height: 42px;
+  padding: 0.48rem 0.75rem;
+  border-radius: 0.9rem;
+  background: #FFFFFF;
+  border: 1.5px solid #D9E9D9;
+  color: #2B3D33;
+  font-size: 0.76rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.right-action-btn:hover {
+  background: #EBF4EB;
+  border-color: #A7C8A3;
+  color: #2E7D62;
+}
+
+.right-action-btn.primary {
+  background: #2E7D62;
+  border-color: #256850;
+  color: #FFFFFF;
+  box-shadow: 0 5px 14px rgba(46, 125, 98, 0.22);
+}
+
+.right-action-btn.primary:hover {
+  background: #24664F;
+  color: #FFFFFF;
+}
+
+/* =====================================================================
+   DESKTOP VIEW (>= 1024px): FIXED 3-COLUMN LAYOUT & INDEPENDENT SCROLL
+   ===================================================================== */
+@media (min-width: 1024px) {
+  .mobile-nav,
+  .mobile-topbar,
+  .tablet-tools-toggle-btn {
+    display: none !important;
+  }
+
+  .app-shell {
+    display: flex !important;
+    align-items: stretch !important;
+    width: min(100%, 1920px) !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
+    padding: 0.95rem 1.15rem !important;
+    gap: 1rem !important;
+    overflow: hidden !important;
+  }
+
+  .sidebar {
+    display: flex !important;
+    position: sticky !important;
+    top: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    flex: 0 0 244px !important;
+    width: 244px !important;
+    padding: 1rem 0.85rem !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .sidebar.is-collapsed {
+    flex: 0 0 76px !important;
+    width: 76px !important;
+    padding: 0.95rem 0.5rem !important;
+  }
+
+  .main-content {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--moss-green) transparent;
+    padding: 1.25rem 1.35rem 2.75rem !important;
+  }
+
+  /* 3-Column Stats Row 1 (Prompts, Categories, Projects) + Equal Row 2 up to 1499px */
+  .filter-and-widgets-row .quick-filter-bar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+  }
+
+  .stat-grid.stat-grid-5 {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 0.8rem !important;
+  }
+
+  .stat-grid.stat-grid-5 .stat-card:nth-child(-n+3) {
+    grid-column: span 2;
+  }
+
+  .stat-grid.stat-grid-5 .stat-card:nth-child(n+4) {
+    grid-column: span 3;
+  }
+}
+
+/* Compact 3-Column Desktop Laptops (1024px - 1359px) */
+@media (min-width: 1024px) and (max-width: 1359px) {
+  .app-shell {
+    padding: 0.75rem 0.85rem !important;
+    gap: 0.8rem !important;
+  }
+
+  .sidebar {
+    flex: 0 0 222px !important;
+    width: 222px !important;
+    padding: 0.9rem 0.75rem !important;
+  }
+
+  .right-sidebar {
+    flex: 0 0 258px !important;
+    width: 258px !important;
+    padding: 0.85rem 0.75rem !important;
+  }
+
+  .main-content {
+    padding: 1.05rem 1.1rem 2.25rem !important;
+  }
+
+  .topbar {
+    gap: 0.75rem;
+    margin-bottom: 0.95rem !important;
+  }
+
+  .topbar-global-search {
+    width: auto !important;
+    flex: 1 1 210px;
+    min-width: 0 !important;
+    max-width: 290px;
+  }
+
+  .hero-strip {
+    min-height: 10.5rem !important;
+    padding: 1.25rem 1.45rem !important;
+    gap: 1rem !important;
+  }
+
+  .hero-image-frame {
+    width: 7.8rem !important;
+    height: 7.8rem !important;
+    flex-basis: 7.8rem !important;
+  }
+
+  .category-visual-grid {
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)) !important;
+    gap: 0.65rem !important;
+  }
+
+  .prompt-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.65rem !important;
+  }
+
+  .quick-tools-strip {
+    grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)) !important;
+  }
+}
+
+/* Standard Wide Desktops (1360px - 1499px) */
+@media (min-width: 1360px) and (max-width: 1499px) {
+  .topbar-global-search {
+    width: 280px !important;
+    min-width: 0 !important;
+  }
+
+  .hero-image-frame {
+    width: 9rem !important;
+    height: 9rem !important;
+    flex-basis: 9rem !important;
+  }
+
+  .category-visual-grid {
+    grid-template-columns: repeat(auto-fill, minmax(122px, 1fr)) !important;
+  }
+
+  .prompt-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .quick-tools-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Large Screens (>= 1500px): All 5 Stats & 7 Categories Fit Cleanly in 1 Row */
+@media (min-width: 1500px) {
+  .stat-grid.stat-grid-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+
+  .stat-grid.stat-grid-5 .stat-card:nth-child(-n+3),
+  .stat-grid.stat-grid-5 .stat-card:nth-child(n+4) {
+    grid-column: span 1 !important;
+  }
+
+  .hero-image-frame {
+    width: 10.2rem !important;
+    height: 10.2rem !important;
+    flex-basis: 10.2rem !important;
+  }
+
+  .category-visual-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  }
+
+  .prompt-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+}
+
+/* =====================================================================
+   TABLET VIEW (768px - 1023px): 2 COLUMNS + RIGHT SLIDE-OUT DRAWER
+   ===================================================================== */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .mobile-topbar,
+  .mobile-nav {
+    display: none !important;
+  }
+
+  .tablet-tools-toggle-btn {
+    display: inline-flex !important;
+  }
+
+  .tablet-mobile-only-close {
+    display: inline-flex !important;
+  }
+
+  .app-shell {
+    display: flex !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    padding: 0.75rem 0.85rem !important;
+    gap: 0.85rem !important;
+    overflow: hidden !important;
+  }
+
+  /* Keep Left Navigation Fixed/Sticky */
+  .sidebar {
+    display: flex !important;
+    position: sticky !important;
+    top: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    flex: 0 0 218px !important;
+    width: 218px !important;
+    padding: 0.9rem 0.75rem !important;
+    overflow-y: auto !important;
+  }
+
+  .sidebar.is-collapsed {
+    flex: 0 0 74px !important;
+    width: 74px !important;
+    padding: 0.9rem 0.45rem !important;
+  }
+
+  /* Scroll Center Content Independently */
+  .main-content {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    padding: 1.05rem 1.15rem 2.25rem !important;
+  }
+
+  .topbar {
+    gap: 0.75rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .topbar-right-cluster {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .topbar-global-search {
+    flex: 1 1 220px !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  /* Wrapping Filter Tags & Folder Pills cleanly on Tablet (even at exact 768px boundary) */
+  .filter-and-widgets-row .quick-filter-bar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    gap: 0.5rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  .folder-pills-row {
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+  }
+
+  .profile-panel {
+    flex-direction: row !important;
+    align-items: center !important;
+    text-align: left !important;
+  }
+
+  /* Hero stays crisp side-by-side instead of boxy stacked card */
+  .hero-strip {
+    flex-direction: row !important;
+    align-items: center !important;
+    text-align: left !important;
+    padding: 1.3rem 1.5rem !important;
+    min-height: 10.5rem !important;
+    gap: 1.15rem !important;
+  }
+
+  .hero-image-frame {
+    width: 8rem !important;
+    height: 8rem !important;
+    flex: 0 0 8rem !important;
+  }
+
+  /* Stats: 3 equal top (Total Prompts, Categories, Projects) + 2 equal bottom */
+  .stat-grid.stat-grid-5 {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 0.7rem !important;
+  }
+
+  .stat-grid.stat-grid-5 .stat-card:nth-child(-n+3) {
+    grid-column: span 2 !important;
+  }
+
+  .stat-grid.stat-grid-5 .stat-card:nth-child(n+4) {
+    grid-column: span 3 !important;
+  }
+
+  .category-visual-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 0.65rem !important;
+  }
+
+  .prompt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.75rem !important;
+  }
+
+  .quick-tools-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Hide Right Sidebar into Slide-Out Drawer behind Toggle Button */
+  .right-sidebar {
+    position: fixed !important;
+    top: 0.75rem !important;
+    right: 0.75rem !important;
+    bottom: 0.75rem !important;
+    height: calc(100dvh - 1.5rem) !important;
+    max-height: calc(100dvh - 1.5rem) !important;
+    width: min(326px, calc(100vw - 2rem)) !important;
+    flex: none !important;
+    z-index: 1120 !important;
+    transform: translateX(calc(100% + 2.5rem)) !important;
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    box-shadow: -18px 0 48px rgba(28, 45, 36, 0.22) !important;
+  }
+
+  .right-sidebar.drawer-open {
+    transform: translateX(0) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+  }
+
+  .right-sidebar .desktop-only-collapse {
+    display: none !important;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1023px) {
+  .prompt-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+/* =====================================================================
+   MOBILE VIEW (< 768px): 1 COLUMN UNIFIED SCROLL + MINIMAL TOPBAR + DRAWERS
+   ===================================================================== */
+@media (max-width: 767px) {
+  /* Hide Desktop/Tablet Topbar & desktop collapse triggers */
+  .topbar,
+  .desktop-only-collapse,
+  .tablet-tools-toggle-btn {
+    display: none !important;
+  }
+
+  .mobile-only-close,
+  .tablet-mobile-only-close {
+    display: inline-flex !important;
+  }
+
+  /* Unified Single-Page Normal Scroll */
+  .app-shell {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100dvh !important;
+    padding: 0 0 calc(5.2rem + env(safe-area-inset-bottom, 0px)) !important;
+    gap: 0 !important;
+    overflow: visible !important;
+  }
+
+  .main-content {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0.6rem 0.72rem 1.25rem !important;
+  }
+
+  /* Minimal Sticky Mobile Top Bar: Logo + Full Search + Hamburger + Tools Drawer */
+  .mobile-topbar {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.55rem;
+    position: sticky;
+    top: 0;
+    z-index: 950;
+    padding: max(0.55rem, env(safe-area-inset-top, 0.55rem)) 0.75rem 0.65rem;
+    background: rgba(244, 247, 242, 0.94);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid #D9E9D9;
+    box-shadow: 0 4px 16px rgba(46, 125, 98, 0.06);
+  }
+
+  .mobile-topbar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .mobile-icon-btn {
+    position: relative;
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: 0.9rem;
+    background: #FFFFFF;
+    border: 1.5px solid #D9E9D9;
+    color: #1C2D24;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(46, 125, 98, 0.05);
+    transition: all 0.2s ease;
+  }
+
+  .mobile-icon-btn:active {
+    transform: scale(0.95);
+    background: #EBF4EB;
+  }
+
+  .mobile-brand-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 44px;
+    padding: 0.15rem 0.25rem;
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .mobile-brand-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .mobile-brand-text strong {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #1C2D24;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-brand-text small {
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: #5C7064;
+    line-height: 1.1;
+  }
+
+  .mobile-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .mobile-search-wrap {
+    width: 100%;
+  }
+
+  .mobile-global-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    background: #FFFFFF;
+    border: 1.5px solid #D9E9D9;
+    box-shadow: 0 3px 10px rgba(46, 125, 98, 0.05);
+  }
+
+  .mobile-global-search:focus-within {
+    border-color: #2E7D62;
+    box-shadow: 0 0 0 3px rgba(46, 125, 98, 0.14);
+  }
+
+  .mobile-global-search input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: #1C2D24;
+    font-size: 16px !important;
+    font-weight: 500;
+    outline: none;
+  }
+
+  .mobile-global-search input::placeholder {
+    color: #7D9084;
+  }
+
+  /* Left Navigation Slide-Out Drawer (Hamburger Menu + Compact Links + Visible Google Drive Card) */
+  .sidebar {
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    width: min(85vw, 316px) !important;
+    flex: none !important;
+    z-index: 1120 !important;
+    gap: 0.4rem !important;
+    border-radius: 0 1.4rem 1.4rem 0 !important;
+    padding: max(0.85rem, env(safe-area-inset-top, 0.85rem)) 0.8rem max(1.25rem, env(safe-area-inset-bottom, 1.25rem)) !important;
+    transform: translateX(-105%) !important;
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    box-shadow: 18px 0 48px rgba(28, 45, 36, 0.24) !important;
+    overflow-y: auto !important;
+  }
+
+  .sidebar.mobile-drawer-open,
+  .sidebar.is-collapsed.mobile-drawer-open {
+    width: min(85vw, 316px) !important;
+    flex: none !important;
+    padding: max(0.85rem, env(safe-area-inset-top, 0.85rem)) 0.8rem max(1.25rem, env(safe-area-inset-bottom, 1.25rem)) !important;
+    transform: translateX(0) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+  }
+
+  .sidebar .brand-lockup-row {
+    padding-bottom: 0.45rem !important;
+    margin-bottom: 0.1rem !important;
+  }
+
+  .sidebar .side-nav {
+    gap: 0.16rem !important;
+  }
+
+  .sidebar .nav-button {
+    min-height: 44px !important;
+    padding: 0.36rem 0.65rem !important;
+    font-size: 0.84rem !important;
+  }
+
+  .sidebar .sidebar-primary-add-btn {
+    min-height: 44px !important;
+    padding: 0.5rem 0.8rem !important;
+    margin: 0.2rem 0 !important;
+  }
+
+  .sidebar .sidebar-links-section {
+    margin: 0.25rem 0 !important;
+    padding-top: 0.55rem !important;
+    flex: none !important;
+  }
+
+  .sidebar .sidebar-links-list {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.32rem !important;
+    overflow-y: auto !important;
+    max-height: 92px !important;
+    padding-right: 0.15rem !important;
+  }
+
+  .sidebar .sidebar-link-btn {
+    min-height: 42px !important;
+    padding: 0.36rem 0.48rem !important;
+    gap: 0.38rem !important;
+  }
+
+  .sidebar .sidebar-link-text span,
+  .sidebar .sidebar-link-arrow {
+    display: none !important;
+  }
+
+  .sidebar .sidebar-link-text strong {
+    font-size: 0.7rem !important;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Keep Google Drive Storage Card cleanly formatted & prominent inside Hamburger Menu */
+  .sidebar .sidebar-storage-card {
+    flex-shrink: 0;
+    margin-top: 0.45rem !important;
+    padding: 0.85rem !important;
+    border: 1.5px solid #CFE3CF !important;
+    background: #FFFFFF !important;
+  }
+
+  /* Right Tools Slide-Out Drawer on Mobile */
+  .right-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    width: min(86vw, 326px) !important;
+    flex: none !important;
+    z-index: 1120 !important;
+    gap: 0.55rem !important;
+    border-radius: 1.4rem 0 0 1.4rem !important;
+    padding: max(0.85rem, env(safe-area-inset-top, 0.85rem)) 0.85rem max(1.25rem, env(safe-area-inset-bottom, 1.25rem)) !important;
+    transform: translateX(105%) !important;
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    box-shadow: -18px 0 48px rgba(28, 45, 36, 0.24) !important;
+  }
+
+  .right-sidebar .right-panel-card {
+    padding: 0.68rem !important;
+    gap: 0.42rem !important;
+  }
+
+  .right-sidebar .right-ai-tile {
+    min-height: 48px !important;
+    padding: 0.45rem 0.35rem !important;
+  }
+
+  .right-sidebar.drawer-open {
+    transform: translateX(0) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+  }
+
+  /* Main Content Mobile Optimizations */
+  /* 1. Filter Tags: Horizontal Scroll Row with hidden scrollbar */
+  .filter-and-widgets-row {
+    margin-bottom: 0.65rem !important;
+  }
+
+  .filter-and-widgets-row .quick-filter-bar {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    gap: 0.4rem !important;
+    padding: 0.1rem 0.05rem 0.25rem !important;
+    margin-bottom: 0 !important;
+    width: 100%;
+  }
+
+  .filter-and-widgets-row .quick-filter-bar::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .quick-pill {
+    flex: 0 0 auto !important;
+    min-height: 44px !important;
+    padding: 0.45rem 0.85rem !important;
+    font-size: 0.78rem !important;
+    white-space: nowrap;
+  }
+
+  /* 2. Balanced Centered Hero + Scaled Borderless Robot + Full-Width CTA */
+  .hero-strip {
+    flex-direction: column-reverse !important;
+    align-items: center !important;
+    text-align: center !important;
+    min-height: 0 !important;
+    padding: 0.9rem 0.95rem 1rem !important;
+    gap: 0.4rem !important;
+    border-radius: 1.25rem !important;
+    margin-bottom: 0.85rem !important;
+  }
+
+  .hero-image-frame {
+    width: 6.2rem !important;
+    height: 6.2rem !important;
+    flex: none !important;
+    margin: 0 auto -0.15rem !important;
+  }
+
+  .hero-image-frame .hero-mascot-3d {
+    width: 96px !important;
+    height: 96px !important;
+    max-width: 96px !important;
+    max-height: 96px !important;
+  }
+
+  .hero-content-col {
+    width: 100%;
+  }
+
+  .hero-label {
+    font-size: 0.68rem !important;
+  }
+
+  .hero-content-col h2 {
+    font-size: 1.18rem !important;
+    line-height: 1.25 !important;
+    margin: 0.2rem 0 0.3rem !important;
+  }
+
+  .hero-content-col p {
+    font-size: 0.79rem !important;
+    line-height: 1.4 !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-bottom: 0.7rem !important;
+  }
+
+  .hero-cta-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    gap: 0.42rem !important;
+  }
+
+  .hero-cta-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 46px !important;
+    padding: 0.55rem 1rem !important;
+    font-size: 0.92rem !important;
+  }
+
+  .hero-live-badge {
+    justify-content: center !important;
+    min-height: 34px !important;
+    padding: 0.28rem 0.75rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* 3. Stats Cards: Crisp 2x2 Grid + Sleek Full-Width 5th Card across ALL Mobile Phones */
+  .stat-grid.stat-grid-5 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.52rem !important;
+    margin-bottom: 0.95rem !important;
+  }
+
+  .stat-grid.stat-grid-5 .stat-card:nth-child(-n+3),
+  .stat-grid.stat-grid-5 .stat-card:nth-child(n+4) {
+    grid-column: auto !important;
+  }
+
+  .stat-card {
+    min-height: 44px;
+    padding: 0.68rem 0.55rem !important;
+    gap: 0.26rem !important;
+    border-radius: 1rem !important;
+  }
+
+  .stat-icon {
+    width: 2.35rem !important;
+    height: 2.35rem !important;
+    border-radius: 0.72rem !important;
+  }
+
+  .stat-icon .three-d-icon {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .stat-card span {
+    font-size: 0.72rem !important;
+  }
+
+  .stat-card strong {
+    font-size: 1.24rem !important;
+  }
+
+  .stat-grid.stat-grid-5 .stat-card:nth-child(5) {
+    grid-column: 1 / -1 !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0.62rem 0.85rem !important;
+    text-align: left !important;
+    gap: 0.65rem !important;
+  }
+
+  .stat-grid.stat-grid-5 .stat-card:nth-child(5) .stat-icon {
+    flex-shrink: 0;
+  }
+
+  .stat-grid.stat-grid-5 .stat-card:nth-child(5) span {
+    flex: 1;
+    font-size: 0.8rem !important;
+  }
+
+  .stat-grid.stat-grid-5 .stat-card:nth-child(5) strong {
+    font-size: 1.05rem !important;
+    color: #2E7D62 !important;
+  }
+
+  /* 4. Accessibility Touch Targets & Clean Horizontal Shelves */
+  .section-block {
+    margin-bottom: 0.95rem !important;
+  }
+
+  .section-heading {
+    margin-bottom: 0.55rem !important;
+  }
+
+  .section-heading h2 {
+    font-size: 1rem !important;
+  }
+
+  .nav-button,
+  .sidebar-primary-add-btn,
+  .popular-tag-pill,
+  .folder-tile,
+  .create-folder-btn,
+  .pill-outline-btn,
+  .right-widgets-stack .top-widget-btn,
+  .right-widgets-stack .calendar-pill-main,
+  .right-action-btn,
+  .right-cloud-sync-btn,
+  .mobile-nav-btn,
+  .quick-tool-card,
+  .view-mode-btn,
+  .gallery-sort-select,
+  .compact-button,
+  .text-button,
+  .drawer-close-btn {
+    min-height: 44px !important;
+  }
+
+  .drawer-close-btn {
+    min-width: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .storage-dl-mini-btn {
+    min-height: 36px;
+    padding: 0.25rem 0.65rem;
+  }
+
+  /* Categories: Horizontal Swipe Strip on Mobile (saves >350px vertical scroll) */
+  .category-visual-grid {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    gap: 0.52rem !important;
+    padding: 0.1rem 0.05rem 0.3rem !important;
+  }
+
+  .category-visual-grid::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .category-visual-card {
+    flex: 0 0 96px !important;
+    padding: 0.58rem 0.4rem !important;
+    border-radius: 1rem !important;
+    gap: 0.3rem !important;
+  }
+
+  .cat-visual-thumb.cat-3d-full {
+    width: 3.25rem !important;
+    height: 3.25rem !important;
+    border-radius: 0.9rem !important;
+  }
+
+  .cat-visual-title {
+    font-size: 0.74rem !important;
+  }
+
+  .cat-visual-count {
+    font-size: 0.64rem !important;
+  }
+
+  /* Popular Tags: Single Swipeable Strip on Mobile */
+  .popular-tags-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    gap: 0.42rem !important;
+    padding-bottom: 0.25rem !important;
+  }
+
+  .popular-tags-row::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .popular-tag-pill {
+    flex: 0 0 auto !important;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 0.95rem !important;
+    white-space: nowrap;
+  }
+
+  .folder-pills-row {
+    touch-action: pan-x pan-y;
+  }
+
+  /* Prompt Cards on Mobile 2-Column Grid — Clean Gallery Hierarchy & Zero Clutter */
+  .prompt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.55rem !important;
+  }
+
+  .card-drag-bar {
+    display: none !important;
+  }
+
+  .thumbnail-container {
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  .tool-pill {
+    top: 0.3rem !important;
+    left: 0.3rem !important;
+    font-size: 0.52rem !important;
+    padding: 0.14rem 0.38rem !important;
+    max-width: calc(100% - 2.6rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .favorite-btn-overlay {
+    position: absolute !important;
+    top: 0.3rem !important;
+    right: 0.3rem !important;
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+  }
+
+  .favorite-btn-overlay::after {
+    content: '';
+    position: absolute;
+    inset: -7px;
+  }
+
+  .prompt-card-body {
+    padding: 0.52rem 0.52rem 0.58rem !important;
+    gap: 0.24rem !important;
+  }
+
+  .card-heading-row {
+    margin-bottom: 0.05rem !important;
+    gap: 0.2rem !important;
+  }
+
+  .category-pill-btn,
+  .folder-chip-btn {
+    position: relative;
+    font-size: 0.56rem !important;
+    padding: 0.14rem 0.4rem !important;
+    min-height: 24px !important;
+  }
+
+  .folder-chip-btn span {
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .negative-badge {
+    display: none !important;
+  }
+
+  .card-title {
+    font-size: 0.82rem !important;
+    line-height: 1.28 !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .prompt-excerpt {
+    font-size: 0.68rem !important;
+    line-height: 1.32 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .tag-row {
+    flex-wrap: nowrap !important;
+    overflow: hidden !important;
+    gap: 0.22rem !important;
+  }
+
+  .tag-btn {
+    font-size: 0.56rem !important;
+    padding: 0.14rem 0.42rem !important;
+    white-space: nowrap;
+  }
+
+  .tag-btn:nth-child(n+3) {
+    display: none !important;
+  }
+
+  .card-actions {
+    display: grid !important;
+    grid-template-columns: 1.25fr 1fr 1fr !important;
+    gap: 0.28rem !important;
+  }
+
+  .card-actions .copy-action-btn {
+    grid-column: 1 / -1 !important;
+  }
+
+  .card-actions .action-btn,
+  .card-actions .action-btn.icon-only-btn,
+  .card-actions .action-btn:nth-child(3),
+  .card-actions .action-btn:nth-child(4) {
+    width: 100% !important;
+    height: auto !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    flex: none !important;
+    padding: 0.28rem 0.35rem !important;
+    font-size: 0.68rem !important;
+  }
+
+  .view-mode-btn {
+    min-width: 44px !important;
+  }
+
+  .gallery-sort-select {
+    font-size: 16px !important;
+  }
+
+  .text-button {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .ai-suite-grid,
+  .profile-links-grid,
+  .profile-downloads-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .quick-tools-strip {
+    grid-template-columns: 1fr !important;
+    gap: 0.55rem !important;
+  }
+
+  /* Harmonious Sage Green Mobile Bottom Dock (Replaces Oversized Leftover Orange Circle) */
+  .mobile-nav {
+    display: flex !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    border-radius: 1.15rem 1.15rem 0 0 !important;
+    padding: 0.28rem 0.25rem max(0.38rem, env(safe-area-inset-bottom, 0.38rem)) !important;
+    background: rgba(255, 255, 255, 0.97) !important;
+    border-top: 1px solid #D9E9D9 !important;
+    box-shadow: 0 -8px 26px rgba(46, 125, 98, 0.1) !important;
+  }
+
+  .mobile-nav-btn {
+    min-width: 44px !important;
+    padding: 0.25rem 0.35rem !important;
+    font-size: 0.65rem !important;
+    color: #5C7064 !important;
+  }
+
+  .mobile-nav-btn.active {
+    color: #2E7D62 !important;
+  }
+
+  .mobile-nav-btn.active .mobile-nav-icon-wrap {
+    color: #2E7D62 !important;
+    transform: translateY(-2px);
+  }
+
+  .mobile-nav-btn.mobile-nav-add {
+    margin-top: -0.45rem !important;
+  }
+
+  .mobile-nav-btn.mobile-nav-add .mobile-nav-icon-wrap {
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, #2E7D62, #205B47) !important;
+    border: 2.5px solid #FFFFFF !important;
+    box-shadow: 0 6px 16px rgba(46, 125, 98, 0.3) !important;
+  }
+}
+
+/* Ultra-Tiny Screens (< 340px only): Stack Vertically */
+@media (max-width: 339px) {
+  .stat-grid.stat-grid-5 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stat-grid.stat-grid-5 .stat-card:nth-child(5) {
+    grid-column: auto !important;
+    flex-direction: column !important;
+    text-align: center !important;
+  }
+
+  .prompt-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 
