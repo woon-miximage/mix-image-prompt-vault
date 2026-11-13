@@ -469,6 +469,14 @@ function Icon({ name, className = '', filled = false }) {
           <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
       )
+    case 'mail':
+    case 'email':
+      return (
+        <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect width="20" height="16" x="2" y="4" rx="2" />
+          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+        </svg>
+      )
     case 'calculator':
       return (
         <svg className={baseClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -7304,7 +7312,7 @@ function App() {
               </div>
               <div className="quick-tools-strip">
                 <a
-                  href="https://miximageai.online/"
+                  href="https://firefly.adobe.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="quick-tool-card primary-tool"
@@ -7312,11 +7320,11 @@ function App() {
                   <div className="qt-icon sage"><ThreeDIcon name="48_ai-image" size={42} fallback="image" /></div>
                   <div className="qt-info">
                     <strong>สร้างภาพ</strong>
-                    <span>GPT-2.5 (Firefly)</span>
+                    <span>Adobe Firefly</span>
                   </div>
                 </a>
                 <a
-                  href="https://mix-music.netlify.app/"
+                  href="https://suno.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="quick-tool-card"
@@ -7324,23 +7332,23 @@ function App() {
                   <div className="qt-icon amber"><ThreeDIcon name="49_ai-music" size={42} fallback="music" /></div>
                   <div className="qt-info">
                     <strong>สร้างเสียง</strong>
-                    <span>SunoAI v5</span>
+                    <span>Suno (suno.com)</span>
                   </div>
                 </a>
                 <a
-                  href="https://miximage-lyric.netlify.app/"
+                  href="https://woon-miximage.github.io/zeroday-mastering/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="quick-tool-card"
                 >
-                  <div className="qt-icon slate"><ThreeDIcon name="52_ai-writing" size={42} fallback="note" /></div>
+                  <div className="qt-icon slate"><ThreeDIcon name="56_ai-microphone" size={42} fallback="music" /></div>
                   <div className="qt-info">
-                    <strong>เขียนสคริปต์</strong>
-                    <span>Google AI Studio</span>
+                    <strong>มาสเตอร์ริ่งเสียง</strong>
+                    <span>ZeroDay Mastering</span>
                   </div>
                 </a>
                 <a
-                  href="https://www.canva.com/"
+                  href="https://beatsync-studio-v2.netlify.app/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="quick-tool-card"
@@ -7348,20 +7356,21 @@ function App() {
                   <div className="qt-icon teal"><ThreeDIcon name="50_ai-video" size={42} fallback="sparkles" /></div>
                   <div className="qt-info">
                     <strong>ตัดต่อวิดีโอ</strong>
-                    <span>Canva</span>
+                    <span>BeatSync Studio v2</span>
                   </div>
                 </a>
-                <button
-                  type="button"
+                <a
+                  href="https://privateemail.com/th/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="quick-tool-card"
-                  onClick={syncData}
                 >
-                  <div className="qt-icon drive"><ThreeDIcon name="55_ai-google-drive" size={42} fallback="cloud" /></div>
+                  <div className="qt-icon drive"><ThreeDIcon name="31_workspace-document" size={42} fallback="mail" /></div>
                   <div className="qt-info">
-                    <strong>เชื่อมต่อ Drive</strong>
-                    <span>Google Drive / Cloud</span>
+                    <strong>อีเมลส่วนตัว</strong>
+                    <span>Private Email</span>
                   </div>
-                </button>
+                </a>
               </div>
             </section>
           </>
