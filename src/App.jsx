@@ -7365,7 +7365,7 @@ function App() {
                   rel="noopener noreferrer"
                   className="quick-tool-card"
                 >
-                  <div className="qt-icon drive"><ThreeDIcon name="31_workspace-document" size={42} fallback="mail" /></div>
+                  <div className="qt-icon mail"><ThreeDIcon name="mail-envelope" size={36} fallback="mail" /></div>
                   <div className="qt-info">
                     <strong>อีเมลส่วนตัว</strong>
                     <span>Private Email</span>

@@ -628,6 +628,17 @@ export const ICON_MANIFEST = [
     "path": "./icons/ai-tools/57_ai-magic.png"
   },
   {
+    "num": "86",
+    "id": "mail-envelope",
+    "filename": "86_mail-envelope.png",
+    "category": "ai-tools",
+    "description": "อีเมลส่วนตัว (Private Email)",
+    "uiLocation": "Quick Tools Strip (Private Email)",
+    "displaySize": 44,
+    "fallback": "mail",
+    "path": "./icons/ai-tools/86_mail-envelope.png"
+  },
+  {
     "num": "58",
     "id": "state-success",
     "filename": "58_state-success.png",
@@ -977,4 +988,6 @@ export const ICON_BY_ID = Object.fromEntries([
   ['calculator', ICON_MANIFEST.find((i) => i.id === 'finance-calculator')],
   ['lock', ICON_MANIFEST.find((i) => i.id === 'state-locked')],
   ['unlock', ICON_MANIFEST.find((i) => i.id === 'state-unlocked')],
+  ['mail', ICON_MANIFEST.find((i) => i.id === 'mail-envelope')],
+  ['email', ICON_MANIFEST.find((i) => i.id === 'mail-envelope')],
 ]);

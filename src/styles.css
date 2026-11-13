@@ -9955,6 +9955,16 @@ body {
 .qt-icon.slate { background: #EDF3ED; color: #2E7D62; border: 1px solid #D5E5D5; }
 .qt-icon.teal { background: #E6F4F1; color: #1F7A68; border: 1px solid #C5E6DF; }
 .qt-icon.drive { background: #EEF5FF; color: #2563EB; border: 1px solid #D3E4FF; }
+.qt-icon.mail { background: #F4F0FF; color: #7C3AED; border: 1px solid #E0D7FE; }
+
+.qt-icon img,
+.qt-icon .three-d-icon {
+  max-width: 32px;
+  max-height: 32px;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
 
 .qt-info {
   min-width: 0;
