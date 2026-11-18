@@ -118,22 +118,24 @@ const popularTools = [
   'Ideogram',
 ]
 
-// รายการลิงก์เว็บในเครือ MIX-IMAGE เรียงลำดับจาก "ล่างขึ้นบน" ตามที่ผู้ใช้กำหนด (#1 ล่างสุด -> #10 บนสุด)
-const externalLinksBottomToTop = [
-  { id: 'shop', label: 'miximage.shop', sub: 'MIXIMAGE SHOP', url: 'https://miximage.shop/', color: 'orange', icon3d: '16_category-design-ui' },
-  { id: 'one', label: 'miximage.one', sub: 'MIXIMAGE ONE', url: 'https://miximage.one/', color: 'cyan', icon3d: '53_ai-studio' },
-  { id: 'art', label: 'miximageart.netlify.app', sub: 'MIXIMAGE ART', url: 'https://miximageart.netlify.app/', color: 'purple', icon3d: '48_ai-image' },
-  { id: 'card', label: 'miximagecard.netlify.app', sub: 'MIXIMAGE CARD', url: 'https://miximagecard.netlify.app/', color: 'blue', icon3d: '38_finance-wallet' },
-  { id: 'id-house', label: 'id-house.netlify.app', sub: 'ID-HOUSE STUDIO', url: 'https://id-house.netlify.app/', color: 'green', icon3d: '11_category-image' },
-  { id: 'lyric', label: 'miximage-lyric.netlify.app', sub: 'MIXIMAGE LYRIC', url: 'https://miximage-lyric.netlify.app/', color: 'orange', icon3d: '52_ai-writing' },
-  { id: 'music', label: 'mix-music.netlify.app', sub: 'MIX-MUSIC AI', url: 'https://mix-music.netlify.app/', color: 'purple', icon3d: '49_ai-music' },
-  { id: 'zeroday-gh', label: 'woon-miximage.github.io/zeroday-mastering', sub: 'ZERODAY (GITHUB)', url: 'https://woon-miximage.github.io/zeroday-mastering/', color: 'cyan', icon3d: '56_ai-microphone' },
-  { id: 'zeroday-net', label: 'zeroday-mastering.netlify.app', sub: 'ZERODAY MASTERING', url: 'https://zeroday-mastering.netlify.app/', color: 'blue', icon3d: '13_category-music' },
+// รายการลิงก์เว็บและเครื่องมือในเครือ MIX-IMAGE เรียงตามลำดับจากบนลงล่างตามที่ผู้ใช้กำหนด
+export const externalLinksTopToBottom = [
+  { id: 'piscopy', label: 'piscopy300dpi.netlify.app', sub: 'PIS COPY 300DPI', url: 'https://piscopy300dpi.netlify.app/', color: 'green', icon3d: '11_category-image' },
+  { id: 'zeroday-gh', label: 'woon-miximage.github.io/zeroday-mastering', sub: 'ZERODAY MASTERING', url: 'https://woon-miximage.github.io/zeroday-mastering/', color: 'cyan', icon3d: '56_ai-microphone' },
+  { id: 'beatsync', label: 'beatsync-studio-v2.netlify.app', sub: 'BEATSYNC STUDIO V2', url: 'https://beatsync-studio-v2.netlify.app/', color: 'purple', icon3d: '50_ai-video' },
+  { id: 'miximage-studio', label: 'miximage-art-audio.github.io/miximage-studio', sub: 'MIXIMAGE STUDIO', url: 'https://miximage-art-audio.github.io/miximage-studio/', color: 'orange', icon3d: '53_ai-studio' },
   { id: 'ai-online', label: 'miximageai.online', sub: 'MIXIMAGE AI ONLINE', url: 'https://miximageai.online/', color: 'green', icon3d: '57_ai-magic' },
+  { id: 'zeroday-net', label: 'zeroday-mastering.netlify.app', sub: 'ZERODAY (NETLIFY)', url: 'https://zeroday-mastering.netlify.app/', color: 'blue', icon3d: '13_category-music' },
+  { id: 'music', label: 'mix-music.netlify.app', sub: 'MIX-MUSIC AI', url: 'https://mix-music.netlify.app/', color: 'purple', icon3d: '49_ai-music' },
+  { id: 'lyric', label: 'miximage-lyric.netlify.app', sub: 'MIXIMAGE LYRIC', url: 'https://miximage-lyric.netlify.app/', color: 'orange', icon3d: '52_ai-writing' },
+  { id: 'id-house', label: 'id-house.netlify.app', sub: 'ID-HOUSE STUDIO', url: 'https://id-house.netlify.app/', color: 'green', icon3d: '36_workspace-image' },
+  { id: 'card', label: 'miximagecard.netlify.app', sub: 'MIXIMAGE CARD', url: 'https://miximagecard.netlify.app/', color: 'blue', icon3d: '38_finance-wallet' },
+  { id: 'art', label: 'miximageart.netlify.app', sub: 'MIXIMAGE ART', url: 'https://miximageart.netlify.app/', color: 'purple', icon3d: '48_ai-image' },
+  { id: 'one', label: 'miximage.one', sub: 'MIXIMAGE ONE', url: 'https://miximage.one/', color: 'cyan', icon3d: '16_category-design-ui' },
+  { id: 'shop', label: 'miximage.shop', sub: 'MIXIMAGE SHOP', url: 'https://miximage.shop/', color: 'orange', icon3d: '42_finance-savings' },
 ]
 
-// แสดงผลจากบนลงล่าง โดยให้รายการสุดท้ายอยู่บนสุด และรายการแรกอยู่ล่างสุด (เรียงล่างขึ้นบน)
-const externalLinksTopToBottom = [...externalLinksBottomToTop].reverse()
+export const externalLinksBottomToTop = [...externalLinksTopToBottom].reverse()
 
 
 const emptyForm = {
