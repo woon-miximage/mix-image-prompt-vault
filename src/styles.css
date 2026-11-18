@@ -436,26 +436,24 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 }
 
 .phone-unlock-btn {
-  color: #0284c7;
-  background: rgba(2, 132, 199, 0.08);
-  border: 1px solid rgba(2, 132, 199, 0.2);
+  display: none; /* Removed: quick-unlock is disabled */
 }
 
-.phone-unlock-btn:hover {
-  background: rgba(2, 132, 199, 0.18);
-  border-color: #0284c7;
-  color: #0369a1;
-  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.2);
+.phone-clear-all-btn {
+  color: #ef4444;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
 }
 
-.phone-unlock-btn:active {
-  transform: scale(0.95);
-  background: rgba(2, 132, 199, 0.28);
+.phone-clear-all-btn:hover {
+  color: #dc2626;
+  background: #fee2e2;
 }
 
-.phone-unlock-btn .svg-icon {
-  width: 1.45rem;
-  height: 1.45rem;
+.phone-clear-all-btn:active {
+  transform: scale(0.93);
+  background: #fecaca;
 }
 
 .phone-footer-note {
@@ -8554,10 +8552,21 @@ body {
   color: #FFFFFF !important;
 }
 
-.phone-unlock-btn {
-  background: #E8F2E8 !important;
-  color: var(--sage-green) !important;
-  border-color: var(--moss-green) !important;
+.phone-clear-all-btn {
+  background: #FFFFFF !important;
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+.phone-clear-all-btn:hover {
+  background: #fee2e2 !important;
+  border-color: #ef4444 !important;
+  color: #dc2626 !important;
+}
+
+.phone-clear-all-btn:active {
+  background: #fca5a5 !important;
+  color: #b91c1c !important;
 }
 
 /* 3. Layout Architecture: App Shell & Soft Neumorphic Sidebar */

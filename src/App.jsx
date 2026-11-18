@@ -910,13 +910,10 @@ function PinGate({ onUnlock }) {
     setPin((prev) => prev.slice(0, -1))
   }, [])
 
-  const handleQuickUnlock = useCallback(() => {
-    setPin(PIN)
-    persistUnlock()
-    setTimeout(() => {
-      onUnlock()
-    }, 80)
-  }, [onUnlock])
+  const handleClearAll = useCallback(() => {
+    setError(false)
+    setPin('')
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -924,13 +921,13 @@ function PinGate({ onUnlock }) {
         handleDigit(e.key)
       } else if (e.key === 'Backspace') {
         handleDelete()
-      } else if (e.key === 'Enter') {
-        handleQuickUnlock()
+      } else if (e.key === 'Delete' || e.key === 'Escape') {
+        handleClearAll()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleDigit, handleDelete, handleQuickUnlock])
+  }, [handleDigit, handleDelete, handleClearAll])
 
   return (
     <main className="phone-gate-container">
@@ -1000,8 +997,8 @@ function PinGate({ onUnlock }) {
               type="button"
               className="phone-key-btn phone-action-key phone-clear-btn"
               onClick={handleDelete}
-              aria-label="ลบตัวเลข"
-              title="ลบตัวเลข (Backspace)"
+              aria-label="ลบตัวเลขทีละตัว"
+              title="ลบตัวเลขทีละตัว (Backspace)"
             >
               ⌫
             </button>
@@ -1014,12 +1011,12 @@ function PinGate({ onUnlock }) {
             </button>
             <button
               type="button"
-              className="phone-key-btn phone-action-key phone-unlock-btn"
-              onClick={handleQuickUnlock}
-              aria-label="ปลดล็อกเข้าสู่ระบบ"
-              title="ปลดล็อกเข้าสู่ระบบ (1449)"
+              className="phone-key-btn phone-action-key phone-clear-all-btn"
+              onClick={handleClearAll}
+              aria-label="ลบทั้งหมด"
+              title="ลบรหัสทั้งหมด (Delete)"
             >
-              <ThreeDIcon name="67_state-unlocked" size={28} eager />
+              C
             </button>
           </div>
         </div>
