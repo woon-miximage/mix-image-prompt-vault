@@ -9,6 +9,7 @@ dist-deploy.zip
 dist-desktop/
 dist-desktop-lite/
 *.zip
+!public/downloads/*.zip
 
 # .NET / Desktop build outputs
 **/bin/
