@@ -135,9 +135,6 @@ export const externalLinksTopToBottom = [
   { id: 'shop', label: 'miximage.shop', sub: 'MIXIMAGE SHOP', url: 'https://miximage.shop/', color: 'orange', icon3d: '42_finance-savings' },
 ]
 
-export const externalLinksBottomToTop = [...externalLinksTopToBottom].reverse()
-
-
 const emptyForm = {
   title: '',
   promptText: '',
@@ -851,6 +848,7 @@ export const ThreeDIcon = memo(function ThreeDIcon({
   const [imgError, setImgError] = useState(false)
   const entry = ICON_BY_ID[name]
   const finalSize = size || entry?.displaySize || 32
+  const shouldLoadEager = eager || finalSize <= 56
 
   if (!entry || imgError) {
     return <Icon name={fallback || entry?.fallback || name} className={className} />
@@ -862,8 +860,8 @@ export const ThreeDIcon = memo(function ThreeDIcon({
       alt={alt ?? entry.description}
       width={finalSize}
       height={finalSize}
-      loading={eager ? 'eager' : 'lazy'}
-      decoding="async"
+      loading={shouldLoadEager ? 'eager' : 'lazy'}
+      decoding={shouldLoadEager ? 'sync' : 'async'}
       draggable={false}
       onError={() => setImgError(true)}
       className={`three-d-icon icon-3d-${entry.id} ${className}`.trim()}
@@ -1635,7 +1633,7 @@ const PromptCard = memo(function PromptCard({
                 className="thumbnail-img-main"
                 src={item.imageUrls[0]}
                 alt={item.title}
-                loading="lazy"
+                loading={index < 8 ? 'eager' : 'lazy'}
                 decoding="async"
                 draggable={false}
               />
@@ -2318,7 +2316,7 @@ function DetailModal({
   const categoryInfo = categories.find((c) => c.id === item.category) || { label: item.category, color: 'slate' }
 
   return (
-    <div className="modal-backdrop" role="presentation">
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <section
         className="detail-modal glass-panel"
         role="dialog"
@@ -3564,7 +3562,7 @@ const AppDownloadModal = memo(function AppDownloadModal({
   }
 
   return (
-    <div className="modal-backdrop">
+    <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card download-modal-card animate-scale-in" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="download-modal-header-brand">
@@ -7392,12 +7390,12 @@ function App() {
                   { id: '48_ai-image', title: 'AI สร้างภาพ (Image Gen)', sub: 'GPT Image 2.5 / Adobe Firefly', url: 'https://miximageai.online/' },
                   { id: '49_ai-music', title: 'AI สร้างเพลง (Music Gen)', sub: 'SunoAI v5 / แต่งทำนองและเนื้อร้อง', url: 'https://mix-music.netlify.app/' },
                   { id: '50_ai-video', title: 'AI วิดีโอ (Video Studio)', sub: 'Flow / Omi / ตัดต่อคลิปอัตโนมัติ', url: 'https://www.canva.com/' },
-                  { id: '51_ai-voice', title: 'AI เสียงพากย์ (Voice Synth)', sub: 'สังเคราะห์เสียงพูดและแคปชัน', url: 'https://mix-captions.netlify.app/' },
+                  { id: '56_ai-microphone', title: 'AI เสียงพากย์ (Voice Synth)', sub: 'สังเคราะห์เสียงพูดและแคปชัน', url: 'https://mix-captions.netlify.app/' },
                   { id: '52_ai-writing', title: 'AI เขียนสคริปต์ (Copywriting)', sub: 'ร่างเนื้อเพลง บทความ และสคริปต์', url: 'https://miximage-lyric.netlify.app/' },
                   { id: '53_ai-studio', title: 'AI Creative Studio', sub: 'ศูนย์กลางระบบสร้างสรรค์ MIX-IMAGE', url: 'https://miximageai.online/' },
                   { id: '54_ai-cloud', title: 'Firebase Cloud Sync', sub: 'ซิงค์คลังพรอมต์แบบเรียลไทม์', url: 'https://woon-miximage.github.io/mix-image-prompt-vault/' },
                   { id: '55_ai-google-drive', title: 'Google Drive Storage', sub: 'พื้นที่จัดเก็บไฟล์งานและเรฟเฟอเรนซ์', url: 'https://drive.google.com/' },
-                  { id: '56_ai-code', title: 'AI Prompt Engineering', sub: 'โครงสร้างพารามิเตอร์และคำสั่งขั้นสูง', url: 'https://mix-promt.netlify.app/' },
+                  { id: '15_category-coding', title: 'AI Prompt Engineering', sub: 'โครงสร้างพารามิเตอร์และคำสั่งขั้นสูง', url: 'https://mix-promt.netlify.app/' },
                   { id: '57_ai-magic', title: 'AI Magic Enhance', sub: 'ปรับแต่งแสง สี และรีทัชภาพติดบัตร', url: 'https://miximage-photo.netlify.app/' },
                 ].map((tool) => (
                   <a
@@ -7414,7 +7412,7 @@ function App() {
                       <strong>{tool.title}</strong>
                       <span>{tool.sub}</span>
                     </div>
-                    <ThreeDIcon name="73_utility-external-link" size={20} />
+                    <Icon name="external" className="ai-suite-arrow" />
                   </a>
                 ))}
               </div>
@@ -7444,7 +7442,7 @@ function App() {
                       <strong>{link.sub}</strong>
                       <span>{link.label}</span>
                     </div>
-                    <ThreeDIcon name="73_utility-external-link" size={18} className="sidebar-link-arrow" fallback="external" />
+                    <Icon name="external" className="sidebar-link-arrow" />
                   </a>
                 ))}
               </div>
@@ -7636,7 +7634,7 @@ function App() {
                       <strong>{link.sub}</strong>
                       <span>{link.label}</span>
                     </div>
-                    <ThreeDIcon name="73_utility-external-link" size={18} className="sidebar-link-arrow" fallback="external" />
+                    <Icon name="external" className="sidebar-link-arrow" />
                   </a>
                 ))}
               </div>
